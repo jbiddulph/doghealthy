@@ -1,0 +1,21 @@
+[build]
+  command = "npm run generate"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Configure secrets scanning to omit dist directory and README
+  # These contain public Supabase URLs needed for client-side connection
+  SECRETS_SCAN_OMIT_PATHS = "dist/**,README.md"
+  
+# Headers for Nuxt build assets
+[[headers]]
+  for = "/_nuxt/builds/meta/*"
+  [headers.values]
+    cache-control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/_nuxt/builds/*"
+  [headers.values]
+    cache-control = "public, max-age=31536000, immutable"
+
