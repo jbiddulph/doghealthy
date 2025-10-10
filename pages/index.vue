@@ -99,6 +99,13 @@
 const authStore = useAuthStore()
 const router = useRouter()
 
+// Ensure auth store is initialized
+onMounted(() => {
+  if (!authStore.user && !authStore.loading) {
+    console.log('Auth store ready')
+  }
+})
+
 const handleLogout = async () => {
   try {
     await authStore.signOut()
