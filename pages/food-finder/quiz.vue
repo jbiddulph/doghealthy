@@ -4,11 +4,14 @@
       <!-- Header -->
       <div class="text-center mb-8">
         <h1 class="text-4xl font-bold text-gray-900 mb-2">🎯 Dog Food Finder Quiz</h1>
-        <p class="text-xl text-gray-600">Answer a few questions to find the perfect food for your dog</p>
+        <p class="text-xl text-gray-600">
+          <span v-if="selectedDog">Find the perfect food for {{ selectedDog.name }}</span>
+          <span v-else>Answer a few questions to find the perfect food for your dog</span>
+        </p>
       </div>
 
       <!-- Quiz Progress -->
-      <div class="mb-8">
+      <div v-if="quizStarted" class="mb-8">
         <div class="flex justify-between items-center mb-2">
           <span class="text-sm font-medium text-gray-700">Question {{ currentQuestion + 1 }} of {{ questions.length }}</span>
           <span class="text-sm text-gray-500">{{ Math.round(((currentQuestion + 1) / questions.length) * 100) }}% Complete</span>
@@ -21,15 +24,76 @@
         </div>
       </div>
 
+      <!-- Dog Selection (if user is logged in and has dogs) -->
+      <div v-if="!quizStarted && authStore.isAuthenticated && userDogs.length > 0" class="bg-white rounded-lg shadow-md p-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+          Which dog are you finding food for?
+        </h2>
+        <p class="text-gray-600 mb-6">
+          We'll use your dog's info to give personalized recommendations!
+        </p>
+
+        <div class="space-y-3 mb-6">
+          <button
+            v-for="dog in userDogs"
+            :key="dog.id"
+            @click="selectDog(dog)"
+            class="w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all flex items-center"
+          >
+            <img
+              v-if="dog.photo_url"
+              :src="dog.photo_url"
+              :alt="dog.name"
+              class="w-16 h-16 rounded-full object-cover mr-4"
+            />
+            <div v-else class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-2xl mr-4">
+              🐕
+            </div>
+            <div>
+              <div class="text-lg font-semibold text-gray-900">{{ dog.name }}</div>
+              <div class="text-sm text-gray-600">
+                {{ dog.breed || 'Mixed Breed' }} 
+                <span v-if="dog.birth_date">• {{ calculateAge(dog.birth_date) }}</span>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        <div class="text-center">
+          <button
+            @click="startQuizWithoutDog"
+            class="text-blue-600 hover:text-blue-700 font-medium"
+          >
+            Or answer questions manually →
+          </button>
+        </div>
+      </div>
+
       <!-- Question Card -->
-      <div v-if="!showResults" class="bg-white rounded-lg shadow-md p-8">
+      <div v-else-if="!showResults && quizStarted" class="bg-white rounded-lg shadow-md p-8">
+        <div v-if="selectedDog" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-center">
+          <img
+            v-if="selectedDog.photo_url"
+            :src="selectedDog.photo_url"
+            :alt="selectedDog.name"
+            class="w-12 h-12 rounded-full object-cover mr-3"
+          />
+          <div v-else class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-xl mr-3">
+            🐕
+          </div>
+          <div>
+            <div class="font-semibold text-blue-900">Finding food for {{ selectedDog.name }}</div>
+            <div class="text-sm text-blue-700">{{ selectedDog.breed || 'Mixed Breed' }}</div>
+          </div>
+        </div>
+
         <h2 class="text-2xl font-semibold text-gray-900 mb-6">
-          {{ questions[currentQuestion].question }}
+          {{ currentQuestionData.question }}
         </h2>
 
         <div class="space-y-3">
           <button
-            v-for="option in questions[currentQuestion].options"
+            v-for="option in currentQuestionData.options"
             :key="option.value"
             @click="selectAnswer(option.value)"
             class="w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all"
@@ -65,8 +129,18 @@
       <div v-else class="space-y-6">
         <div class="bg-white rounded-lg shadow-md p-8 text-center">
           <div class="text-6xl mb-4">🎉</div>
-          <h2 class="text-3xl font-bold text-gray-900 mb-2">Your Perfect Match!</h2>
-          <p class="text-gray-600 mb-6">Based on your answers, here are the best foods for your dog:</p>
+          <h2 class="text-3xl font-bold text-gray-900 mb-2">
+            <span v-if="selectedDog">Perfect Food for {{ selectedDog.name }}!</span>
+            <span v-else>Your Perfect Match!</span>
+          </h2>
+          <p class="text-gray-600 mb-6">
+            <span v-if="selectedDog">
+              Based on {{ selectedDog.name }}'s profile and your preferences, here are the best foods:
+            </span>
+            <span v-else>
+              Based on your answers, here are the best foods for your dog:
+            </span>
+          </p>
           
           <!-- Email Capture -->
           <div v-if="!emailCaptured" class="max-w-md mx-auto mb-8">
@@ -172,15 +246,29 @@
 const supabase = useSupabase()
 const authStore = useAuthStore()
 
+interface Dog {
+  id: string
+  name: string
+  breed: string | null
+  gender: string | null
+  birth_date: string | null
+  weight_kg: number | null
+  photo_url: string | null
+}
+
 const currentQuestion = ref(0)
 const showResults = ref(false)
+const quizStarted = ref(false)
 const answers = ref<Record<string, string>>({})
 const recommendedProducts = ref<any[]>([])
 const email = ref('')
 const emailCaptured = ref(false)
 const submittingEmail = ref(false)
+const userDogs = ref<Dog[]>([])
+const selectedDog = ref<Dog | null>(null)
+const loadingDogs = ref(true)
 
-const questions = [
+const allQuestions = [
   {
     id: 'breed_size',
     question: 'What size is your dog?',
@@ -232,10 +320,114 @@ const questions = [
   }
 ]
 
-const selectAnswer = async (value: string) => {
-  answers.value[questions[currentQuestion.value].id] = value
+// Computed questions - skip questions we already have answers for from dog data
+const questions = computed(() => {
+  if (!selectedDog.value) return allQuestions
   
-  if (currentQuestion.value < questions.length - 1) {
+  return allQuestions.filter(q => {
+    // Skip breed size if we can determine from weight
+    if (q.id === 'breed_size' && selectedDog.value?.weight_kg) return false
+    // Skip age if we have birth date
+    if (q.id === 'life_stage' && selectedDog.value?.birth_date) return false
+    return true
+  })
+})
+
+const currentQuestionData = computed(() => {
+  return questions.value[currentQuestion.value]
+})
+
+// Load user's dogs if authenticated
+const loadUserDogs = async () => {
+  if (!authStore.isAuthenticated) {
+    loadingDogs.value = false
+    quizStarted.value = true
+    return
+  }
+  
+  try {
+    const { data, error } = await supabase
+      .from('doghealthy_dogs')
+      .select('*')
+      .eq('user_id', authStore.userId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    
+    userDogs.value = data || []
+    
+    // If user has no dogs, start quiz directly
+    if (userDogs.value.length === 0) {
+      quizStarted.value = true
+    }
+  } catch (err) {
+    console.error('Error loading dogs:', err)
+    quizStarted.value = true
+  } finally {
+    loadingDogs.value = false
+  }
+}
+
+const selectDog = (dog: Dog) => {
+  selectedDog.value = dog
+  
+  // Pre-fill answers based on dog data
+  if (dog.weight_kg) {
+    // Determine breed size from weight
+    if (dog.weight_kg < 10) {
+      answers.value.breed_size = 'small'
+    } else if (dog.weight_kg <= 25) {
+      answers.value.breed_size = 'medium'
+    } else {
+      answers.value.breed_size = 'large'
+    }
+  }
+  
+  if (dog.birth_date) {
+    const age = calculateAgeInYears(dog.birth_date)
+    if (age < 1) {
+      answers.value.life_stage = 'puppy'
+    } else if (age >= 7) {
+      answers.value.life_stage = 'senior'
+    } else {
+      answers.value.life_stage = 'adult'
+    }
+  }
+  
+  quizStarted.value = true
+}
+
+const startQuizWithoutDog = () => {
+  selectedDog.value = null
+  quizStarted.value = true
+}
+
+const calculateAge = (birthDate: string) => {
+  const birth = new Date(birthDate)
+  const now = new Date()
+  const years = now.getFullYear() - birth.getFullYear()
+  const months = now.getMonth() - birth.getMonth()
+  
+  if (years === 0) {
+    return `${months} month${months !== 1 ? 's' : ''} old`
+  } else if (months < 0) {
+    return `${years - 1} year${years !== 1 ? 's' : ''} old`
+  } else {
+    return `${years} year${years !== 1 ? 's' : ''} old`
+  }
+}
+
+const calculateAgeInYears = (birthDate: string) => {
+  const birth = new Date(birthDate)
+  const now = new Date()
+  return now.getFullYear() - birth.getFullYear()
+}
+
+const selectAnswer = async (value: string) => {
+  answers.value[currentQuestionData.value.id] = value
+  
+  if (currentQuestion.value < questions.value.length - 1) {
     currentQuestion.value++
   } else {
     await showRecommendations()
@@ -328,8 +520,14 @@ const captureEmail = async () => {
       .from('doghealthy_email_leads')
       .insert({
         email: email.value,
-        source: 'food-quiz',
-        quiz_answers: answers.value,
+        source: selectedDog.value ? 'food-quiz-dog-profile' : 'food-quiz',
+        quiz_answers: {
+          ...answers.value,
+          dog_id: selectedDog.value?.id,
+          dog_name: selectedDog.value?.name,
+          dog_breed: selectedDog.value?.breed,
+          dog_age_years: selectedDog.value?.birth_date ? calculateAgeInYears(selectedDog.value.birth_date) : null
+        },
         recommended_products: recommendedProducts.value.map(p => p.id)
       })
       .then(() => {
@@ -351,10 +549,23 @@ const captureEmail = async () => {
 const restartQuiz = () => {
   currentQuestion.value = 0
   showResults.value = false
+  quizStarted.value = false
   answers.value = {}
   emailCaptured.value = false
   email.value = ''
+  selectedDog.value = null
+  
+  // Reload dogs if authenticated
+  if (authStore.isAuthenticated) {
+    loadUserDogs()
+  } else {
+    quizStarted.value = true
+  }
 }
+
+onMounted(() => {
+  loadUserDogs()
+})
 
 // Set page meta
 useHead({
