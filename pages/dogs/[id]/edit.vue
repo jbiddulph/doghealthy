@@ -543,26 +543,28 @@ const handleDelete = async () => {
   }
 }
 
-// Watch for auth to be ready, then fetch dog
-watch(() => authStore.loading, (isLoading) => {
-  if (!isLoading && authStore.isAuthenticated && !dog.value && loading.value) {
-    console.log('[Edit Page] Auth ready, fetching dog')
-    fetchDog()
-  }
-}, { immediate: true })
-
-onMounted(() => {
+onMounted(async () => {
   console.log('[Edit Page] Component mounted')
   console.log('[Edit Page] Auth loading:', authStore.loading)
   console.log('[Edit Page] Authenticated:', authStore.isAuthenticated)
+  console.log('[Edit Page] User:', authStore.user)
   
-  if (!authStore.loading) {
-    if (!authStore.isAuthenticated) {
-      router.push('/auth/login')
-      return
-    }
-    fetchDog()
+  // Wait a bit for auth to initialize if it's still loading
+  if (authStore.loading) {
+    console.log('[Edit Page] Waiting for auth to initialize...')
+    await new Promise(resolve => setTimeout(resolve, 1000))
   }
+  
+  console.log('[Edit Page] After wait - Authenticated:', authStore.isAuthenticated)
+  
+  if (!authStore.isAuthenticated) {
+    console.log('[Edit Page] Not authenticated, redirecting to login')
+    router.push('/auth/login')
+    return
+  }
+  
+  console.log('[Edit Page] Starting fetchDog')
+  await fetchDog()
 })
 </script>
 
