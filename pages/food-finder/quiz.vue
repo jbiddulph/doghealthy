@@ -181,16 +181,10 @@
           <svg class="mx-auto h-12 w-12 text-yellow-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
-          <h3 class="text-lg font-semibold text-yellow-900 mb-2">No Products in Database Yet</h3>
+          <h3 class="text-lg font-semibold text-yellow-900 mb-2">No Products Available Yet</h3>
           <p class="text-yellow-800 mb-4">
-            The food finder needs products added to show recommendations.
+            We're currently building our product database. Check back soon!
           </p>
-          <div class="text-sm text-yellow-700 bg-yellow-100 rounded p-3 mb-4">
-            <strong>Quick Start:</strong><br/>
-            1. Run <code class="bg-yellow-200 px-2 py-1 rounded">supabase/QUICK_SETUP.sql</code> in Supabase SQL Editor<br/>
-            2. This creates tables and adds 1 sample product<br/>
-            3. Add more products using the guide in <code class="bg-yellow-200 px-2 py-1 rounded">HOW_TO_ADD_PRODUCTS.md</code>
-          </div>
           <NuxtLink
             to="/food-finder"
             class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
