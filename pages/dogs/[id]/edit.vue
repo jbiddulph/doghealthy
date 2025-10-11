@@ -543,13 +543,26 @@ const handleDelete = async () => {
   }
 }
 
-onMounted(() => {
-  if (!authStore.isAuthenticated) {
-    router.push('/auth/login')
-    return
+// Watch for auth to be ready, then fetch dog
+watch(() => authStore.loading, (isLoading) => {
+  if (!isLoading && authStore.isAuthenticated && !dog.value && loading.value) {
+    console.log('[Edit Page] Auth ready, fetching dog')
+    fetchDog()
   }
+}, { immediate: true })
+
+onMounted(() => {
+  console.log('[Edit Page] Component mounted')
+  console.log('[Edit Page] Auth loading:', authStore.loading)
+  console.log('[Edit Page] Authenticated:', authStore.isAuthenticated)
   
-  fetchDog()
+  if (!authStore.loading) {
+    if (!authStore.isAuthenticated) {
+      router.push('/auth/login')
+      return
+    }
+    fetchDog()
+  }
 })
 </script>
 
