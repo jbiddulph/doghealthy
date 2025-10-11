@@ -11,6 +11,12 @@
           </div>
           
           <div class="flex items-center gap-4">
+            <NuxtLink
+              to="/food-finder"
+              class="text-gray-700 hover:text-gray-900 font-medium"
+            >
+              Food Finder
+            </NuxtLink>
             <template v-if="authStore.isAuthenticated">
               <NuxtLink
                 to="/dogs"
@@ -51,8 +57,26 @@
           Welcome to DogHealthy
         </h2>
         <p class="text-xl text-gray-600 mb-8">
-          The complete health tracking app for your furry friends
+          Health tracking + dog food comparison - everything your dog needs
         </p>
+        
+        <!-- New: Food Finder CTA -->
+        <div class="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg p-6 mb-12 max-w-2xl mx-auto">
+          <h3 class="text-2xl font-bold text-gray-900 mb-2">🍖 New: Dog Food Finder</h3>
+          <p class="text-gray-700 mb-4">Compare hundreds of dog foods and find the perfect match for your pet</p>
+          <NuxtLink
+            to="/food-finder"
+            class="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold px-8 py-3 rounded-lg text-lg transition-colors mr-4"
+          >
+            Browse Dog Foods
+          </NuxtLink>
+          <NuxtLink
+            to="/food-finder/quiz"
+            class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg text-lg transition-colors"
+          >
+            Take the Quiz
+          </NuxtLink>
+        </div>
         
         <div class="grid md:grid-cols-3 gap-8 mt-12">
           <div class="bg-white p-6 rounded-lg shadow-md">
