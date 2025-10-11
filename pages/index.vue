@@ -1,18 +1,29 @@
 <template>
   <div class="min-h-screen bg-gradient-to-b from-blue-50 to-white">
     <!-- Hero Section -->
-    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 text-white">
-      <div class="absolute inset-0 opacity-10">
-        <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; viewBox=&quot;0 0 60 60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%23ffffff&quot; fill-opacity=&quot;0.4&quot;%3E%3Cpath d=&quot;M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"></div>
+    <div class="relative overflow-hidden text-white bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700">
+      <!-- Unsplash Background Image -->
+      <div
+        v-if="heroImage"
+        class="absolute inset-0 bg-cover bg-center"
+        :style="{ backgroundImage: `url(${heroImage})` }"
+      ></div>
+      
+      <!-- 30% Black Overlay (only show if image is loaded) -->
+      <div v-if="heroImage" class="absolute inset-0 bg-black opacity-30"></div>
+      
+      <!-- Photo credit (required by Unsplash) -->
+      <div v-if="heroImage && photoCredit" class="absolute bottom-2 right-2 text-xs text-white/70 z-10">
+        Photo by <a :href="photoCredit.authorUrl + '?utm_source=doghealthy&utm_medium=referral'" target="_blank" rel="noopener noreferrer" class="underline hover:text-white">{{ photoCredit.author }}</a> on <a href="https://unsplash.com?utm_source=doghealthy&utm_medium=referral" target="_blank" rel="noopener noreferrer" class="underline hover:text-white">Unsplash</a>
       </div>
       
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <div class="text-center">
           <h1 class="text-5xl md:text-6xl font-extrabold mb-6">
             <span class="block">Everything Your Dog Needs</span>
-            <span class="block text-blue-200">All in One Place</span>
+            <span class="block text-gray-100">All in One Place</span>
           </h1>
-          <p class="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto">
+          <p class="text-xl md:text-2xl text-gray-100 mb-8 max-w-3xl mx-auto">
             Track health records, manage vaccinations, find the perfect food, and keep all your dog's information organized
           </p>
           
@@ -39,7 +50,7 @@
             </NuxtLink>
           </div>
           
-          <div class="flex justify-center items-center gap-8 text-blue-100">
+          <div class="flex justify-center items-center gap-8 text-gray-100">
             <div class="flex items-center">
               <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
@@ -457,6 +468,24 @@
 
 <script setup lang="ts">
 const authStore = useAuthStore()
+
+// Fetch hero image from Unsplash
+const heroImage = ref('')
+const photoCredit = ref<{ author: string; authorUrl: string } | null>(null)
+
+onMounted(async () => {
+  try {
+    const response = await $fetch('/api/unsplash/random-dog')
+    heroImage.value = response.url
+    photoCredit.value = {
+      author: response.author,
+      authorUrl: response.authorUrl
+    }
+  } catch (error) {
+    console.error('Failed to load hero image:', error)
+    // Fallback to a default background color if Unsplash fails
+  }
+})
 
 // Set page meta for SEO
 useHead({

@@ -122,7 +122,7 @@
         </div>
 
         <!-- Quick Actions -->
-        <div class="grid md:grid-cols-4 gap-4">
+        <div class="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
           <NuxtLink
             :to="`/dogs/${dog.id}/health-records`"
             class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center"
@@ -157,6 +157,15 @@
             <div class="text-4xl mb-2">📅</div>
             <h3 class="font-semibold text-gray-900">Appointments</h3>
             <p class="text-sm text-gray-600 mt-1">Schedule visits</p>
+          </NuxtLink>
+
+          <NuxtLink
+            :to="`/dogs/${dog.id}/vets`"
+            class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center"
+          >
+            <div class="text-4xl mb-2">🏥</div>
+            <h3 class="font-semibold text-gray-900">Vets</h3>
+            <p class="text-sm text-gray-600 mt-1">Vet contacts</p>
           </NuxtLink>
         </div>
 

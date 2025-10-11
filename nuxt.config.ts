@@ -14,6 +14,7 @@ export default defineNuxtConfig({
   ],
   
   runtimeConfig: {
+    unsplashAccessKey: process.env.UNSPLASH_ACCESS_KEY,
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseKey: process.env.SUPABASE_ANON_KEY

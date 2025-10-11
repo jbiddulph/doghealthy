@@ -314,6 +314,154 @@ CREATE TRIGGER update_doghealthy_weight_logs_updated_at
     FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- ============================================
+-- Migration 08: Create Vets Table
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS public.doghealthy_vets (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES public.doghealthy_users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    clinic_name VARCHAR(255),
+    phone VARCHAR(50),
+    email VARCHAR(255),
+    address TEXT,
+    website VARCHAR(500),
+    notes TEXT,
+    is_primary BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_doghealthy_vets_user_id ON public.doghealthy_vets(user_id);
+CREATE INDEX IF NOT EXISTS idx_doghealthy_vets_is_primary ON public.doghealthy_vets(is_primary);
+ALTER TABLE public.doghealthy_vets ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view their own vets" ON public.doghealthy_vets;
+CREATE POLICY "Users can view their own vets" ON public.doghealthy_vets FOR SELECT 
+    USING (user_id IN (SELECT id FROM public.doghealthy_users WHERE id = auth.uid()));
+
+DROP POLICY IF EXISTS "Users can insert their own vets" ON public.doghealthy_vets;
+CREATE POLICY "Users can insert their own vets" ON public.doghealthy_vets FOR INSERT 
+    WITH CHECK (user_id IN (SELECT id FROM public.doghealthy_users WHERE id = auth.uid()));
+
+DROP POLICY IF EXISTS "Users can update their own vets" ON public.doghealthy_vets;
+CREATE POLICY "Users can update their own vets" ON public.doghealthy_vets FOR UPDATE 
+    USING (user_id IN (SELECT id FROM public.doghealthy_users WHERE id = auth.uid()));
+
+DROP POLICY IF EXISTS "Users can delete their own vets" ON public.doghealthy_vets;
+CREATE POLICY "Users can delete their own vets" ON public.doghealthy_vets FOR DELETE 
+    USING (user_id IN (SELECT id FROM public.doghealthy_users WHERE id = auth.uid()));
+
+CREATE OR REPLACE FUNCTION update_doghealthy_vets_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = TIMEZONE('utc'::text, NOW());
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS update_doghealthy_vets_updated_at ON public.doghealthy_vets;
+CREATE TRIGGER update_doghealthy_vets_updated_at
+    BEFORE UPDATE ON public.doghealthy_vets
+    FOR EACH ROW
+    EXECUTE FUNCTION update_doghealthy_vets_updated_at();
+
+-- ============================================
+-- Migration 09: Update Tables for Vet Linking
+-- ============================================
+
+-- Update health_records table
+ALTER TABLE public.doghealthy_health_records 
+ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES public.doghealthy_users(id) ON DELETE CASCADE,
+ADD COLUMN IF NOT EXISTS vet_id UUID REFERENCES public.doghealthy_vets(id) ON DELETE SET NULL,
+ADD COLUMN IF NOT EXISTS visit_date DATE;
+
+UPDATE public.doghealthy_health_records 
+SET visit_date = record_date 
+WHERE visit_date IS NULL AND record_date IS NOT NULL;
+
+UPDATE public.doghealthy_health_records hr
+SET user_id = d.user_id
+FROM public.doghealthy_dogs d
+WHERE hr.dog_id = d.id AND hr.user_id IS NULL;
+
+ALTER TABLE public.doghealthy_health_records 
+ALTER COLUMN user_id SET NOT NULL;
+
+-- Update vaccinations table
+ALTER TABLE public.doghealthy_vaccinations 
+ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES public.doghealthy_users(id) ON DELETE CASCADE,
+ADD COLUMN IF NOT EXISTS vet_id UUID REFERENCES public.doghealthy_vets(id) ON DELETE SET NULL,
+ADD COLUMN IF NOT EXISTS cost DECIMAL(10, 2),
+ADD COLUMN IF NOT EXISTS administered_date DATE;
+
+UPDATE public.doghealthy_vaccinations 
+SET administered_date = vaccination_date 
+WHERE administered_date IS NULL AND vaccination_date IS NOT NULL;
+
+UPDATE public.doghealthy_vaccinations v
+SET user_id = d.user_id
+FROM public.doghealthy_dogs d
+WHERE v.dog_id = d.id AND v.user_id IS NULL;
+
+ALTER TABLE public.doghealthy_vaccinations 
+ALTER COLUMN user_id SET NOT NULL;
+
+-- Update medications table
+ALTER TABLE public.doghealthy_medications 
+ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES public.doghealthy_users(id) ON DELETE CASCADE,
+ADD COLUMN IF NOT EXISTS vet_id UUID REFERENCES public.doghealthy_vets(id) ON DELETE SET NULL,
+ADD COLUMN IF NOT EXISTS notes TEXT;
+
+UPDATE public.doghealthy_medications m
+SET user_id = d.user_id
+FROM public.doghealthy_dogs d
+WHERE m.dog_id = d.id AND m.user_id IS NULL;
+
+ALTER TABLE public.doghealthy_medications 
+ALTER COLUMN user_id SET NOT NULL;
+
+-- Update appointments table
+ALTER TABLE public.doghealthy_appointments 
+ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES public.doghealthy_users(id) ON DELETE CASCADE,
+ADD COLUMN IF NOT EXISTS vet_id UUID REFERENCES public.doghealthy_vets(id) ON DELETE SET NULL,
+ADD COLUMN IF NOT EXISTS purpose TEXT;
+
+UPDATE public.doghealthy_appointments 
+SET purpose = appointment_type 
+WHERE purpose IS NULL AND appointment_type IS NOT NULL;
+
+UPDATE public.doghealthy_appointments a
+SET user_id = d.user_id
+FROM public.doghealthy_dogs d
+WHERE a.dog_id = d.id AND a.user_id IS NULL;
+
+ALTER TABLE public.doghealthy_appointments 
+ALTER COLUMN user_id SET NOT NULL;
+
+-- Create indexes for new foreign keys
+CREATE INDEX IF NOT EXISTS idx_doghealthy_health_records_vet_id ON public.doghealthy_health_records(vet_id);
+CREATE INDEX IF NOT EXISTS idx_doghealthy_health_records_user_id ON public.doghealthy_health_records(user_id);
+CREATE INDEX IF NOT EXISTS idx_doghealthy_vaccinations_vet_id ON public.doghealthy_vaccinations(vet_id);
+CREATE INDEX IF NOT EXISTS idx_doghealthy_vaccinations_user_id ON public.doghealthy_vaccinations(user_id);
+CREATE INDEX IF NOT EXISTS idx_doghealthy_medications_vet_id ON public.doghealthy_medications(vet_id);
+CREATE INDEX IF NOT EXISTS idx_doghealthy_medications_user_id ON public.doghealthy_medications(user_id);
+CREATE INDEX IF NOT EXISTS idx_doghealthy_appointments_vet_id ON public.doghealthy_appointments(vet_id);
+CREATE INDEX IF NOT EXISTS idx_doghealthy_appointments_user_id ON public.doghealthy_appointments(user_id);
+
+-- ============================================
+-- Migration 10: Add Missing Notes Columns
+-- ============================================
+
+-- Add notes column to health_records table if it doesn't exist
+ALTER TABLE public.doghealthy_health_records 
+ADD COLUMN IF NOT EXISTS notes TEXT;
+
+-- Also make sure medications table has notes column
+ALTER TABLE public.doghealthy_medications 
+ADD COLUMN IF NOT EXISTS notes TEXT;
+
+-- ============================================
 -- Migration Complete!
 -- ============================================
 -- All tables created successfully with RLS policies and triggers
