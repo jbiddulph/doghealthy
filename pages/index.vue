@@ -1,75 +1,469 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gradient-to-b from-blue-50 to-white">
     <!-- Hero Section -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-      <div class="text-center">
+    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 text-white">
+      <div class="absolute inset-0 opacity-10">
+        <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; viewBox=&quot;0 0 60 60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%23ffffff&quot; fill-opacity=&quot;0.4&quot;%3E%3Cpath d=&quot;M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"></div>
+      </div>
+      
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div class="text-center">
+          <h1 class="text-5xl md:text-6xl font-extrabold mb-6">
+            <span class="block">Everything Your Dog Needs</span>
+            <span class="block text-blue-200">All in One Place</span>
+          </h1>
+          <p class="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto">
+            Track health records, manage vaccinations, find the perfect food, and keep all your dog's information organized
+          </p>
+          
+          <div class="flex flex-col sm:flex-row justify-center gap-4 mb-12">
+            <NuxtLink
+              v-if="!authStore.isAuthenticated"
+              to="/auth/register"
+              class="bg-white text-blue-700 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              🐕 Get Started Free
+            </NuxtLink>
+            <NuxtLink
+              v-else
+              to="/dogs"
+              class="bg-white text-blue-700 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              🐕 View My Dogs
+            </NuxtLink>
+            <NuxtLink
+              to="/food-finder/quiz"
+              class="bg-green-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-green-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              🍖 Find Perfect Food
+            </NuxtLink>
+          </div>
+          
+          <div class="flex justify-center items-center gap-8 text-blue-100">
+            <div class="flex items-center">
+              <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              <span>100% Free</span>
+            </div>
+            <div class="flex items-center">
+              <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              <span>No Credit Card</span>
+            </div>
+            <div class="flex items-center">
+              <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              <span>Secure & Private</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <div class="text-center mb-16">
         <h2 class="text-4xl font-bold text-gray-900 mb-4">
-          Welcome to DogHealthy
+          Comprehensive Care for Your Furry Friend
         </h2>
-        <p class="text-xl text-gray-600 mb-8">
-          Health tracking + dog food comparison - everything your dog needs
+        <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+          DogHealthy is your personalized hub for managing every aspect of your dog's health and wellbeing
         </p>
-        
-        <!-- New: Food Finder CTA -->
-        <div class="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg p-6 mb-12 max-w-2xl mx-auto">
-          <h3 class="text-2xl font-bold text-gray-900 mb-2">🍖 New: Dog Food Finder</h3>
-          <p class="text-gray-700 mb-4">Compare hundreds of dog foods and find the perfect match for your pet</p>
-          <NuxtLink
-            to="/food-finder"
-            class="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold px-8 py-3 rounded-lg text-lg transition-colors mr-4"
-          >
-            Browse Dog Foods
-          </NuxtLink>
-          <NuxtLink
-            to="/food-finder/quiz"
-            class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg text-lg transition-colors"
-          >
-            Take the Quiz
-          </NuxtLink>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- Health Records -->
+        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-blue-500">
+          <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-3xl mb-4">
+            📋
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-3">Health Records</h3>
+          <p class="text-gray-600 mb-4">
+            Keep detailed medical history, diagnoses, and treatments all in one secure place. Never lose important health information again.
+          </p>
+          <ul class="space-y-2 text-sm text-gray-600">
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Complete medical history
+            </li>
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Diagnosis tracking
+            </li>
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Treatment notes
+            </li>
+          </ul>
         </div>
-        
-        <div class="grid md:grid-cols-3 gap-8 mt-12">
-          <div class="bg-white p-6 rounded-lg shadow-md">
-            <div class="text-3xl mb-4">📋</div>
-            <h3 class="text-lg font-semibold mb-2">Health Records</h3>
-            <p class="text-gray-600">Track medical history, diagnoses, and treatments</p>
+
+        <!-- Vaccinations -->
+        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-purple-500">
+          <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center text-3xl mb-4">
+            💉
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-3">Vaccinations</h3>
+          <p class="text-gray-600 mb-4">
+            Never miss a vaccination with automatic reminders and complete immunization tracking for your dog.
+          </p>
+          <ul class="space-y-2 text-sm text-gray-600">
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Smart reminders
+            </li>
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Complete history
+            </li>
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Due date tracking
+            </li>
+          </ul>
+        </div>
+
+        <!-- Medications -->
+        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-pink-500">
+          <div class="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center text-3xl mb-4">
+            💊
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-3">Medications</h3>
+          <p class="text-gray-600 mb-4">
+            Manage all medications, dosages, and schedules to ensure your dog gets the right treatment at the right time.
+          </p>
+          <ul class="space-y-2 text-sm text-gray-600">
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Dosage tracking
+            </li>
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Schedule reminders
+            </li>
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Refill alerts
+            </li>
+          </ul>
+        </div>
+
+        <!-- Appointments -->
+        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-green-500">
+          <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-3xl mb-4">
+            📅
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-3">Appointments</h3>
+          <p class="text-gray-600 mb-4">
+            Schedule and track all vet appointments with reminders so you never miss an important checkup.
+          </p>
+          <ul class="space-y-2 text-sm text-gray-600">
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Calendar integration
+            </li>
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Email reminders
+            </li>
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Visit history
+            </li>
+          </ul>
+        </div>
+
+        <!-- Vet Information -->
+        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-red-500">
+          <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-3xl mb-4">
+            🏥
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-3">Vet Contacts</h3>
+          <p class="text-gray-600 mb-4">
+            Store all your vet contact information and emergency numbers for quick access when you need them most.
+          </p>
+          <ul class="space-y-2 text-sm text-gray-600">
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Regular vet details
+            </li>
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Emergency contacts
+            </li>
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Quick call access
+            </li>
+          </ul>
+        </div>
+
+        <!-- Food Finder -->
+        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-yellow-500">
+          <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center text-3xl mb-4">
+            🍖
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-3">Dog Food Finder</h3>
+          <p class="text-gray-600 mb-4">
+            Compare dog foods and find the perfect match based on your dog's breed, age, and dietary needs.
+          </p>
+          <ul class="space-y-2 text-sm text-gray-600">
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Personalized quiz
+            </li>
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Price comparison
+            </li>
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Nutrition analysis
+            </li>
+          </ul>
+        </div>
+
+        <!-- Weight Tracking -->
+        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-indigo-500">
+          <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center text-3xl mb-4">
+            ⚖️
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-3">Weight Tracking</h3>
+          <p class="text-gray-600 mb-4">
+            Monitor your dog's weight over time with visual charts to ensure they stay healthy and fit.
+          </p>
+          <ul class="space-y-2 text-sm text-gray-600">
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Weight history
+            </li>
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Visual charts
+            </li>
+            <li class="flex items-start">
+              <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              Trend analysis
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Food Finder Spotlight -->
+    <div class="bg-gradient-to-r from-green-600 to-emerald-700 text-white py-20">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="lg:flex lg:items-center lg:justify-between">
+          <div class="lg:w-1/2 mb-8 lg:mb-0">
+            <div class="inline-block bg-white/20 text-white px-4 py-1 rounded-full text-sm font-semibold mb-4">
+              ✨ NEW FEATURE
+            </div>
+            <h2 class="text-4xl font-bold mb-4">Find the Perfect Food for Your Dog</h2>
+            <p class="text-xl text-green-100 mb-6">
+              Take our personalized quiz and get instant recommendations based on your dog's breed, age, and dietary needs.
+            </p>
+            <ul class="space-y-3 mb-8">
+              <li class="flex items-center">
+                <svg class="w-6 h-6 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span class="text-lg">Compare prices & nutrition</span>
+              </li>
+              <li class="flex items-center">
+                <svg class="w-6 h-6 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span class="text-lg">Filter by breed size & age</span>
+              </li>
+              <li class="flex items-center">
+                <svg class="w-6 h-6 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span class="text-lg">Grain-free & special diets</span>
+              </li>
+            </ul>
+            <div class="flex gap-4">
+              <NuxtLink
+                to="/food-finder/quiz"
+                class="bg-white text-green-700 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-green-50 transition-all shadow-lg"
+              >
+                Take the Quiz →
+              </NuxtLink>
+              <NuxtLink
+                to="/food-finder"
+                class="bg-green-800 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-green-900 transition-all"
+              >
+                Browse All Foods
+              </NuxtLink>
+            </div>
           </div>
           
-          <div class="bg-white p-6 rounded-lg shadow-md">
-            <div class="text-3xl mb-4">💉</div>
-            <h3 class="text-lg font-semibold mb-2">Vaccinations</h3>
-            <p class="text-gray-600">Never miss a vaccination with reminders</p>
+          <div class="lg:w-1/2 lg:pl-12">
+            <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+              <h3 class="text-2xl font-bold mb-4">How It Works</h3>
+              <div class="space-y-4">
+                <div class="flex items-start">
+                  <div class="bg-white text-green-700 rounded-full w-10 h-10 flex items-center justify-center font-bold mr-4 flex-shrink-0">
+                    1
+                  </div>
+                  <div>
+                    <h4 class="font-semibold text-lg mb-1">Select Your Dog</h4>
+                    <p class="text-green-100">Choose from your saved dogs or enter details manually</p>
+                  </div>
+                </div>
+                <div class="flex items-start">
+                  <div class="bg-white text-green-700 rounded-full w-10 h-10 flex items-center justify-center font-bold mr-4 flex-shrink-0">
+                    2
+                  </div>
+                  <div>
+                    <h4 class="font-semibold text-lg mb-1">Answer 3-5 Questions</h4>
+                    <p class="text-green-100">Quick questions about food preferences and budget</p>
+                  </div>
+                </div>
+                <div class="flex items-start">
+                  <div class="bg-white text-green-700 rounded-full w-10 h-10 flex items-center justify-center font-bold mr-4 flex-shrink-0">
+                    3
+                  </div>
+                  <div>
+                    <h4 class="font-semibold text-lg mb-1">Get Recommendations</h4>
+                    <p class="text-green-100">Receive personalized food matches with prices and reviews</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          
-          <div class="bg-white p-6 rounded-lg shadow-md">
-            <div class="text-3xl mb-4">📅</div>
-            <h3 class="text-lg font-semibold mb-2">Appointments</h3>
-            <p class="text-gray-600">Schedule and track vet appointments</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold text-gray-900 mb-4">
+          Simple, Secure, and Always Free
+        </h2>
+        <p class="text-xl text-gray-600">
+          Get started in minutes and keep all your dog's information organized forever
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-12">
+        <div class="text-center">
+          <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-lg">
+            🐕
           </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-3">Add Your Dogs</h3>
+          <p class="text-gray-600">
+            Create profiles for all your dogs with photos, breed info, and microchip details
+          </p>
         </div>
         
-        <div class="mt-12">
-          <NuxtLink
-            v-if="!authStore.isAuthenticated"
-            to="/auth/register"
-            class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg text-lg transition-colors"
-          >
-            Get Started Free
-          </NuxtLink>
-          <NuxtLink
-            v-else
-            to="/dogs"
-            class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg text-lg transition-colors"
-          >
-            View My Dogs
-          </NuxtLink>
+        <div class="text-center">
+          <div class="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-lg">
+            📝
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-3">Track Everything</h3>
+          <p class="text-gray-600">
+            Log health records, vaccinations, medications, and appointments all in one place
+          </p>
         </div>
+        
+        <div class="text-center">
+          <div class="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-lg">
+            💝
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-3">Stay Healthy</h3>
+          <p class="text-gray-600">
+            Get reminders, find the best food, and ensure your furry friend lives their best life
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="bg-gray-900 text-white py-20">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-4xl font-bold mb-4">
+          Ready to Give Your Dog the Best Care?
+        </h2>
+        <p class="text-xl text-gray-300 mb-8">
+          Join thousands of dog owners keeping their pets healthy and happy
+        </p>
+        <NuxtLink
+          v-if="!authStore.isAuthenticated"
+          to="/auth/register"
+          class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-12 py-4 rounded-lg text-xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+        >
+          Start Free Today →
+        </NuxtLink>
+        <NuxtLink
+          v-else
+          to="/dogs"
+          class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-12 py-4 rounded-lg text-xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+        >
+          Go to My Dogs →
+        </NuxtLink>
+        <p class="text-sm text-gray-400 mt-6">
+          No credit card required • Free forever • Secure & private
+        </p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-// Page is now simplified - navigation is in AppNav component
+const authStore = useAuthStore()
+
+// Set page meta for SEO
+useHead({
+  title: 'DogHealthy - Complete Health Tracking & Food Finder for Your Dog',
+  meta: [
+    { name: 'description', content: 'Free dog health tracker with medical records, vaccinations, medications, appointments, and intelligent food finder. Everything your dog needs in one place.' }
+  ]
+})
 </script>
 
