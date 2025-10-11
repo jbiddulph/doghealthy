@@ -116,64 +116,6 @@ CREATE POLICY "Anyone can track affiliate clicks"
     FOR INSERT
     WITH CHECK (true);
 
--- Insert sample dog food products
-INSERT INTO public.doghealthy_dog_food_products (
-    name, brand, description, food_type, breed_size, life_stage,
-    protein_percent, fat_percent, price_gbp, price_per_kg, package_size_kg,
-    affiliate_link, retailer, is_editors_choice, slug, tags
-) VALUES
-(
-    'Adult Chicken & Rice Dry Dog Food',
-    'Royal Canin',
-    'Complete and balanced nutrition for adult dogs with chicken and rice.',
-    'dry',
-    'medium',
-    'adult',
-    25.0,
-    14.0,
-    45.99,
-    11.50,
-    4.0,
-    'https://www.amazon.co.uk/dp/EXAMPLE?tag=your-tag',
-    'amazon',
-    true,
-    'royal-canin-adult-chicken-rice',
-    ARRAY['chicken', 'rice', 'complete nutrition', 'medium breeds']
-),
-(
-    'Grain Free Turkey & Sweet Potato',
-    'Lily''s Kitchen',
-    'Natural grain-free recipe with 65% turkey and vegetables.',
-    'dry',
-    'all',
-    'adult',
-    28.0,
-    16.0,
-    52.99,
-    17.66,
-    3.0,
-    'https://www.amazon.co.uk/dp/EXAMPLE2?tag=your-tag',
-    'amazon',
-    false,
-    'lilys-kitchen-grain-free-turkey',
-    ARRAY['grain-free', 'turkey', 'natural', 'all breeds']
-),
-(
-    'Hypoallergenic Salmon & Potato',
-    'James Wellbeloved',
-    'Hypoallergenic formula for dogs with sensitivities.',
-    'dry',
-    'all',
-    'adult',
-    20.0,
-    10.5,
-    39.99,
-    10.00,
-    4.0,
-    'https://www.amazon.co.uk/dp/EXAMPLE3?tag=your-tag',
-    'amazon',
-    false,
-    'james-wellbeloved-salmon-potato',
-    ARRAY['hypoallergenic', 'salmon', 'sensitive', 'all breeds']
-);
+-- Sample products removed - use migration 20251011000003 to populate with real Amazon products
+-- See HOW_TO_ADD_PRODUCTS.md for instructions on finding real Amazon ASINs
 
