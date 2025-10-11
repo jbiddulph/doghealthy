@@ -15,34 +15,36 @@
           >
             Food Finder
           </NuxtLink>
-          <template v-if="authStore.isAuthenticated">
-            <NuxtLink
-              to="/dogs"
-              class="text-gray-700 hover:text-gray-900 font-medium"
-            >
-              My Dogs
-            </NuxtLink>
-            <button
-              @click="handleLogout"
-              class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              Logout
-            </button>
-          </template>
-          <template v-else>
-            <NuxtLink
-              to="/auth/login"
-              class="text-gray-700 hover:text-gray-900 font-medium"
-            >
-              Login
-            </NuxtLink>
-            <NuxtLink
-              to="/auth/register"
-              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              Register
-            </NuxtLink>
-          </template>
+          <ClientOnly>
+            <template v-if="authStore.isAuthenticated">
+              <NuxtLink
+                to="/dogs"
+                class="text-gray-700 hover:text-gray-900 font-medium"
+              >
+                My Dogs
+              </NuxtLink>
+              <button
+                @click="handleLogout"
+                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Logout
+              </button>
+            </template>
+            <template v-else>
+              <NuxtLink
+                to="/auth/login"
+                class="text-gray-700 hover:text-gray-900 font-medium"
+              >
+                Login
+              </NuxtLink>
+              <NuxtLink
+                to="/auth/register"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Register
+              </NuxtLink>
+            </template>
+          </ClientOnly>
         </div>
       </div>
     </div>

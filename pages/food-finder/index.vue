@@ -332,6 +332,10 @@ const fetchProducts = async () => {
     
     if (error) {
       console.error('Error fetching products:', error)
+      // If table doesn't exist yet, just show empty results
+      products.value = []
+      applyFiltersAndSort()
+      loading.value = false
       return
     }
     
@@ -339,6 +343,9 @@ const fetchProducts = async () => {
     applyFiltersAndSort()
   } catch (err) {
     console.error('Error:', err)
+    // On error, show empty results instead of infinite loading
+    products.value = []
+    applyFiltersAndSort()
   } finally {
     loading.value = false
   }
