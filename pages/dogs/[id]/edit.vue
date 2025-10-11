@@ -309,6 +309,15 @@ const fetchDog = async () => {
     error.value = ''
     
     const dogId = route.params.id as string
+    console.log('[Edit Page] Fetching dog:', dogId)
+    console.log('[Edit Page] User ID:', authStore.userId)
+    
+    if (!authStore.userId) {
+      console.error('[Edit Page] No user ID available')
+      error.value = 'Please log in to edit dogs'
+      loading.value = false
+      return
+    }
     
     const { data, error: fetchError } = await supabase
       .from('doghealthy_dogs')
@@ -318,11 +327,13 @@ const fetchDog = async () => {
       .single()
     
     if (fetchError) {
-      console.error('Error fetching dog:', fetchError)
+      console.error('[Edit Page] Fetch error:', fetchError)
       error.value = 'Dog not found or you do not have permission to edit it'
+      loading.value = false
       return
     }
     
+    console.log('[Edit Page] Dog loaded:', data)
     dog.value = data
     
     // Populate form
@@ -335,8 +346,10 @@ const fetchDog = async () => {
       microchipNumber: data.microchip_number || '',
       notes: data.notes || ''
     }
+    
+    console.log('[Edit Page] Form populated:', form.value)
   } catch (err: any) {
-    console.error('Error:', err)
+    console.error('[Edit Page] Exception:', err)
     error.value = err.message || 'Failed to load dog details'
   } finally {
     loading.value = false
