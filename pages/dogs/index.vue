@@ -1,25 +1,5 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-sm border-b border-gray-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-16">
-          <NuxtLink to="/" class="text-xl font-bold text-gray-900">
-            🐕 DogHealthy
-          </NuxtLink>
-          
-          <div class="flex items-center gap-4">
-            <button
-              @click="handleLogout"
-              class="text-gray-700 hover:text-gray-900"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
-    </nav>
-    
     <!-- Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="flex justify-between items-center mb-8">
@@ -168,11 +148,6 @@ const formatAge = (birthDate: string) => {
   } else {
     return months > 0 ? `${months} months old` : 'Less than a month old'
   }
-}
-
-const handleLogout = async () => {
-  await authStore.signOut()
-  router.push('/')
 }
 
 onMounted(() => {
