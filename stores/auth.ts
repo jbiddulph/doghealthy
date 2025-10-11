@@ -26,10 +26,44 @@ export const useAuthStore = defineStore('auth', {
       this.user = user
       this.loading = false
       
+      // Ensure user profile exists in doghealthy_users
+      if (user) {
+        await this.ensureUserProfile(user)
+      }
+      
       // Listen for auth changes
-      supabase.auth.onAuthStateChange((_event, session) => {
+      supabase.auth.onAuthStateChange(async (_event, session) => {
         this.user = session?.user || null
+        if (session?.user) {
+          await this.ensureUserProfile(session.user)
+        }
       })
+    },
+    
+    async ensureUserProfile(user: User) {
+      const supabase = useSupabase()
+      
+      // Check if user profile exists
+      const { data: existingProfile } = await supabase
+        .from('doghealthy_users')
+        .select('id')
+        .eq('id', user.id)
+        .single()
+      
+      // Create profile if it doesn't exist
+      if (!existingProfile) {
+        const { error: profileError } = await supabase
+          .from('doghealthy_users')
+          .insert({
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || null
+          })
+        
+        if (profileError) {
+          console.error('Error creating user profile:', profileError)
+        }
+      }
     },
     
     async signUp(email: string, password: string, fullName?: string) {
