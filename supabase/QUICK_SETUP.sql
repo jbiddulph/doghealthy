@@ -135,12 +135,21 @@ CREATE POLICY "Anyone can submit email for leads"
 -- Now add real products below with actual ASINs from Amazon.co.uk
 -- ============================================
 
--- TEMPLATE: Copy this for each product you want to add
--- Find products on Amazon.co.uk and get their ASIN from the URL
+-- ============================================
+-- HOW TO GET PRODUCT IMAGE URLS FROM AMAZON:
+-- ============================================
+-- 1. Go to the Amazon product page
+-- 2. Right-click on the main product image
+-- 3. Choose "Copy Image Address" or "Copy Image Link"
+-- 4. The URL will look like:
+--    https://m.media-amazon.com/images/I/71AbCdEfGh._AC_SL1500_.jpg
+-- 5. Paste this into the image_url field below
+-- ============================================
 
-/*
+-- EXAMPLE with REAL product (you can use this one!):
+-- Royal Canin Medium Adult - Real ASIN: B00CWF25MU
 INSERT INTO public.doghealthy_dog_food_products (
-    name, brand, description,
+    name, brand, description, image_url,
     food_type, breed_size, life_stage,
     protein_percent, fat_percent,
     price_gbp, price_per_kg, package_size_kg,
@@ -148,22 +157,53 @@ INSERT INTO public.doghealthy_dog_food_products (
     is_editors_choice,
     slug, tags
 ) VALUES (
-    'Product Name Here',
-    'Brand Name',
-    'Product description from Amazon',
-    'dry', -- or 'wet', 'raw'
-    'medium', -- or 'small', 'large', 'all'
-    'adult', -- or 'puppy', 'senior'
-    25.0, -- protein %
-    14.0, -- fat %
-    45.99, -- price
-    11.50, -- price per kg (price ÷ package size)
-    4.0, -- package size in kg
-    'https://www.amazon.co.uk/dp/REAL_ASIN_HERE?tag=doghealthy-21',
+    'Medium Adult Dry Dog Food 4kg',
+    'Royal Canin',
+    'Complete nutrition for medium breed adult dogs aged 1-7 years. Supports optimal digestive health.',
+    'https://m.media-amazon.com/images/I/71YQKGz9JyL._AC_SL1500_.jpg',
+    'dry',
+    'medium',
+    'adult',
+    25.0,
+    14.0,
+    45.99,
+    11.50,
+    4.0,
+    'https://www.amazon.co.uk/dp/B00CWF25MU?tag=doghealthy-21',
     'amazon',
-    false, -- set true for 2-3 best products
-    'brand-product-name-slug',
-    ARRAY['tag1', 'tag2', 'tag3']
+    true,
+    'royal-canin-medium-adult',
+    ARRAY['royal canin', 'medium breed', 'adult', 'dry food']
+);
+
+-- TEMPLATE for adding more products:
+/*
+INSERT INTO public.doghealthy_dog_food_products (
+    name, brand, description, image_url,
+    food_type, breed_size, life_stage,
+    protein_percent, fat_percent,
+    price_gbp, price_per_kg, package_size_kg,
+    affiliate_link, retailer,
+    is_editors_choice,
+    slug, tags
+) VALUES (
+    'Product Name',
+    'Brand Name',
+    'Product description',
+    'https://m.media-amazon.com/images/I/COPIED_IMAGE_URL.jpg', -- RIGHT-CLICK on Amazon image → Copy Image Address
+    'dry',
+    'medium',
+    'adult',
+    25.0,
+    14.0,
+    45.99,
+    11.50,
+    4.0,
+    'https://www.amazon.co.uk/dp/REAL_ASIN?tag=doghealthy-21',
+    'amazon',
+    false,
+    'brand-product-slug',
+    ARRAY['tag1', 'tag2']
 );
 */
 
