@@ -2,6 +2,12 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
   
+  ssr: true,
+  
+  nitro: {
+    preset: 'netlify-static'
+  },
+  
   modules: [
     '@nuxtjs/tailwindcss',
     '@pinia/nuxt'

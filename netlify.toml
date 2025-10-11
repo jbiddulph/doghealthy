@@ -1,12 +1,12 @@
 [build]
   command = "npm run generate"
-  publish = ".output/public"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "22"
   # Configure secrets scanning to omit output directory and README
   # These contain public Supabase URLs needed for client-side connection
-  SECRETS_SCAN_OMIT_PATHS = ".output/public/**,README.md"
+  SECRETS_SCAN_OMIT_PATHS = "dist/**,README.md"
   
 # Headers for Nuxt build assets
 [[headers]]
