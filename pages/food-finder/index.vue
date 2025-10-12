@@ -224,8 +224,8 @@
               <!-- Price & CTA -->
               <div class="flex justify-between items-center pt-3 border-t border-gray-200">
                 <div>
-                  <div class="text-2xl font-bold text-gray-900">£{{ product.price_gbp.toFixed(2) }}</div>
-                  <div class="text-xs text-gray-500">£{{ product.price_per_kg.toFixed(2)}} /kg</div>
+                  <div class="text-2xl font-bold text-gray-900">£{{ product.price_gbp?.toFixed(2) || 'N/A' }}</div>
+                  <div v-if="product.price_per_kg" class="text-xs text-gray-500">£{{ product.price_per_kg.toFixed(2)}} /kg</div>
                   <div class="text-xs text-gray-400 italic">Price may vary</div>
                 </div>
                 <a
