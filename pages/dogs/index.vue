@@ -4,12 +4,20 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold text-gray-900">My Dogs</h1>
-        <NuxtLink
-          to="/dogs/new"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
-        >
-          + Add Dog
-        </NuxtLink>
+        <div class="flex items-center gap-3">
+          <NuxtLink
+            to="/vets"
+            class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold transition-colors"
+          >
+            🏥 Vets
+          </NuxtLink>
+          <NuxtLink
+            to="/dogs/new"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+          >
+            + Add Dog
+          </NuxtLink>
+        </div>
       </div>
       
       <!-- Loading State -->
@@ -108,29 +116,52 @@ const dogs = ref<Dog[]>([])
 const loading = ref(true)
 const error = ref('')
 
+const waitForAuth = async () => {
+  // If auth is still initializing, wait until it's done
+  if ((authStore as any).loading) {
+    await new Promise<void>((resolve) => {
+      const check = () => {
+        if (!(authStore as any).loading) resolve()
+        else setTimeout(check, 50)
+      }
+      check()
+    })
+  }
+}
+
 const loadDogs = async () => {
   loading.value = true
   error.value = ''
   
   try {
+    await waitForAuth()
+
+    // If user not authenticated for any reason, redirect to login
+    if (!authStore.isAuthenticated || !authStore.userId) {
+      router.push('/auth/login')
+      return
+    }
+
     const { data, error: fetchError } = await supabase
       .from('doghealthy_dogs')
       .select('*')
+      .eq('user_id', authStore.userId)
       .eq('is_active', true)
       .order('created_at', { ascending: false })
     
     if (fetchError) throw fetchError
     
-    dogs.value = data?.map(dog => ({
+    dogs.value = data?.map((dog: any) => ({
       id: dog.id,
       name: dog.name,
       breed: dog.breed,
       gender: dog.gender,
       birthDate: dog.birth_date,
-      weightKg: dog.weight_kg ? parseFloat(dog.weight_kg) : undefined,
+      weightKg: dog.weight_kg != null ? Number(dog.weight_kg) : undefined,
       photoUrl: dog.photo_url
     })) || []
   } catch (err: any) {
+    console.error('Error loading dogs:', err)
     error.value = err.message || 'Failed to load dogs'
   } finally {
     loading.value = false

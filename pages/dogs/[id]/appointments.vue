@@ -495,22 +495,24 @@ const fetchVets = async () => {
 const fetchAppointments = async () => {
   try {
     loading.value = true
+    // Fetch without FK join to avoid PGRST200 when vet FK isn't in schema cache
     const { data, error } = await supabase
       .from('doghealthy_appointments')
-      .select(`
-        *,
-        vet:vet_id (
-          name
-        )
-      `)
+      .select('*')
       .eq('dog_id', dogId)
       .order('appointment_date', { ascending: false })
 
     if (error) throw error
-    
-    appointments.value = (data || []).map(appointment => ({
+
+    // Map vet names client-side from loaded vets
+    const vetIdToName = new Map<string, string>()
+    for (const v of (vets.value || [])) {
+      vetIdToName.set(v.id, v.name)
+    }
+
+    appointments.value = (data || []).map((appointment: any) => ({
       ...appointment,
-      vet_name: appointment.vet?.name || null
+      vet_name: appointment.vet_id ? (vetIdToName.get(appointment.vet_id) || null) : null
     }))
   } catch (err: any) {
     console.error('Error fetching appointments:', err)
@@ -579,6 +581,8 @@ const saveAppointment = async () => {
       user_id: authStore.userId,
       title: form.value.title,
       appointment_date: appointmentDateTime,
+      // Ensure legacy schemas with NOT NULL appointment_type are satisfied
+      appointment_type: form.value.purpose || 'general',
       purpose: form.value.purpose || null,
       vet_id: form.value.vet_id || null,
       location: form.value.location || null,

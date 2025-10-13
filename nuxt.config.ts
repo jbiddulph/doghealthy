@@ -13,6 +13,14 @@ export default defineNuxtConfig({
     '@pinia/nuxt'
   ],
   
+  app: {
+    head: {
+      link: [
+        { rel: 'stylesheet', href: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css' }
+      ]
+    }
+  },
+  
   runtimeConfig: {
     unsplashAccessKey: process.env.UNSPLASH_ACCESS_KEY,
     public: {

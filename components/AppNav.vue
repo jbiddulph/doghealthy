@@ -3,8 +3,9 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
         <div class="flex items-center">
-          <NuxtLink to="/" class="text-xl font-bold text-gray-900">
-            🐕 DogHealthy
+          <NuxtLink to="/" class="flex items-center gap-2 text-xl font-bold text-gray-900">
+            <img src="/dog_silhouette_friendly_pose_4MtxY.svg" alt="DogHealthy logo" class="h-7 w-7" />
+            <span>DogHealthy</span>
           </NuxtLink>
         </div>
         

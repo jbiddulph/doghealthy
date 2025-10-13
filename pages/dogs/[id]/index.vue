@@ -122,51 +122,44 @@
         </div>
 
         <!-- Quick Actions -->
-        <div class="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div class="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
           <NuxtLink
             :to="`/dogs/${dog.id}/health-records`"
             class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center"
           >
-            <div class="text-4xl mb-2">📋</div>
-            <h3 class="font-semibold text-gray-900">Health Records</h3>
-            <p class="text-sm text-gray-600 mt-1">View medical history</p>
+            <div class="text-4xl mb-2"><i class="bi bi-clipboard2-pulse"></i></div>
+            <h3 class="font-semibold text-gray-900">{{ dog.name }}'s Health Records</h3>
+            <p class="text-sm text-gray-600 mt-1">View medical history ({{ counts.healthRecords }})</p>
           </NuxtLink>
 
           <NuxtLink
             :to="`/dogs/${dog.id}/vaccinations`"
             class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center"
           >
-            <div class="text-4xl mb-2">💉</div>
-            <h3 class="font-semibold text-gray-900">Vaccinations</h3>
-            <p class="text-sm text-gray-600 mt-1">Track vaccines</p>
+            <div class="text-4xl mb-2">🐾<i class="bi bi-syringe"></i></div>
+            <h3 class="font-semibold text-gray-900">{{ dog.name }}'s Vaccinations</h3>
+            <p class="text-sm text-gray-600 mt-1">Active {{ counts.vaccinationsUpcoming }} · Inactive {{ counts.vaccinationsPast }}</p>
           </NuxtLink>
 
           <NuxtLink
             :to="`/dogs/${dog.id}/medications`"
             class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center"
           >
-            <div class="text-4xl mb-2">💊</div>
-            <h3 class="font-semibold text-gray-900">Medications</h3>
-            <p class="text-sm text-gray-600 mt-1">Manage meds</p>
+            <div class="text-4xl mb-2"><i class="bi bi-capsule"></i></div>
+            <h3 class="font-semibold text-gray-900">{{ dog.name }}'s Medications</h3>
+            <p class="text-sm text-gray-600 mt-1">Active {{ counts.medicationsActive }} · Inactive {{ counts.medicationsInactive }}</p>
           </NuxtLink>
 
           <NuxtLink
             :to="`/dogs/${dog.id}/appointments`"
             class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center"
           >
-            <div class="text-4xl mb-2">📅</div>
-            <h3 class="font-semibold text-gray-900">Appointments</h3>
-            <p class="text-sm text-gray-600 mt-1">Schedule visits</p>
+            <div class="text-4xl mb-2"><i class="bi bi-calendar2-event"></i></div>
+            <h3 class="font-semibold text-gray-900">{{ dog.name }}'s Appointments</h3>
+            <p class="text-sm text-gray-600 mt-1">Upcoming {{ counts.appointmentsUpcoming }} · Past {{ counts.appointmentsPast }}</p>
           </NuxtLink>
 
-          <NuxtLink
-            :to="`/dogs/${dog.id}/vets`"
-            class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center"
-          >
-            <div class="text-4xl mb-2">🏥</div>
-            <h3 class="font-semibold text-gray-900">Vets</h3>
-            <p class="text-sm text-gray-600 mt-1">Vet contacts</p>
-          </NuxtLink>
+          
         </div>
 
         <!-- Recent Activity -->
@@ -205,6 +198,16 @@ interface Dog {
 const dog = ref<Dog | null>(null)
 const loading = ref(true)
 const error = ref('')
+const recentActivity = ref<any[]>([])
+const counts = ref({
+  healthRecords: 0,
+  vaccinationsUpcoming: 0,
+  vaccinationsPast: 0,
+  medicationsActive: 0,
+  medicationsInactive: 0,
+  appointmentsUpcoming: 0,
+  appointmentsPast: 0
+})
 
 const fetchDog = async () => {
   try {
@@ -267,13 +270,154 @@ const calculateAge = (dateStr: string | null) => {
   }
 }
 
-onMounted(() => {
+const fetchCountsAndActivity = async () => {
+  if (!dog.value) return
+  
+  try {
+    const dogId = dog.value.id
+    
+    // Fetch health records count
+    const { count: healthCount } = await supabase
+      .from('doghealthy_health_records')
+      .select('*', { count: 'exact', head: true })
+      .eq('dog_id', dogId)
+    
+    // Fetch vaccinations
+    const { data: vaccinations } = await supabase
+      .from('doghealthy_vaccinations')
+      .select('vaccination_date, next_due_date')
+      .eq('dog_id', dogId)
+    
+    // Fetch medications
+    const { data: medications } = await supabase
+      .from('doghealthy_medications')
+      .select('is_active')
+      .eq('dog_id', dogId)
+    
+    // Fetch appointments
+    const { data: appointments } = await supabase
+      .from('doghealthy_appointments')
+      .select('appointment_date, status')
+      .eq('dog_id', dogId)
+    
+    // Update counts
+    counts.value.healthRecords = healthCount || 0
+    
+    const now = new Date()
+    counts.value.vaccinationsUpcoming = vaccinations?.filter(v => 
+      v.next_due_date && new Date(v.next_due_date) >= now
+    ).length || 0
+    counts.value.vaccinationsPast = vaccinations?.filter(v => 
+      v.vaccination_date && new Date(v.vaccination_date) < now
+    ).length || 0
+    
+    counts.value.medicationsActive = medications?.filter(m => m.is_active).length || 0
+    counts.value.medicationsInactive = medications?.filter(m => !m.is_active).length || 0
+    
+    counts.value.appointmentsUpcoming = appointments?.filter(a => 
+      new Date(a.appointment_date) >= now && (a.status === 'scheduled' || a.status === 'confirmed')
+    ).length || 0
+    counts.value.appointmentsPast = appointments?.filter(a => 
+      new Date(a.appointment_date) < now || a.status === 'completed' || a.status === 'cancelled'
+    ).length || 0
+    
+    // Build recent activity
+    const activity: any[] = []
+    
+    // Health records (last 5)
+    const { data: recentHealth } = await supabase
+      .from('doghealthy_health_records')
+      .select('id, record_date, record_type, diagnosis')
+      .eq('dog_id', dogId)
+      .order('record_date', { ascending: false })
+      .limit(5)
+    
+    recentHealth?.forEach(record => {
+      activity.push({
+        id: `health-${record.id}`,
+        type: 'health',
+        icon: '🏥',
+        title: record.record_type || 'Health Record',
+        subtitle: record.diagnosis || 'Medical checkup',
+        date: record.record_date,
+        created_at: record.record_date
+      })
+    })
+    
+    // Recent vaccinations
+    const { data: recentVaccinations } = await supabase
+      .from('doghealthy_vaccinations')
+      .select('id, vaccination_date, vaccine_name')
+      .eq('dog_id', dogId)
+      .order('vaccination_date', { ascending: false })
+      .limit(3)
+    
+    recentVaccinations?.forEach(vaccination => {
+      activity.push({
+        id: `vaccination-${vaccination.id}`,
+        type: 'vaccination',
+        icon: '💉',
+        title: 'Vaccination',
+        subtitle: vaccination.vaccine_name || 'Vaccine administered',
+        date: vaccination.vaccination_date,
+        created_at: vaccination.vaccination_date
+      })
+    })
+    
+    // Recent appointments
+    const { data: recentAppointments } = await supabase
+      .from('doghealthy_appointments')
+      .select('id, appointment_date, title, status')
+      .eq('dog_id', dogId)
+      .order('appointment_date', { ascending: false })
+      .limit(3)
+    
+    recentAppointments?.forEach(appointment => {
+      activity.push({
+        id: `appointment-${appointment.id}`,
+        type: 'appointment',
+        icon: '📅',
+        title: appointment.title,
+        subtitle: `Status: ${appointment.status}`,
+        date: appointment.appointment_date,
+        created_at: appointment.appointment_date
+      })
+    })
+    
+    // Sort by date and take most recent 8
+    recentActivity.value = activity
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 8)
+      
+  } catch (err) {
+    console.error('Error fetching counts and activity:', err)
+  }
+}
+
+const formatDateTimeShort = (dateStr: string) => {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+  
+  if (diffInHours < 24) {
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  } else if (diffInHours < 24 * 7) {
+    return date.toLocaleDateString('en-US', { weekday: 'short' })
+  } else {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+}
+
+onMounted(async () => {
   if (!authStore.isAuthenticated) {
     router.push('/auth/login')
     return
   }
   
-  fetchDog()
+  await fetchDog()
+  if (dog.value) {
+    await fetchCountsAndActivity()
+  }
 })
 </script>
 

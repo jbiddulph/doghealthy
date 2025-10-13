@@ -487,23 +487,25 @@ const fetchVets = async () => {
 const fetchMedications = async () => {
   try {
     loading.value = true
+    // Fetch without FK join to avoid PGRST200 when vet FK isn't present in schema cache
     const { data, error } = await supabase
       .from('doghealthy_medications')
-      .select(`
-        *,
-        vet:vet_id (
-          name
-        )
-      `)
+      .select('*')
       .eq('dog_id', dogId)
       .order('is_active', { ascending: false })
       .order('start_date', { ascending: false })
 
     if (error) throw error
-    
-    medications.value = (data || []).map(medication => ({
+
+    // Build a quick lookup for vet names client-side
+    const vetIdToName = new Map<string, string>()
+    for (const v of (vets.value || [])) {
+      vetIdToName.set(v.id, v.name)
+    }
+
+    medications.value = (data || []).map((medication: any) => ({
       ...medication,
-      vet_name: medication.vet?.name || null
+      vet_name: medication.vet_id ? (vetIdToName.get(medication.vet_id) || null) : null
     }))
   } catch (err: any) {
     console.error('Error fetching medications:', err)

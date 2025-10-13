@@ -89,7 +89,7 @@
 
                 <div v-if="record.cost">
                   <p class="text-sm font-medium text-gray-500">Cost</p>
-                  <p class="text-gray-900">${{ record.cost }}</p>
+                  <p class="text-gray-900">£{{ record.cost }}</p>
                 </div>
               </div>
 
@@ -213,7 +213,7 @@
 
             <div>
               <label for="cost" class="block text-sm font-medium text-gray-700 mb-2">
-                Cost ($)
+                Cost (£)
               </label>
               <input
                 id="cost"

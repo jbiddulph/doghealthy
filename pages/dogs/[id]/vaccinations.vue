@@ -101,7 +101,7 @@
 
                 <div v-if="vaccination.cost">
                   <p class="text-gray-500">Cost</p>
-                  <p class="text-gray-900">${{ vaccination.cost }}</p>
+                  <p class="text-gray-900">£{{ vaccination.cost }}</p>
                 </div>
               </div>
 
@@ -226,7 +226,7 @@
 
             <div>
               <label for="cost" class="block text-sm font-medium text-gray-700 mb-2">
-                Cost ($)
+                Cost (£)
               </label>
               <input
                 id="cost"
@@ -375,22 +375,25 @@ const fetchVets = async () => {
 const fetchVaccinations = async () => {
   try {
     loading.value = true
+    // Fetch without FK join to avoid PGRST200 when FK not present
     const { data, error } = await supabase
       .from('doghealthy_vaccinations')
-      .select(`
-        *,
-        vet:vet_id (
-          name
-        )
-      `)
+      .select('*')
       .eq('dog_id', dogId)
-      .order('administered_date', { ascending: false })
+      .order('vaccination_date', { ascending: false })
 
     if (error) throw error
-    
-    vaccinations.value = (data || []).map(vaccination => ({
+
+    // Map vet_name locally from loaded vets (no server-side join)
+    const vetIdToName = new Map<string, string>()
+    for (const v of (vets.value || [])) {
+      vetIdToName.set(v.id, v.name)
+    }
+
+    vaccinations.value = (data || []).map((vaccination: any) => ({
       ...vaccination,
-      vet_name: vaccination.vet?.name || null
+      administered_date: vaccination.administered_date || vaccination.vaccination_date || null,
+      vet_name: vaccination.vet_id ? (vetIdToName.get(vaccination.vet_id) || null) : null
     }))
   } catch (err: any) {
     console.error('Error fetching vaccinations:', err)
@@ -455,6 +458,8 @@ const saveVaccination = async () => {
       user_id: authStore.userId,
       vaccine_name: form.value.vaccine_name,
       administered_date: form.value.administered_date,
+      // Ensure compatibility with existing schema where vaccination_date is NOT NULL
+      vaccination_date: form.value.administered_date,
       next_due_date: form.value.next_due_date || null,
       batch_number: form.value.batch_number || null,
       vet_id: form.value.vet_id || null,
