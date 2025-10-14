@@ -1,7 +1,8 @@
 <template>
   <div class="min-h-screen bg-gray-50 flex items-center justify-center px-4">
     <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-      <h1 class="text-2xl font-bold text-gray-900 mb-6">
+      <div class="text-[6.75rem] mb-2 text-center">🐾</div>
+      <h1 class="text-2xl font-bold text-gray-900 mb-6 text-center">
         Create Your Account
       </h1>
       

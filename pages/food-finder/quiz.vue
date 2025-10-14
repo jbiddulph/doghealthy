@@ -142,34 +142,8 @@
             </span>
           </p>
           
-          <!-- Email Capture -->
-          <div v-if="!emailCaptured" class="max-w-md mx-auto mb-8">
-            <div class="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-2">
-                📧 Get Your Free PDF Guide
-              </h3>
-              <p class="text-sm text-gray-600 mb-4">
-                Receive "Complete Dog Nutrition Guide" plus personalized food recommendations
-              </p>
-              <form @submit.prevent="captureEmail" class="flex gap-2">
-                <input
-                  v-model="email"
-                  type="email"
-                  required
-                  placeholder="your@email.com"
-                  class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                />
-                <button
-                  type="submit"
-                  :disabled="submittingEmail"
-                  class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {{ submittingEmail ? 'Sending...' : 'Get Guide' }}
-                </button>
-              </form>
-              <p class="text-xs text-gray-500 mt-2">We respect your privacy. Unsubscribe anytime.</p>
-            </div>
-          </div>
+          <!-- Email Capture (temporarily removed) -->
+          <div v-if="false"></div>
 
           <div v-else class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
             <p class="text-green-800">✅ Check your email for your free nutrition guide!</p>
