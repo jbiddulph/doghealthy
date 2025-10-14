@@ -4,6 +4,55 @@
     <div class="mb-8">
       <h1 class="text-4xl font-bold text-dark mb-4">Notifications</h1>
       <p class="text-secondary text-lg">Stay updated with your dog's health and messages</p>
+      
+      <!-- Reminder Settings -->
+      <div class="mt-6 bg-white rounded-lg shadow-sm border border-muted p-6">
+        <h2 class="text-xl font-semibold text-dark mb-4">Reminder Settings</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-medium text-dark">Enable Reminders</h3>
+              <p class="text-sm text-secondary">Get notifications for appointments, medications, and vaccinations</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input 
+                v-model="reminderSettings.enabled" 
+                @change="updateReminderSettings"
+                type="checkbox" 
+                class="sr-only peer"
+              >
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+            </label>
+          </div>
+          
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-medium text-dark">Browser Notifications</h3>
+              <p class="text-sm text-secondary">Show desktop notifications when reminders are due</p>
+            </div>
+            <button 
+              @click="handleRequestNotificationPermission"
+              :class="notificationButtonClass"
+              class="px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              {{ notificationButtonText }}
+            </button>
+          </div>
+        </div>
+        
+        <div v-if="reminderSettings.lastCheck" class="mt-4 p-3 bg-gray-50 rounded-lg">
+          <p class="text-sm text-secondary">
+            Last reminder check: {{ formatReminderDate(reminderSettings.lastCheck) }}
+          </p>
+          <button 
+            @click="checkRemindersNow"
+            :disabled="checkingReminders"
+            class="mt-2 text-sm text-primary hover:text-accent font-medium disabled:opacity-50"
+          >
+            {{ checkingReminders ? 'Checking...' : 'Check Reminders Now' }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Actions -->
@@ -170,6 +219,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useSupabase } from '~/composables/useSupabase'
 import { useAuthStore } from '~/stores/auth'
+import { useReminders } from '~/composables/useReminders'
 
 // Define page meta
 definePageMeta({
@@ -178,6 +228,12 @@ definePageMeta({
 
 const supabase = useSupabase()
 const authStore = useAuthStore()
+const { 
+  getReminderSettings, 
+  setRemindersEnabled, 
+  requestNotificationPermission, 
+  checkAllReminders 
+} = useReminders()
 
 // State
 const notifications = ref<any[]>([])
@@ -188,6 +244,8 @@ const statusFilter = ref('')
 const page = ref(1)
 const pageSize = 20
 const hasMore = ref(true)
+const reminderSettings = ref(getReminderSettings())
+const checkingReminders = ref(false)
 
 // Computed
 const unreadCount = computed(() => {
@@ -218,7 +276,73 @@ const filteredNotifications = computed(() => {
   return filtered
 })
 
+const notificationButtonText = computed(() => {
+  const permission = reminderSettings.value.notificationsPermission
+  switch (permission) {
+    case 'granted': return 'Enabled'
+    case 'denied': return 'Blocked'
+    case 'default': 
+    default: return 'Request Permission'
+  }
+})
+
+const notificationButtonClass = computed(() => {
+  const permission = reminderSettings.value.notificationsPermission
+  switch (permission) {
+    case 'granted': return 'bg-green-100 text-green-700 hover:bg-green-200'
+    case 'denied': return 'bg-red-100 text-red-700 hover:bg-red-200'
+    case 'default': 
+    default: return 'bg-primary text-dark hover:bg-accent'
+  }
+})
+
 // Methods
+const updateReminderSettings = () => {
+  setRemindersEnabled(reminderSettings.value.enabled)
+}
+
+const handleRequestNotificationPermission = async () => {
+  const granted = await requestNotificationPermission()
+  if (granted) {
+    reminderSettings.value.notificationsPermission = 'granted'
+  } else {
+    reminderSettings.value.notificationsPermission = 'denied'
+  }
+}
+
+const checkRemindersNow = async () => {
+  checkingReminders.value = true
+  try {
+    const result = await checkAllReminders()
+    reminderSettings.value.lastCheck = new Date().toISOString()
+    
+    // Show success message
+    if (result.appointments + result.medications + result.vaccinations > 0) {
+      alert(`Found ${result.appointments + result.medications + result.vaccinations} reminders! Check your notifications.`)
+    } else {
+      alert('No new reminders found.')
+    }
+    
+    // Refresh notifications
+    await fetchNotifications()
+  } catch (error) {
+    console.error('Error checking reminders:', error)
+    alert('Error checking reminders. Please try again.')
+  } finally {
+    checkingReminders.value = false
+  }
+}
+
+const formatReminderDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('en-GB', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 const getNotificationIcon = (type: string) => {
   switch (type) {
     case 'appointment': return 'bi-calendar2-event'
