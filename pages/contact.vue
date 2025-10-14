@@ -37,8 +37,13 @@ const submit = async () => {
   try {
     submitting.value = true
     success.value = false
-    // In a real app, send to an email service / backend endpoint
-    await new Promise(resolve => setTimeout(resolve, 800))
+    // Send via mailto to site owner
+    const subject = `DogHealthy Contact from ${form.value.name}`
+    const body = `Name: ${form.value.name}\nEmail: ${form.value.email}\n\n${form.value.message}`
+    const mailto = `mailto:john.mbiddulph@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    if (process.client) {
+      window.location.href = mailto
+    }
     success.value = true
     form.value = { name: '', email: '', message: '' }
   } finally {
