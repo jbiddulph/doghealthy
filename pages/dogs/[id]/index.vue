@@ -162,6 +162,14 @@
           
         </div>
 
+        <!-- Ad Space -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <AdUnit 
+            ad-slot="dog-detail-sidebar"
+            ad-format="horizontal"
+          />
+        </div>
+
         <!-- Recent Activity -->
         <div class="bg-white rounded-lg shadow-md p-6">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
@@ -173,6 +181,8 @@
 </template>
 
 <script setup lang="ts">
+import AdUnit from '~/components/ads/AdUnit.vue'
+
 const route = useRoute()
 const router = useRouter()
 const supabase = useSupabase()

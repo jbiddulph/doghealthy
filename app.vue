@@ -7,3 +7,9 @@
     <AppFooter />
   </div>
 </template>
+
+<script setup>
+// Initialize auth store on app startup
+const authStore = useAuthStore()
+await authStore.initialize()
+</script>

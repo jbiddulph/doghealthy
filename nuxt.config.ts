@@ -22,6 +22,11 @@ export default defineNuxtConfig({
         { src: 'https://www.googletagmanager.com/gtag/js?id=G-EMYKQNQ3FJ', async: true },
         {
           children: `window.dataLayer = window.dataLayer || [];\nfunction gtag(){dataLayer.push(arguments);}\ngtag('js', new Date());\n\ngtag('config', 'G-EMYKQNQ3FJ');`
+        },
+        { 
+          src: 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1907813559893319', 
+          async: true, 
+          crossorigin: 'anonymous' 
         }
       ]
     }
@@ -32,9 +37,15 @@ export default defineNuxtConfig({
   
   runtimeConfig: {
     unsplashAccessKey: process.env.UNSPLASH_ACCESS_KEY,
+    stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
-      supabaseKey: process.env.SUPABASE_ANON_KEY
+      supabaseKey: process.env.SUPABASE_ANON_KEY,
+      stripePublishableKey: process.env.NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+      baseUrl: process.env.NUXT_PUBLIC_BASE_URL,
+      adsenseClient: process.env.NUXT_PUBLIC_ADSENSE_CLIENT
     }
   }
 })

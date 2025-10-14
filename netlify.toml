@@ -19,3 +19,12 @@
   [headers.values]
     cache-control = "public, max-age=31536000, immutable"
 
+# Scheduled functions
+[functions]
+  node_bundler = "esbuild"
+
+# Scheduled reminder function - runs daily at 8am UTC
+# Note: For production deployment, you'll need to set up the scheduled function
+# in the Netlify dashboard under Functions > Scheduled Functions
+# Schedule: "0 8 * * *" (Daily at 8:00 AM UTC)
+

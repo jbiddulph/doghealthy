@@ -67,6 +67,15 @@
         </div>
       </div>
 
+      <!-- Banner Ad -->
+      <div class="border-t border-gray-800 mt-8 pt-8">
+        <AdUnit 
+          ad-slot="footer-banner"
+          ad-format="horizontal"
+          class-name="max-w-4xl mx-auto"
+        />
+      </div>
+
       <!-- Bottom Bar -->
       <div class="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
         <p class="text-gray-400 text-sm">
@@ -89,6 +98,8 @@
 </template>
 
 <script setup lang="ts">
+import AdUnit from '~/components/ads/AdUnit.vue'
+
 const currentYear = new Date().getFullYear()
 </script>
 
