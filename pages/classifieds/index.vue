@@ -143,6 +143,25 @@ import AdUnit from '~/components/ads/AdUnit.vue'
 const supabase = useSupabase()
 const authStore = useAuthStore()
 
+// SEO Meta tags
+useHead({
+  title: 'Dog Classifieds - Find Your Perfect Puppy | DogHealthy',
+  meta: [
+    { 
+      name: 'description', 
+      content: 'Browse thousands of dog classifieds from trusted breeders. Find puppies for sale, adult dogs, and rescue dogs near you. Free to browse, secure messaging, and verified sellers.' 
+    },
+    { name: 'keywords', content: 'dog classifieds, puppies for sale, dogs for sale, dog breeders, puppy listings, dog adoption, pet classifieds' },
+    { property: 'og:title', content: 'Dog Classifieds - Find Your Perfect Puppy | DogHealthy' },
+    { property: 'og:description', content: 'Browse thousands of dog classifieds from trusted breeders. Find puppies for sale, adult dogs, and rescue dogs near you.' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: 'https://doghealthy.netlify.app/classifieds' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: 'Dog Classifieds - Find Your Perfect Puppy' },
+    { name: 'twitter:description', content: 'Browse thousands of dog classifieds from trusted breeders. Find puppies for sale, adult dogs, and rescue dogs near you.' }
+  ]
+})
+
 // Define page meta - no auth required to browse listings
 // definePageMeta({
 //   middleware: 'auth'

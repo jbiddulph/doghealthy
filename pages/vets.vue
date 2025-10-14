@@ -184,6 +184,21 @@
 const supabase = useSupabase()
 const authStore = useAuthStore()
 
+// SEO Meta tags
+useHead({
+  title: 'Veterinarians - Manage Vet Contacts | DogHealthy',
+  meta: [
+    { 
+      name: 'description', 
+      content: 'Manage your veterinarian contacts and clinic information. Keep all your vet details organized for quick access when needed.' 
+    },
+    { name: 'robots', content: 'noindex, nofollow' }, // Don't index personal pages
+    { property: 'og:title', content: 'Veterinarians - Manage Vet Contacts | DogHealthy' },
+    { property: 'og:description', content: 'Manage your veterinarian contacts and clinic information. Keep all your vet details organized.' },
+    { property: 'og:type', content: 'website' }
+  ]
+})
+
 interface Vet {
   id: string
   user_id: string

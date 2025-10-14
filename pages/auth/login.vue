@@ -78,6 +78,21 @@ const error = ref('')
 const authStore = useAuthStore()
 const router = useRouter()
 
+// SEO Meta tags
+useHead({
+  title: 'Login - DogHealthy',
+  meta: [
+    { 
+      name: 'description', 
+      content: 'Login to your DogHealthy account to manage your dog profiles, track health records, and access personalized recommendations.' 
+    },
+    { name: 'robots', content: 'noindex, nofollow' }, // Don't index login pages
+    { property: 'og:title', content: 'Login - DogHealthy' },
+    { property: 'og:description', content: 'Login to your DogHealthy account to manage your dog profiles and health records.' },
+    { property: 'og:type', content: 'website' }
+  ]
+})
+
 const handleLogin = async () => {
   loading.value = true
   error.value = ''

@@ -459,11 +459,22 @@ onMounted(() => {
   fetchProducts()
 })
 
-// Set page meta
+// SEO Meta tags
 useHead({
   title: 'Dog Food Finder - Compare & Find the Best Dog Food | DogHealthy',
   meta: [
-    { name: 'description', content: 'Find and compare the best dog food for your pet. Filter by breed size, food type, price, and special dietary needs. Expert recommendations and affiliate-backed reviews.' }
+    { 
+      name: 'description', 
+      content: 'Find and compare the best dog food for your pet. Filter by breed size, food type, price, and special dietary needs. Expert recommendations and affiliate-backed reviews.' 
+    },
+    { name: 'keywords', content: 'dog food finder, best dog food, dog food comparison, dog nutrition, puppy food, senior dog food, grain free dog food, hypoallergenic dog food' },
+    { property: 'og:title', content: 'Dog Food Finder - Compare & Find the Best Dog Food | DogHealthy' },
+    { property: 'og:description', content: 'Find and compare the best dog food for your pet. Filter by breed size, food type, price, and special dietary needs.' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: 'https://doghealthy.netlify.app/food-finder' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: 'Dog Food Finder - Compare & Find the Best Dog Food' },
+    { name: 'twitter:description', content: 'Find and compare the best dog food for your pet. Filter by breed size, food type, price, and special dietary needs.' }
   ]
 })
 </script>

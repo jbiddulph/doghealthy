@@ -487,11 +487,54 @@ onMounted(async () => {
   }
 })
 
-// Set page meta for SEO
+// SEO Meta tags and structured data
 useHead({
   title: 'DogHealthy - Complete Health Tracking & Food Finder for Your Dog',
   meta: [
-    { name: 'description', content: 'Free dog health tracker with medical records, vaccinations, medications, appointments, and intelligent food finder. Everything your dog needs in one place.' }
+    { name: 'description', content: 'Free dog health tracker with medical records, vaccinations, medications, appointments, and intelligent food finder. Everything your dog needs in one place.' },
+    { name: 'keywords', content: 'dog health tracker, dog medical records, dog vaccinations, dog food finder, pet health management, dog care app' },
+    { property: 'og:title', content: 'DogHealthy - Complete Health Tracking & Food Finder for Your Dog' },
+    { property: 'og:description', content: 'Free dog health tracker with medical records, vaccinations, medications, appointments, and intelligent food finder.' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: 'https://doghealthy.netlify.app' },
+    { property: 'og:image', content: 'https://doghealthy.netlify.app/dog_silhouette_friendly_pose_4MtxY.svg' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: 'DogHealthy - Complete Health Tracking & Food Finder' },
+    { name: 'twitter:description', content: 'Free dog health tracker with medical records, vaccinations, medications, appointments, and intelligent food finder.' },
+    { name: 'twitter:image', content: 'https://doghealthy.netlify.app/dog_silhouette_friendly_pose_4MtxY.svg' }
+  ],
+  script: [
+    {
+      type: 'application/ld+json',
+      children: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "DogHealthy",
+        "description": "Complete health tracking and food finder for your dog. Track medical records, vaccinations, medications, appointments, and find the perfect food.",
+        "url": "https://doghealthy.netlify.app",
+        "applicationCategory": "HealthApplication",
+        "operatingSystem": "Web",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "GBP"
+        },
+        "featureList": [
+          "Dog Health Records",
+          "Vaccination Tracking", 
+          "Medication Management",
+          "Appointment Scheduling",
+          "Dog Food Finder",
+          "Weight Tracking",
+          "Vet Contact Management"
+        ],
+        "provider": {
+          "@type": "Organization",
+          "name": "DogHealthy",
+          "url": "https://doghealthy.netlify.app"
+        }
+      })
+    }
   ]
 })
 </script>

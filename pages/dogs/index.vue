@@ -112,6 +112,21 @@ const authStore = useAuthStore()
 const router = useRouter()
 const supabase = useSupabase()
 
+// SEO Meta tags
+useHead({
+  title: 'My Dogs - Manage Your Dog Profiles | DogHealthy',
+  meta: [
+    { 
+      name: 'description', 
+      content: 'Manage all your dog profiles in one place. Track health records, vaccinations, medications, and appointments for each of your furry friends.' 
+    },
+    { name: 'robots', content: 'noindex, nofollow' }, // Don't index personal pages
+    { property: 'og:title', content: 'My Dogs - Manage Your Dog Profiles | DogHealthy' },
+    { property: 'og:description', content: 'Manage all your dog profiles in one place. Track health records, vaccinations, medications, and appointments.' },
+    { property: 'og:type', content: 'website' }
+  ]
+})
+
 const dogs = ref<Dog[]>([])
 const loading = ref(true)
 const error = ref('')

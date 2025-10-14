@@ -182,6 +182,84 @@ const route = useRoute()
 const supabase = useSupabase()
 const authStore = useAuthStore()
 
+// Dynamic SEO Meta tags and structured data
+useHead(() => {
+  if (!listing.value) {
+    return {
+      title: 'Dog Listing - DogHealthy',
+      meta: [
+        { name: 'description', content: 'Browse this dog listing on DogHealthy classifieds.' }
+      ]
+    }
+  }
+
+  const title = `${listing.value.title} - ${listing.value.breed || 'Dog'} for Sale | DogHealthy`
+  const description = `${listing.value.description?.substring(0, 150) || listing.value.title} - ${listing.value.breed || 'Dog'} for sale in ${listing.value.location || 'UK'}. £${listing.value.price_gbp || 'Contact for price'}.`
+
+  return {
+    title,
+    meta: [
+      { name: 'description', content: description },
+      { name: 'keywords', content: `${listing.value.breed || 'dog'}, ${listing.value.breed || 'dog'} for sale, puppy, dog classifieds, ${listing.value.location || 'UK'} dogs` },
+      { property: 'og:title', content: title },
+      { property: 'og:description', content: description },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:url', content: `https://doghealthy.netlify.app/classifieds/${listing.value.id}` },
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: title },
+      { name: 'twitter:description', content: description }
+    ],
+    script: [
+      {
+        type: 'application/ld+json',
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Product",
+          "name": listing.value.title,
+          "description": listing.value.description,
+          "category": "Pet",
+          "brand": {
+            "@type": "Brand",
+            "name": listing.value.breed || "Dog"
+          },
+          "offers": {
+            "@type": "Offer",
+            "price": listing.value.price_gbp || 0,
+            "priceCurrency": "GBP",
+            "availability": "https://schema.org/InStock",
+            "seller": {
+              "@type": "Organization",
+              "name": "DogHealthy Classifieds"
+            }
+          },
+          "additionalProperty": [
+            {
+              "@type": "PropertyValue",
+              "name": "Breed",
+              "value": listing.value.breed || "Mixed"
+            },
+            {
+              "@type": "PropertyValue", 
+              "name": "Age",
+              "value": listing.value.age_weeks ? `${Math.floor(listing.value.age_weeks / 4)} months` : "Unknown"
+            },
+            {
+              "@type": "PropertyValue",
+              "name": "Gender", 
+              "value": listing.value.gender || "Unknown"
+            },
+            {
+              "@type": "PropertyValue",
+              "name": "Location",
+              "value": listing.value.location || "UK"
+            }
+          ]
+        })
+      }
+    ]
+  }
+})
+
 // State
 const listing = ref<any>(null)
 const loading = ref(true)
