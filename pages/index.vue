@@ -2,23 +2,35 @@
   <div class="min-h-screen bg-gradient-to-b from-blue-50 to-white">
     <!-- Hero Section -->
     <div class="relative overflow-hidden text-white bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700">
-      <!-- Unsplash Background Image -->
+      <!-- Dynamic Background Image (if available) -->
       <div
         v-if="heroImage"
         class="absolute inset-0 bg-cover bg-center"
         :style="{ backgroundImage: `url(${heroImage})` }"
       ></div>
       
-      <!-- 30% Black Overlay (only show if image is loaded) -->
-      <div v-if="heroImage" class="absolute inset-0 bg-black opacity-30"></div>
+      <!-- Fallback Pattern Background -->
+      <div v-else class="absolute inset-0 opacity-10">
+        <div class="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-600"></div>
+        <div class="absolute inset-0 opacity-20" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.1) 35px, rgba(255,255,255,.1) 70px);"></div>
+      </div>
       
-      <!-- Photo credit (required by Unsplash) -->
+      <!-- Overlay for better text readability -->
+      <div class="absolute inset-0 bg-black opacity-20"></div>
+      
+      <!-- Photo credit (only show if Unsplash image is loaded) -->
       <div v-if="heroImage && photoCredit" class="absolute bottom-2 right-2 text-xs text-white/70 z-10">
         Photo by <a :href="photoCredit.authorUrl + '?utm_source=doghealthy&utm_medium=referral'" target="_blank" rel="noopener noreferrer" class="underline hover:text-white">{{ photoCredit.author }}</a> on <a href="https://unsplash.com?utm_source=doghealthy&utm_medium=referral" target="_blank" rel="noopener noreferrer" class="underline hover:text-white">Unsplash</a>
       </div>
       
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-        <div class="text-center">
+        <!-- Decorative Dog Elements -->
+        <div class="absolute top-10 left-10 text-6xl opacity-20 animate-bounce" style="animation-delay: 0s;">🐕</div>
+        <div class="absolute top-20 right-20 text-4xl opacity-20 animate-bounce" style="animation-delay: 1s;">🐶</div>
+        <div class="absolute bottom-20 left-20 text-5xl opacity-20 animate-bounce" style="animation-delay: 2s;">🦴</div>
+        <div class="absolute bottom-10 right-10 text-4xl opacity-20 animate-bounce" style="animation-delay: 0.5s;">🏥</div>
+        
+        <div class="text-center relative z-10">
           <h1 class="text-5xl md:text-6xl font-extrabold mb-6">
             <span class="block">Everything Your Dog Needs</span>
             <span class="block text-gray-100">All in One Place</span>
@@ -474,6 +486,7 @@ const heroImage = ref('')
 const photoCredit = ref<{ author: string; authorUrl: string } | null>(null)
 
 onMounted(async () => {
+  // Try to load Unsplash image (works in both dev and production)
   try {
     const response = await $fetch('/api/unsplash/random-dog')
     heroImage.value = response.url
@@ -481,9 +494,12 @@ onMounted(async () => {
       author: response.author,
       authorUrl: response.authorUrl
     }
+    console.log('Successfully loaded Unsplash hero image')
   } catch (error) {
-    console.error('Failed to load hero image:', error)
-    // Fallback to a default background color if Unsplash fails
+    console.log('Unsplash image not available, using beautiful fallback design')
+    // Fallback to beautiful gradient background with dog pattern
+    heroImage.value = ''
+    photoCredit.value = null
   }
 })
 

@@ -4,18 +4,19 @@ export default defineEventHandler(async (event) => {
 
   if (!accessKey) {
     throw createError({
-      statusCode: 500,
-      statusMessage: 'Unsplash access key not configured'
+      statusCode: 503,
+      statusMessage: 'Unsplash access key not configured - using fallback'
     })
   }
 
   try {
     // Fetch a random dog photo from Unsplash
     const response = await fetch(
-      'https://api.unsplash.com/photos/random?query=dog&orientation=landscape',
+      'https://api.unsplash.com/photos/random?query=dog&orientation=landscape&w=1920&h=1080',
       {
         headers: {
-          'Authorization': `Client-ID ${accessKey}`
+          'Authorization': `Client-ID ${accessKey}`,
+          'Accept-Version': 'v1'
         }
       }
     )
