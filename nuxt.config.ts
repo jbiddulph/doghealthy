@@ -20,6 +20,9 @@ export default defineNuxtConfig({
       ]
     }
   },
+  css: [
+    '@/assets/css/brand.css'
+  ],
   
   runtimeConfig: {
     unsplashAccessKey: process.env.UNSPLASH_ACCESS_KEY,

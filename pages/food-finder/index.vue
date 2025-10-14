@@ -1,10 +1,10 @@
 <template>
   <div class="min-h-screen bg-gray-50">
     <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white py-16">
+    <div class="bg-gradient-to-r from-primary to-secondary text-dark py-16">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h1 class="text-4xl md:text-5xl font-bold mb-4">🍖 Dog Food Finder</h1>
-        <p class="text-xl md:text-2xl text-blue-100 mb-8">
+        <p class="text-xl md:text-2xl text-white mb-8">
           Find the perfect food for your furry friend
         </p>
         
@@ -15,7 +15,7 @@
               v-model="searchQuery"
               type="text"
               placeholder="Search by brand, ingredient, or food type..."
-              class="w-full px-6 py-4 rounded-lg text-gray-900 text-lg focus:outline-none focus:ring-4 focus:ring-blue-300"
+              class="w-full px-6 py-4 rounded-lg text-dark text-lg focus:outline-none focus:ring-4 focus:ring-primary/30"
               @input="handleSearch"
             />
             <svg class="absolute right-4 top-4 w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -27,14 +27,14 @@
     </div>
 
     <!-- Filters Section -->
-    <div class="bg-white border-b border-gray-200 py-6">
+    <div class="bg-white border-b border-muted py-6">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex flex-wrap gap-4">
           <!-- Food Type Filter -->
           <select
             v-model="filters.foodType"
             @change="handleSearch"
-            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            class="px-4 py-2 border border-muted rounded-lg focus:ring-2 focus:ring-primary"
           >
             <option value="">All Food Types</option>
             <option value="dry">Dry Food</option>
@@ -47,7 +47,7 @@
           <select
             v-model="filters.breedSize"
             @change="handleSearch"
-            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            class="px-4 py-2 border border-muted rounded-lg focus:ring-2 focus:ring-primary"
           >
             <option value="">All Breed Sizes</option>
             <option value="small">Small Breeds</option>
@@ -60,7 +60,7 @@
           <select
             v-model="filters.lifeStage"
             @change="handleSearch"
-            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            class="px-4 py-2 border border-muted rounded-lg focus:ring-2 focus:ring-primary"
           >
             <option value="">All Life Stages</option>
             <option value="puppy">Puppy</option>
@@ -72,7 +72,7 @@
           <select
             v-model="filters.priceRange"
             @change="handleSearch"
-            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            class="px-4 py-2 border border-muted rounded-lg focus:ring-2 focus:ring-primary"
           >
             <option value="">All Prices</option>
             <option value="0-30">Under £30</option>
@@ -85,7 +85,7 @@
           <select
             v-model="filters.specialDiet"
             @change="handleSearch"
-            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            class="px-4 py-2 border border-muted rounded-lg focus:ring-2 focus:ring-primary"
           >
             <option value="">Special Diets</option>
             <option value="grain-free">Grain Free</option>
@@ -110,7 +110,7 @@
           <button
             v-if="hasActiveFilters"
             @click="clearFilters"
-            class="px-4 py-2 text-blue-600 hover:text-blue-700 font-medium"
+            class="px-4 py-2 text-secondary hover:text-dark font-medium"
           >
             Clear All Filters
           </button>
@@ -135,7 +135,7 @@
           </h2>
           <NuxtLink
             to="/food-finder/quiz"
-            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors"
+            class="bg-accent hover:brightness-95 text-white px-6 py-2 rounded-lg transition-colors"
           >
             🎯 Take Food Quiz
           </NuxtLink>
@@ -149,7 +149,7 @@
           <p class="mt-4 text-xl text-gray-600">No products match your filters</p>
           <button
             @click="clearFilters"
-            class="mt-4 text-blue-600 hover:text-blue-700 font-medium"
+            class="mt-4 text-secondary hover:text-dark font-medium"
           >
             Clear filters to see all products
           </button>
@@ -179,7 +179,7 @@
                 <span v-if="product.is_editors_choice" class="bg-yellow-500 text-white text-xs font-semibold px-2 py-1 rounded">
                   ⭐ Editor's Choice
                 </span>
-                <span v-if="product.is_best_value" class="bg-green-600 text-white text-xs font-semibold px-2 py-1 rounded">
+                <span v-if="product.is_best_value" class="bg-accent text-white text-xs font-semibold px-2 py-1 rounded">
                   💰 Best Value
                 </span>
                 <span v-if="product.is_grain_free" class="bg-purple-600 text-white text-xs font-semibold px-2 py-1 rounded">
@@ -189,7 +189,7 @@
             </div>
 
             <!-- Product Info -->
-            <div class="p-4">
+              <div class="p-4">
               <div class="flex justify-between items-start mb-2">
                 <div>
                   <p class="text-sm text-gray-500">{{ product.brand }}</p>
@@ -206,7 +206,7 @@
               <p class="text-sm text-gray-600 mb-3 line-clamp-2">{{ product.description }}</p>
 
               <!-- Nutrition Summary -->
-              <div class="grid grid-cols-3 gap-2 mb-3 text-xs text-gray-600">
+              <div class="grid grid-cols-3 gap-2 mb-3 text-xs text-secondary">
                 <div class="text-center p-2 bg-gray-50 rounded">
                   <div class="font-semibold text-gray-900">{{ product.protein_percent }}%</div>
                   <div>Protein</div>
@@ -222,9 +222,9 @@
               </div>
 
               <!-- Price & CTA -->
-              <div class="flex justify-between items-center pt-3 border-t border-gray-200">
+              <div class="flex justify-between items-center pt-3 border-t border-muted">
                 <div>
-                  <div class="text-2xl font-bold text-gray-900">£{{ product.price_gbp?.toFixed(2) || 'N/A' }}</div>
+                  <div class="text-2xl font-bold text-dark">£{{ product.price_gbp?.toFixed(2) || 'N/A' }}</div>
                   <div v-if="product.price_per_kg" class="text-xs text-gray-500">£{{ product.price_per_kg.toFixed(2)}} /kg</div>
                   <div class="text-xs text-gray-400 italic">Price may vary</div>
                 </div>
@@ -233,7 +233,7 @@
                   @click="trackClick(product)"
                   target="_blank"
                   rel="noopener sponsored"
-                  class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors font-semibold"
+                  class="bg-primary hover:brightness-95 text-dark px-6 py-2 rounded-lg transition-colors font-semibold"
                 >
                   Buy Now
                 </a>
@@ -251,14 +251,14 @@
 
     <!-- Info Callout -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
         <div class="flex items-start">
-          <svg class="w-6 h-6 text-blue-600 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-6 h-6 text-primary mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <div>
-            <h3 class="font-semibold text-blue-900 mb-1">Affiliate Disclosure</h3>
-            <p class="text-sm text-blue-800">
+            <h3 class="font-semibold text-dark mb-1">Affiliate Disclosure</h3>
+            <p class="text-sm text-secondary">
               DogHealthy earns a commission from qualifying purchases through our affiliate links at no extra cost to you. 
               This helps us maintain the service and provide free health tracking for your dogs. Thank you for your support! 🐕
             </p>

@@ -1,5 +1,5 @@
 <template>
-  <nav class="bg-white shadow-sm border-b border-gray-200">
+  <nav class="bg-white shadow-sm border-b border-muted/40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
         <div class="flex items-center">
@@ -12,7 +12,7 @@
         <div class="flex items-center gap-4">
           <NuxtLink
             to="/food-finder"
-            class="text-gray-700 hover:text-gray-900 font-medium"
+            class="text-secondary hover:text-dark font-medium"
           >
             Food Finder
           </NuxtLink>
@@ -20,13 +20,13 @@
             <template v-if="authStore.isAuthenticated">
               <NuxtLink
                 to="/dogs"
-                class="text-gray-700 hover:text-gray-900 font-medium"
+                class="text-secondary hover:text-dark font-medium"
               >
                 My Dogs
               </NuxtLink>
               <button
                 @click="handleLogout"
-                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+                class="bg-accent hover:brightness-95 text-white px-4 py-2 rounded-lg transition-colors"
               >
                 Logout
               </button>
@@ -34,13 +34,13 @@
             <template v-else>
               <NuxtLink
                 to="/auth/login"
-                class="text-gray-700 hover:text-gray-900 font-medium"
+                class="text-secondary hover:text-dark font-medium"
               >
                 Login
               </NuxtLink>
               <NuxtLink
                 to="/auth/register"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                class="bg-primary hover:brightness-95 text-dark px-4 py-2 rounded-lg transition-colors"
               >
                 Register
               </NuxtLink>

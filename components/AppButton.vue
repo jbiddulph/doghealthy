@@ -32,9 +32,9 @@ const buttonClasses = computed(() => {
   const baseClasses = 'font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2'
   
   const variantClasses = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500 disabled:bg-blue-300',
-    secondary: 'bg-gray-600 hover:bg-gray-700 text-white focus:ring-gray-500 disabled:bg-gray-300',
-    danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500 disabled:bg-red-300'
+    primary: 'bg-primary hover:brightness-95 text-dark focus:ring-primary disabled:opacity-50',
+    secondary: 'bg-secondary hover:brightness-110 text-white focus:ring-secondary disabled:opacity-50',
+    danger: 'bg-accent hover:brightness-95 text-white focus:ring-accent disabled:opacity-50'
   }
   
   const sizeClasses = {
