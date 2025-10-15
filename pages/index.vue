@@ -9,11 +9,8 @@
         :style="{ backgroundImage: `url(${heroImage})` }"
       ></div>
       
-      <!-- Fallback Pattern Background -->
-      <div v-else class="absolute inset-0 opacity-10">
-        <div class="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-600"></div>
-        <div class="absolute inset-0 opacity-20" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.1) 35px, rgba(255,255,255,.1) 70px);"></div>
-      </div>
+      <!-- Simple Fallback Background -->
+      <div v-else class="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-700"></div>
       
       <!-- Overlay for better text readability -->
       <div class="absolute inset-0 bg-black opacity-20"></div>
@@ -24,13 +21,7 @@
       </div>
       
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-        <!-- Decorative Dog Elements -->
-        <div class="absolute top-10 left-10 text-6xl opacity-20 animate-bounce" style="animation-delay: 0s;">🐕</div>
-        <div class="absolute top-20 right-20 text-4xl opacity-20 animate-bounce" style="animation-delay: 1s;">🐶</div>
-        <div class="absolute bottom-20 left-20 text-5xl opacity-20 animate-bounce" style="animation-delay: 2s;">🦴</div>
-        <div class="absolute bottom-10 right-10 text-4xl opacity-20 animate-bounce" style="animation-delay: 0.5s;">🏥</div>
-        
-        <div class="text-center relative z-10">
+        <div class="text-center">
           <h1 class="text-5xl md:text-6xl font-extrabold mb-6">
             <span class="block">Everything Your Dog Needs</span>
             <span class="block text-gray-100">All in One Place</span>
