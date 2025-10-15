@@ -477,21 +477,11 @@ const heroImage = ref('')
 const photoCredit = ref<{ author: string; authorUrl: string } | null>(null)
 
 onMounted(async () => {
-  // Try to load Unsplash image (works in both dev and production)
-  try {
-    const response = await $fetch('/api/unsplash/random-dog')
-    heroImage.value = response.url
-    photoCredit.value = {
-      author: response.author,
-      authorUrl: response.authorUrl
-    }
-    console.log('Successfully loaded Unsplash hero image')
-  } catch (error) {
-    console.log('Unsplash image not available, using beautiful fallback design')
-    // Fallback to beautiful gradient background with dog pattern
-    heroImage.value = ''
-    photoCredit.value = null
-  }
+  // For now, just use the clean blue gradient fallback
+  // Unsplash API integration can be added later if needed
+  heroImage.value = ''
+  photoCredit.value = null
+  console.log('Using clean blue gradient hero design')
 })
 
 // SEO Meta tags and structured data
