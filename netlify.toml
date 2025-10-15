@@ -19,10 +19,7 @@
   [headers.values]
     cache-control = "public, max-age=31536000, immutable"
 
-# Functions disabled to avoid 4KB environment variable limit
-# [functions]
-#   node_bundler = "esbuild"
-
-# Scheduled reminder function removed due to Netlify environment variable limits
-# Can be re-implemented later with fewer environment variables or external scheduling
+# Netlify Functions for Unsplash API
+[functions]
+  node_bundler = "esbuild"
 

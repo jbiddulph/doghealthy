@@ -477,11 +477,32 @@ const heroImage = ref('')
 const photoCredit = ref<{ author: string; authorUrl: string } | null>(null)
 
 onMounted(async () => {
-  // For now, just use the clean blue gradient fallback
-  // Unsplash API integration can be added later if needed
-  heroImage.value = ''
-  photoCredit.value = null
-  console.log('Using clean blue gradient hero design')
+  // Try to load Unsplash image via Netlify function
+  try {
+    const response = await fetch('/.netlify/functions/unsplash-random-dog')
+    
+    if (response.ok) {
+      const data = await response.json()
+      
+      if (!data.fallback) {
+        heroImage.value = data.url
+        photoCredit.value = {
+          author: data.author,
+          authorUrl: data.authorUrl
+        }
+        console.log('Successfully loaded Unsplash hero image')
+      } else {
+        throw new Error('Fallback mode')
+      }
+    } else {
+      throw new Error('Function error')
+    }
+  } catch (error) {
+    console.log('Unsplash image not available, using clean blue gradient')
+    // Fallback to clean blue gradient
+    heroImage.value = ''
+    photoCredit.value = null
+  }
 })
 
 // SEO Meta tags and structured data
