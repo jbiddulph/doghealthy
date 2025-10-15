@@ -477,37 +477,28 @@ const heroImage = ref('')
 const photoCredit = ref<{ author: string; authorUrl: string } | null>(null)
 
 onMounted(async () => {
-  // Try to load random dog image from Unsplash API
+  // Try to load random dog image via Netlify function
   try {
-    // Use Unsplash Source API (public, no authentication required)
-    // This provides random images from Unsplash without needing API keys
-    const response = await fetch('https://source.unsplash.com/1920x1080/?dog')
+    const response = await fetch('/.netlify/functions/unsplash-dog')
     
     if (response.ok) {
-      // Get the final redirected URL
-      const imageUrl = response.url
+      const data = await response.json()
       
-      // Test if the image loads successfully
-      const img = new Image()
-      img.onload = () => {
-        heroImage.value = imageUrl
-        // Note: Unsplash Source doesn't provide photographer info
+      if (!data.fallback) {
+        heroImage.value = data.url
         photoCredit.value = {
-          author: 'Unsplash',
-          authorUrl: 'https://unsplash.com'
+          author: data.author,
+          authorUrl: data.authorUrl
         }
         console.log('Successfully loaded random dog image from Unsplash')
+      } else {
+        throw new Error('Fallback mode')
       }
-      img.onerror = () => {
-        throw new Error('Image failed to load')
-      }
-      img.src = imageUrl
-      
     } else {
-      throw new Error('Failed to fetch from Unsplash Source')
+      throw new Error('Function error')
     }
   } catch (error) {
-    console.log('Unsplash Source not available, using clean blue gradient')
+    console.log('Unsplash API not available, using clean blue gradient')
     // Fallback to clean blue gradient
     heroImage.value = ''
     photoCredit.value = null
