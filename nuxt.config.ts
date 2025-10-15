@@ -43,6 +43,7 @@ export default defineNuxtConfig({
   ],
   
   runtimeConfig: {
+    unsplashAccessKey: process.env.UNSPLASH_ACCESS_KEY,
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
