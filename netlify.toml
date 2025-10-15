@@ -19,7 +19,5 @@
   [headers.values]
     cache-control = "public, max-age=31536000, immutable"
 
-# Functions disabled to avoid 4KB environment variable limit
-# [functions]
-#   node_bundler = "esbuild"
+# No functions - using client-side Unsplash Source API instead
 
