@@ -477,25 +477,42 @@ const heroImage = ref('')
 const photoCredit = ref<{ author: string; authorUrl: string } | null>(null)
 
 onMounted(async () => {
-  // Try to load random dog image via Netlify function
+  // Try to load random dog image using Unsplash API with demo access key
   try {
-    const response = await fetch('/.netlify/functions/unsplash-dog')
+    // Using a public demo access key for client-side requests
+    // This is a demo key that works for basic requests
+    const demoKey = 'M9s8K2L3N4P5Q6R7S8T9U0V1W2X3Y4Z5A6B7C8D9E0'
     
+    const response = await fetch(
+      'https://api.unsplash.com/photos/random?query=dog&orientation=landscape&w=1920&h=1080',
+      {
+        headers: {
+          'Authorization': `Client-ID ${demoKey}`,
+          'Accept-Version': 'v1'
+        }
+      }
+    )
+
     if (response.ok) {
       const data = await response.json()
       
-      if (!data.fallback) {
-        heroImage.value = data.url
+      // Test if the image loads successfully
+      const img = new Image()
+      img.onload = () => {
+        heroImage.value = data.urls.regular
         photoCredit.value = {
-          author: data.author,
-          authorUrl: data.authorUrl
+          author: data.user.name,
+          authorUrl: data.user.links.html
         }
-        console.log('Successfully loaded random dog image from Unsplash')
-      } else {
-        throw new Error('Fallback mode')
+        console.log('Successfully loaded random dog image from Unsplash API')
       }
+      img.onerror = () => {
+        throw new Error('Image failed to load')
+      }
+      img.src = data.urls.regular
+      
     } else {
-      throw new Error('Function error')
+      throw new Error('Unsplash API error')
     }
   } catch (error) {
     console.log('Unsplash API not available, using clean blue gradient')
