@@ -4,9 +4,6 @@ export default defineNuxtPlugin(async () => {
   try {
     await authStore.initialize()
     
-    // Temporarily disabled reminders to fix login issue
-    // TODO: Re-enable reminders once login is working
-    /*
     // Check reminders after auth initialization (client-side only)
     if (process.client && authStore.isAuthenticated) {
       // Use setTimeout to avoid blocking the initial page load
@@ -20,7 +17,6 @@ export default defineNuxtPlugin(async () => {
         }
       }, 2000) // Wait 2 seconds after page load
     }
-    */
   } catch (error) {
     console.error('Auth initialization error:', error)
     // Continue loading the app even if auth fails

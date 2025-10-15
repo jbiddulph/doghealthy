@@ -43,7 +43,6 @@ export default defineNuxtConfig({
   ],
   
   runtimeConfig: {
-    unsplashAccessKey: process.env.UNSPLASH_ACCESS_KEY,
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -52,7 +51,8 @@ export default defineNuxtConfig({
       supabaseKey: process.env.SUPABASE_ANON_KEY,
       stripePublishableKey: process.env.NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
       baseUrl: process.env.NUXT_PUBLIC_BASE_URL,
-      adsenseClient: process.env.NUXT_PUBLIC_ADSENSE_CLIENT
+      adsenseClient: process.env.NUXT_PUBLIC_ADSENSE_CLIENT,
+      unsplashAccessKey: process.env.UNSPLASH_ACCESS_KEY
     }
   }
 })

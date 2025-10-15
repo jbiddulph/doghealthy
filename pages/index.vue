@@ -477,25 +477,46 @@ const heroImage = ref('')
 const photoCredit = ref<{ author: string; authorUrl: string } | null>(null)
 
 onMounted(async () => {
-  // Try to load random dog image via Nuxt server API
+  // Try to load random dog image using your actual API key
   try {
-    const response = await $fetch('/api/unsplash/random-dog')
+    const config = useRuntimeConfig()
+    const accessKey = config.public.unsplashAccessKey
     
-    // Test if the image loads successfully
-    const img = new Image()
-    img.onload = () => {
-      heroImage.value = response.url
-      photoCredit.value = {
-        author: response.author,
-        authorUrl: response.authorUrl
+    if (!accessKey) {
+      throw new Error('No Unsplash access key configured')
+    }
+    
+    const response = await fetch(
+      'https://api.unsplash.com/photos/random?query=dog&orientation=landscape&w=1920&h=1080',
+      {
+        headers: {
+          'Authorization': `Client-ID ${accessKey}`,
+          'Accept-Version': 'v1'
+        }
       }
-      console.log('Successfully loaded random dog image from Unsplash')
+    )
+
+    if (response.ok) {
+      const data = await response.json()
+      
+      // Test if the image loads successfully
+      const img = new Image()
+      img.onload = () => {
+        heroImage.value = data.urls.regular
+        photoCredit.value = {
+          author: data.user.name,
+          authorUrl: data.user.links.html
+        }
+        console.log('Successfully loaded random dog image from Unsplash API')
+      }
+      img.onerror = () => {
+        throw new Error('Image failed to load')
+      }
+      img.src = data.urls.regular
+      
+    } else {
+      throw new Error('Unsplash API error')
     }
-    img.onerror = () => {
-      throw new Error('Image failed to load')
-    }
-    img.src = response.url
-    
   } catch (error) {
     console.log('Unsplash API not available, using clean blue gradient')
     // Fallback to clean blue gradient
