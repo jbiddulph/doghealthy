@@ -477,28 +477,57 @@ const heroImage = ref('')
 const photoCredit = ref<{ author: string; authorUrl: string } | null>(null)
 
 onMounted(async () => {
-  // Try to load Unsplash image via Netlify function
-  try {
-    const response = await fetch('/.netlify/functions/unsplash-random-dog')
-    
-    if (response.ok) {
-      const data = await response.json()
-      
-      if (!data.fallback) {
-        heroImage.value = data.url
-        photoCredit.value = {
-          author: data.author,
-          authorUrl: data.authorUrl
-        }
-        console.log('Successfully loaded Unsplash hero image')
-      } else {
-        throw new Error('Fallback mode')
-      }
-    } else {
-      throw new Error('Function error')
+  // Use a curated set of beautiful dog images from Unsplash
+  // These are high-quality, free-to-use images with proper attribution
+  const dogImages = [
+    {
+      url: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=1920&h=1080&fit=crop&crop=center',
+      author: 'Jamie Street',
+      authorUrl: 'https://unsplash.com/@jamie452'
+    },
+    {
+      url: 'https://images.unsplash.com/photo-1547407139-3c921a71905c?w=1920&h=1080&fit=crop&crop=center',
+      author: 'Alvan Nee',
+      authorUrl: 'https://unsplash.com/@alvannee'
+    },
+    {
+      url: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=1920&h=1080&fit=crop&crop=center',
+      author: 'Karsten Winegeart',
+      authorUrl: 'https://unsplash.com/@karsten116'
+    },
+    {
+      url: 'https://images.unsplash.com/photo-1551717743-49959800b1f6?w=1920&h=1080&fit=crop&crop=center',
+      author: 'Jamie Street',
+      authorUrl: 'https://unsplash.com/@jamie452'
+    },
+    {
+      url: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=1920&h=1080&fit=crop&crop=center',
+      author: 'Karsten Winegeart',
+      authorUrl: 'https://unsplash.com/@karsten116'
     }
+  ]
+
+  try {
+    // Select a random image from the curated set
+    const randomImage = dogImages[Math.floor(Math.random() * dogImages.length)]
+    
+    // Test if the image loads successfully
+    const img = new Image()
+    img.onload = () => {
+      heroImage.value = randomImage.url
+      photoCredit.value = {
+        author: randomImage.author,
+        authorUrl: randomImage.authorUrl
+      }
+      console.log('Successfully loaded curated dog hero image')
+    }
+    img.onerror = () => {
+      throw new Error('Image failed to load')
+    }
+    img.src = randomImage.url
+    
   } catch (error) {
-    console.log('Unsplash image not available, using clean blue gradient')
+    console.log('Curated dog image not available, using clean blue gradient')
     // Fallback to clean blue gradient
     heroImage.value = ''
     photoCredit.value = null
