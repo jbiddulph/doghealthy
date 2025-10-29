@@ -6,9 +6,11 @@ export default defineEventHandler(async (event) => {
     const page = parseInt(query.page as string) || 1
     const pageSize = parseInt(query.pageSize as string) || 12
     
+    const config = useRuntimeConfig()
+    
     const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      config.public.supabaseUrl,
+      config.supabaseServiceRoleKey
     )
 
     // Calculate offset
