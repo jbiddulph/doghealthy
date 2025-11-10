@@ -40,14 +40,13 @@
                     v-else
                     class="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center text-2xl font-bold text-blue-600"
                   >
-                    {{ getInitials(member.fullName || member.email) }}
+                    {{ getInitials(member.fullName) }}
                   </div>
                 </div>
                 <div class="flex-1 min-w-0">
                   <h3 class="text-lg font-semibold text-gray-900 truncate">
                     {{ member.fullName || 'Anonymous Member' }}
                   </h3>
-                  <p class="text-sm text-gray-500 truncate">{{ member.email }}</p>
                   <p class="text-sm text-gray-400 mt-1">
                     {{ formatDate(member.createdAt) }}
                   </p>
@@ -198,7 +197,6 @@ interface Dog {
 
 interface Member {
   id: string
-  email: string
   fullName?: string
   avatarUrl?: string
   createdAt: string
@@ -333,7 +331,7 @@ const formatAge = (birthDate: string) => {
   }
 }
 
-const getInitials = (name: string) => {
+const getInitials = (name?: string) => {
   if (!name) return '?'
   return name
     .split(' ')

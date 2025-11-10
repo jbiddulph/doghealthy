@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
     // Fetch paginated users
     const { data: users, error: usersError } = await supabase
       .from('doghealthy_users')
-      .select('id, email, full_name, avatar_url, created_at')
+      .select('id, full_name, avatar_url, created_at')
       .order('created_at', { ascending: false })
       .range(from, to)
 
@@ -78,7 +78,6 @@ export default defineEventHandler(async (event) => {
     // Combine users with their dogs
     const members = (users || []).map(user => ({
       id: user.id,
-      email: user.email,
       fullName: user.full_name,
       avatarUrl: user.avatar_url,
       createdAt: user.created_at,
