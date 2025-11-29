@@ -90,14 +90,15 @@
 
       <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
         <!-- Health Records -->
-        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-blue-500 overflow-hidden">
-          <div v-if="featureImages.health" class="w-full h-48 mb-4 rounded-lg overflow-hidden">
+        <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-blue-500 overflow-hidden">
+          <div v-if="featureImages.health" class="w-full h-48 overflow-hidden">
             <img :src="featureImages.health.url" :alt="featureImages.health.description || 'Dog health care'" class="w-full h-full object-cover" />
           </div>
-          <div v-else class="w-full h-48 bg-blue-100 rounded-lg mb-4 flex items-center justify-center text-6xl">
+          <div v-else class="w-full h-48 bg-blue-100 flex items-center justify-center text-6xl">
             📋
           </div>
-          <h3 class="text-2xl font-bold text-gray-900 mb-3">Health Records</h3>
+          <div class="p-8">
+            <h3 class="text-2xl font-bold text-gray-900 mb-3">Health Records</h3>
           <p class="text-gray-600 mb-4">
             Keep detailed medical history, diagnoses, and treatments all in one secure place. Never lose important health information again. Regular health tracking helps you spot potential issues early and maintain your dog's wellbeing.
           </p>
@@ -121,17 +122,19 @@
               Treatment notes
             </li>
           </ul>
+          </div>
         </div>
 
         <!-- Vaccinations -->
-        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-purple-500 overflow-hidden">
-          <div v-if="featureImages.vaccination" class="w-full h-48 mb-4 rounded-lg overflow-hidden">
+        <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-purple-500 overflow-hidden">
+          <div v-if="featureImages.vaccination" class="w-full h-48 overflow-hidden">
             <img :src="featureImages.vaccination.url" :alt="featureImages.vaccination.description || 'Dog vaccination'" class="w-full h-full object-cover" />
           </div>
-          <div v-else class="w-full h-48 bg-purple-100 rounded-lg mb-4 flex items-center justify-center text-6xl">
+          <div v-else class="w-full h-48 bg-purple-100 flex items-center justify-center text-6xl">
             💉
           </div>
-          <h3 class="text-2xl font-bold text-gray-900 mb-3">Vaccinations</h3>
+          <div class="p-8">
+            <h3 class="text-2xl font-bold text-gray-900 mb-3">Vaccinations</h3>
           <p class="text-gray-600 mb-4">
             Never miss a vaccination with automatic reminders and complete immunization tracking for your dog. Protect your furry friend from preventable diseases with timely vaccinations and boosters.
           </p>
@@ -155,17 +158,19 @@
               Due date tracking
             </li>
           </ul>
+          </div>
         </div>
 
         <!-- Medications -->
-        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-pink-500 overflow-hidden">
-          <div v-if="featureImages.medication" class="w-full h-48 mb-4 rounded-lg overflow-hidden">
+        <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-pink-500 overflow-hidden">
+          <div v-if="featureImages.medication" class="w-full h-48 overflow-hidden">
             <img :src="featureImages.medication.url" :alt="featureImages.medication.description || 'Dog medication'" class="w-full h-full object-cover" />
           </div>
-          <div v-else class="w-full h-48 bg-pink-100 rounded-lg mb-4 flex items-center justify-center text-6xl">
+          <div v-else class="w-full h-48 bg-pink-100 flex items-center justify-center text-6xl">
             💊
           </div>
-          <h3 class="text-2xl font-bold text-gray-900 mb-3">Medications</h3>
+          <div class="p-8">
+            <h3 class="text-2xl font-bold text-gray-900 mb-3">Medications</h3>
           <p class="text-gray-600 mb-4">
             Manage all medications, dosages, and schedules to ensure your dog gets the right treatment at the right time. Proper medication management is crucial for your dog's recovery and long-term health.
           </p>
@@ -189,17 +194,19 @@
               Refill alerts
             </li>
           </ul>
+          </div>
         </div>
 
         <!-- Appointments -->
-        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-green-500 overflow-hidden">
-          <div v-if="featureImages.appointment" class="w-full h-48 mb-4 rounded-lg overflow-hidden">
+        <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-green-500 overflow-hidden">
+          <div v-if="featureImages.appointment" class="w-full h-48 overflow-hidden">
             <img :src="featureImages.appointment.url" :alt="featureImages.appointment.description || 'Dog at vet appointment'" class="w-full h-full object-cover" />
           </div>
-          <div v-else class="w-full h-48 bg-green-100 rounded-lg mb-4 flex items-center justify-center text-6xl">
+          <div v-else class="w-full h-48 bg-green-100 flex items-center justify-center text-6xl">
             📅
           </div>
-          <h3 class="text-2xl font-bold text-gray-900 mb-3">Appointments</h3>
+          <div class="p-8">
+            <h3 class="text-2xl font-bold text-gray-900 mb-3">Appointments</h3>
           <p class="text-gray-600 mb-4">
             Schedule and track all vet appointments with reminders so you never miss an important checkup. Regular veterinary visits are essential for preventive care and early detection of health issues.
           </p>
@@ -223,17 +230,19 @@
               Visit history
             </li>
           </ul>
+          </div>
         </div>
 
         <!-- Vet Information -->
-        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-red-500 overflow-hidden">
-          <div v-if="featureImages.vet" class="w-full h-48 mb-4 rounded-lg overflow-hidden">
+        <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-red-500 overflow-hidden">
+          <div v-if="featureImages.vet" class="w-full h-48 overflow-hidden">
             <img :src="featureImages.vet.url" :alt="featureImages.vet.description || 'Veterinary clinic'" class="w-full h-full object-cover" />
           </div>
-          <div v-else class="w-full h-48 bg-red-100 rounded-lg mb-4 flex items-center justify-center text-6xl">
+          <div v-else class="w-full h-48 bg-red-100 flex items-center justify-center text-6xl">
             🏥
           </div>
-          <h3 class="text-2xl font-bold text-gray-900 mb-3">Vet Contacts</h3>
+          <div class="p-8">
+            <h3 class="text-2xl font-bold text-gray-900 mb-3">Vet Contacts</h3>
           <p class="text-gray-600 mb-4">
             Store all your vet contact information and emergency numbers for quick access when you need them most. Having your veterinarian's details readily available can be crucial during emergencies.
           </p>
@@ -257,17 +266,19 @@
               Quick call access
             </li>
           </ul>
+          </div>
         </div>
 
         <!-- Food Finder -->
-        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-yellow-500 overflow-hidden">
-          <div v-if="featureImages.food" class="w-full h-48 mb-4 rounded-lg overflow-hidden">
+        <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-yellow-500 overflow-hidden">
+          <div v-if="featureImages.food" class="w-full h-48 overflow-hidden">
             <img :src="featureImages.food.url" :alt="featureImages.food.description || 'Dog food'" class="w-full h-full object-cover" />
           </div>
-          <div v-else class="w-full h-48 bg-yellow-100 rounded-lg mb-4 flex items-center justify-center text-6xl">
+          <div v-else class="w-full h-48 bg-yellow-100 flex items-center justify-center text-6xl">
             🍖
           </div>
-          <h3 class="text-2xl font-bold text-gray-900 mb-3">Dog Food Finder</h3>
+          <div class="p-8">
+            <h3 class="text-2xl font-bold text-gray-900 mb-3">Dog Food Finder</h3>
           <p class="text-gray-600 mb-4">
             Compare dog foods and find the perfect match based on your dog's breed, age, and dietary needs. Proper nutrition is fundamental to your dog's health, energy levels, and overall wellbeing.
           </p>
@@ -291,17 +302,19 @@
               Nutrition analysis
             </li>
           </ul>
+          </div>
         </div>
 
         <!-- Weight Tracking -->
-        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-indigo-500 overflow-hidden">
-          <div v-if="featureImages.weight" class="w-full h-48 mb-4 rounded-lg overflow-hidden">
+        <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-indigo-500 overflow-hidden">
+          <div v-if="featureImages.weight" class="w-full h-48 overflow-hidden">
             <img :src="featureImages.weight.url" :alt="featureImages.weight.description || 'Dog weight tracking'" class="w-full h-full object-cover" />
           </div>
-          <div v-else class="w-full h-48 bg-indigo-100 rounded-lg mb-4 flex items-center justify-center text-6xl">
+          <div v-else class="w-full h-48 bg-indigo-100 flex items-center justify-center text-6xl">
             ⚖️
           </div>
-          <h3 class="text-2xl font-bold text-gray-900 mb-3">Weight Tracking</h3>
+          <div class="p-8">
+            <h3 class="text-2xl font-bold text-gray-900 mb-3">Weight Tracking</h3>
           <p class="text-gray-600 mb-4">
             Monitor your dog's weight over time with visual charts to ensure they stay healthy and fit. Maintaining a healthy weight helps prevent obesity-related health problems and keeps your dog active and happy.
           </p>
@@ -325,6 +338,7 @@
               Trend analysis
             </li>
           </ul>
+          </div>
         </div>
       </div>
     </div>
