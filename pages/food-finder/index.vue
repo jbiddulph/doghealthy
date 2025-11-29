@@ -1,11 +1,13 @@
 <template>
   <div class="min-h-screen bg-gray-50">
     <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-primary to-accent text-dark py-16">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <div class="relative overflow-hidden bg-gradient-to-r from-primary to-accent text-dark py-16">
+      <!-- Background Image -->
+      <div v-if="heroImage" class="absolute inset-0 bg-cover bg-center opacity-20" :style="{ backgroundImage: `url(${heroImage})` }"></div>
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h1 class="text-4xl md:text-5xl font-bold mb-4">🍖 Dog Food Finder</h1>
         <p class="text-xl md:text-2xl text-white mb-8">
-          Find the perfect food for your furry friend
+          Find the perfect food for your furry friend. Proper nutrition is essential for your dog's health, energy, and longevity.
         </p>
         
         <!-- Search Bar -->
@@ -193,7 +195,15 @@
               <div class="flex justify-between items-start mb-2">
                 <div>
                   <p class="text-sm text-gray-500">{{ product.brand }}</p>
-                  <h3 class="text-lg font-semibold text-gray-900">{{ product.name }}</h3>
+                  <a
+                    :href="product.affiliate_link"
+                    @click="trackClick(product)"
+                    target="_blank"
+                    rel="noopener sponsored"
+                    class="text-lg font-semibold text-gray-900 hover:text-primary transition-colors cursor-pointer"
+                  >
+                    {{ product.name }}
+                  </a>
                 </div>
                 <div class="text-right">
                   <div v-if="product.avg_rating > 0" class="flex items-center text-yellow-500">
@@ -271,6 +281,31 @@
 
 <script setup lang="ts">
 const supabase = useSupabase()
+const { fetchImageWithFallback } = useUnsplash()
+
+// Hero image
+const heroImage = ref('')
+const infoImage = ref<{ url: string; description?: string } | null>(null)
+
+onMounted(async () => {
+  try {
+    const image = await fetchImageWithFallback('dog eating food nutrition', { orientation: 'landscape', width: 1920, height: 600 })
+    if (image) {
+      heroImage.value = image.url
+    }
+  } catch (error) {
+    // Silently fail
+  }
+
+  try {
+    const img = await fetchImageWithFallback('healthy dog food bowl', { orientation: 'landscape', width: 800, height: 600 })
+    if (img) {
+      infoImage.value = img
+    }
+  } catch (error) {
+    // Silently fail
+  }
+})
 
 interface DogFoodProduct {
   id: string

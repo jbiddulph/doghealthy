@@ -1,13 +1,71 @@
 <template>
   <div class="min-h-screen bg-gray-50 py-8">
+    <!-- Hero Section -->
+    <div v-if="heroImage" class="relative h-48 bg-cover bg-center mb-8" :style="{ backgroundImage: `url(${heroImage})` }">
+      <div class="absolute inset-0 bg-black opacity-30"></div>
+      <div class="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
+        <div class="text-center w-full">
+          <h1 class="text-4xl font-bold text-white mb-2">🎯 Dog Food Finder Quiz</h1>
+          <p class="text-xl text-white">
+            <span v-if="selectedDog">Find the perfect food for {{ selectedDog.name }}</span>
+            <span v-else>Answer a few questions to find the perfect food for your dog</span>
+          </p>
+        </div>
+      </div>
+    </div>
+    
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-      <!-- Header -->
-      <div class="text-center mb-8">
+      <!-- Header (if no hero image) -->
+      <div v-if="!heroImage" class="text-center mb-8">
         <h1 class="text-4xl font-bold text-gray-900 mb-2">🎯 Dog Food Finder Quiz</h1>
         <p class="text-xl text-gray-600">
           <span v-if="selectedDog">Find the perfect food for {{ selectedDog.name }}</span>
-          <span v-else>Answer a few questions to find the perfect food for your dog</span>
+          <span v-else>Answer a few questions to find the perfect food for your dog. Our personalized quiz considers your dog's breed, age, activity level, and dietary needs to recommend the best nutrition options.</span>
         </p>
+      </div>
+      
+      <!-- Info Section -->
+      <div v-if="infoImage && !quizStarted" class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div class="grid md:grid-cols-2 gap-6 items-center">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-3">Why Take Our Quiz?</h2>
+            <p class="text-gray-600 mb-3">
+              Every dog is unique, and their nutritional needs vary based on multiple factors. Our quiz helps you find the perfect food match by considering:
+            </p>
+            <ul class="space-y-2 text-gray-600">
+              <li class="flex items-start">
+                <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span>Breed size and specific nutritional requirements</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span>Life stage (puppy, adult, or senior)</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span>Activity level and energy needs</span>
+              </li>
+              <li class="flex items-start">
+                <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span>Special dietary requirements and preferences</span>
+              </li>
+            </ul>
+          </div>
+          <div v-if="infoImage" class="rounded-lg overflow-hidden">
+            <img :src="infoImage.url" :alt="infoImage.description || 'Dog food quiz'" class="w-full h-auto object-cover" />
+          </div>
+          <div v-else class="bg-gray-200 rounded-lg h-64 flex items-center justify-center text-6xl">
+            🐕
+          </div>
+        </div>
       </div>
 
       <!-- Quiz Progress -->
@@ -234,6 +292,31 @@
 </template>
 
 <script setup lang="ts">
+const { fetchImageWithFallback } = useUnsplash()
+
+// Images
+const heroImage = ref('')
+const infoImage = ref<{ url: string; description?: string } | null>(null)
+
+onMounted(async () => {
+  try {
+    const image = await fetchImageWithFallback('dog food nutrition quiz', { orientation: 'landscape', width: 1920, height: 400 })
+    if (image) {
+      heroImage.value = image.url
+    }
+  } catch (error) {
+    // Silently fail
+  }
+
+  try {
+    const img = await fetchImageWithFallback('dog eating healthy food', { orientation: 'landscape', width: 600, height: 400 })
+    if (img) {
+      infoImage.value = img
+    }
+  } catch (error) {
+    // Silently fail
+  }
+})
 const supabase = useSupabase()
 const authStore = useAuthStore()
 

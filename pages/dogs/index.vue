@@ -1,8 +1,19 @@
 <template>
   <div class="min-h-screen bg-gray-50">
+    <!-- Hero Section with Image -->
+    <div v-if="heroImage" class="relative h-64 bg-cover bg-center" :style="{ backgroundImage: `url(${heroImage})` }">
+      <div class="absolute inset-0 bg-black opacity-30"></div>
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
+        <div>
+          <h1 class="text-4xl font-bold text-white mb-2">My Dogs</h1>
+          <p class="text-xl text-white">Manage all your furry friends in one place</p>
+        </div>
+      </div>
+    </div>
+    
     <!-- Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div class="flex justify-between items-center mb-8">
+      <div v-if="!heroImage" class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold text-gray-900">My Dogs</h1>
         <div class="flex items-center gap-3">
           <NuxtLink
@@ -33,9 +44,13 @@
       
       <!-- Empty State -->
       <div v-else-if="!dogs || dogs.length === 0" class="text-center py-12">
-        <div class="text-6xl mb-4">🐕</div>
+        <div v-if="emptyStateImage" class="mb-6">
+          <img :src="emptyStateImage.url" :alt="emptyStateImage.description || 'Happy dog'" class="w-64 h-64 mx-auto rounded-full object-cover" />
+        </div>
+        <div v-else class="text-6xl mb-4">🐕</div>
         <h2 class="text-2xl font-semibold text-gray-900 mb-2">No dogs yet</h2>
-        <p class="text-gray-600 mb-6">Start by adding your first furry friend!</p>
+        <p class="text-gray-600 mb-4">Start by adding your first furry friend! Tracking your dog's health information helps ensure they live a long, happy, and healthy life.</p>
+        <p class="text-sm text-gray-500 mb-6">You can track vaccinations, medications, appointments, health records, and more for each of your dogs.</p>
         <NuxtLink
           to="/dogs/new"
           class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
@@ -96,6 +111,32 @@
 <script setup lang="ts">
 definePageMeta({
   middleware: 'auth'
+})
+
+const { fetchImageWithFallback } = useUnsplash()
+
+// Images
+const heroImage = ref('')
+const emptyStateImage = ref<{ url: string; description?: string } | null>(null)
+
+onMounted(async () => {
+  try {
+    const image = await fetchImageWithFallback('happy dog owner', { orientation: 'landscape', width: 1920, height: 600 })
+    if (image) {
+      heroImage.value = image.url
+    }
+  } catch (error) {
+    // Silently fail
+  }
+
+  try {
+    const img = await fetchImageWithFallback('cute dog puppy', { orientation: 'portrait', width: 400, height: 400 })
+    if (img) {
+      emptyStateImage.value = img
+    }
+  } catch (error) {
+    // Silently fail
+  }
 })
 
 interface Dog {

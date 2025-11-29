@@ -1,10 +1,39 @@
 <template>
   <div class="min-h-screen bg-gray-50">
+    <!-- Hero Section -->
+    <div v-if="heroImage" class="relative h-64 bg-cover bg-center" :style="{ backgroundImage: `url(${heroImage})` }">
+      <div class="absolute inset-0 bg-black opacity-30"></div>
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
+        <div>
+          <h1 class="text-4xl font-bold text-white mb-2">Community Members</h1>
+          <p class="text-xl text-white">Discover other dog owners and their furry friends</p>
+        </div>
+      </div>
+    </div>
+    
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <!-- Header -->
-      <div class="mb-8">
+      <!-- Header (if no hero image) -->
+      <div v-if="!heroImage" class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900 mb-2">Community Members</h1>
-        <p class="text-gray-600">Discover other dog owners and their furry friends</p>
+        <p class="text-gray-600">Discover other dog owners and their furry friends. Connect with fellow dog lovers and share experiences about caring for your pets.</p>
+      </div>
+      
+      <!-- Info Section -->
+      <div v-if="infoImage" class="bg-white rounded-lg shadow-md p-8 mb-8">
+        <div class="grid md:grid-cols-2 gap-8 items-center">
+          <div v-if="infoImage" class="rounded-lg overflow-hidden">
+            <img :src="infoImage.url" :alt="infoImage.description || 'Dog community'" class="w-full h-auto object-cover" />
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Join Our Dog Lovers Community</h2>
+            <p class="text-gray-600 mb-4">
+              Our community is made up of thousands of dog owners who are passionate about their pets' health and wellbeing. Browse member profiles to see how others are caring for their dogs, discover new breeds, and get inspired by their stories.
+            </p>
+            <p class="text-gray-600">
+              Whether you're a first-time dog owner or have years of experience, connecting with other members can provide valuable insights, tips, and support for your dog care journey.
+            </p>
+          </div>
+        </div>
       </div>
 
       <!-- Loading State -->
@@ -228,6 +257,36 @@ useHead({
 
 const route = useRoute()
 const router = useRouter()
+const { fetchImageWithFallback } = useUnsplash()
+
+// Images
+const heroImage = ref('')
+const infoImage = ref<{ url: string; description?: string } | null>(null)
+
+onMounted(async () => {
+  // Load images
+  try {
+    const image = await fetchImageWithFallback('dog community group', { orientation: 'landscape', width: 1920, height: 600 })
+    if (image) {
+      heroImage.value = image.url
+    }
+  } catch (error) {
+    // Silently fail
+  }
+
+  try {
+    const img = await fetchImageWithFallback('dogs playing together', { orientation: 'landscape', width: 800, height: 600 })
+    if (img) {
+      infoImage.value = img
+    }
+  } catch (error) {
+    // Silently fail
+  }
+
+  // Load members
+  const page = parseInt(route.query.page as string) || 1
+  fetchMembers(page)
+})
 
 const members = ref<Member[]>([])
 const pagination = ref<Pagination>({
@@ -340,10 +399,5 @@ const getInitials = (name?: string) => {
     .toUpperCase()
     .slice(0, 2)
 }
-
-onMounted(() => {
-  const page = parseInt(route.query.page as string) || 1
-  fetchMembers(page)
-})
 </script>
 

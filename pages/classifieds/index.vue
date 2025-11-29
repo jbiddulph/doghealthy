@@ -1,11 +1,22 @@
 <template>
   <div class="container mx-auto px-4 py-8">
+    <!-- Hero Section -->
+    <div v-if="heroImage" class="relative h-64 bg-cover bg-center mb-8 rounded-lg overflow-hidden" :style="{ backgroundImage: `url(${heroImage})` }">
+      <div class="absolute inset-0 bg-black opacity-40"></div>
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
+        <div>
+          <h1 class="text-4xl font-bold text-white mb-2">Dog Classifieds</h1>
+          <p class="text-secondary text-xl text-white">Find your perfect companion from trusted breeders</p>
+        </div>
+      </div>
+    </div>
+    
     <!-- Header -->
     <div class="mb-8">
       <div class="flex justify-between items-start mb-4">
-        <div>
+        <div v-if="!heroImage">
           <h1 class="text-4xl font-bold text-dark mb-2">Dog Classifieds</h1>
-          <p class="text-secondary text-lg">Find your perfect companion from trusted breeders</p>
+          <p class="text-secondary text-lg">Find your perfect companion from trusted breeders. Browse listings from responsible breeders and find your new best friend.</p>
         </div>
         <div v-if="authStore.isAuthenticated">
           <NuxtLink 
@@ -61,6 +72,47 @@
       </div>
     </div>
 
+    <!-- Info Section -->
+    <div v-if="infoImage && listings.length > 0" class="bg-white rounded-lg shadow-md p-6 mb-8">
+      <div class="grid md:grid-cols-2 gap-6 items-center">
+        <div v-if="infoImage" class="rounded-lg overflow-hidden">
+          <img :src="infoImage.url" :alt="infoImage.description || 'Dog classifieds'" class="w-full h-auto object-cover" />
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold text-dark mb-3">Finding Your Perfect Dog</h2>
+          <p class="text-secondary mb-3">
+            When looking for a new dog, it's important to find a responsible breeder who prioritizes the health and wellbeing of their dogs. Look for breeders who:
+          </p>
+          <ul class="space-y-2 text-secondary">
+            <li class="flex items-start">
+              <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              <span>Provide health certificates and genetic testing</span>
+            </li>
+            <li class="flex items-start">
+              <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              <span>Allow you to meet the puppy's parents</span>
+            </li>
+            <li class="flex items-start">
+              <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              <span>Offer ongoing support and advice</span>
+            </li>
+            <li class="flex items-start">
+              <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              <span>Have clean, safe breeding facilities</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
     <!-- Listings Grid -->
     <div v-if="loading" class="text-center py-12">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
@@ -68,9 +120,13 @@
     </div>
 
     <div v-else-if="listings.length === 0" class="text-center py-12">
-      <div class="text-6xl mb-4">🐕</div>
+      <div v-if="emptyStateImage" class="mb-6">
+        <img :src="emptyStateImage.url" :alt="emptyStateImage.description || 'Dog'" class="w-48 h-48 mx-auto rounded-full object-cover" />
+      </div>
+      <div v-else class="text-6xl mb-4">🐕</div>
       <h3 class="text-xl font-semibold text-dark mb-2">No listings found</h3>
-      <p class="text-secondary">Try adjusting your filters or check back later for new listings.</p>
+      <p class="text-secondary mb-2">Try adjusting your filters or check back later for new listings.</p>
+      <p class="text-sm text-gray-500">Responsible breeders care deeply about finding the right homes for their puppies. Take your time to find the perfect match for your family.</p>
     </div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -135,6 +191,41 @@
 </template>
 
 <script setup lang="ts">
+const { fetchImageWithFallback } = useUnsplash()
+
+// Images
+const heroImage = ref('')
+const infoImage = ref<{ url: string; description?: string } | null>(null)
+const emptyStateImage = ref<{ url: string; description?: string } | null>(null)
+
+onMounted(async () => {
+  try {
+    const image = await fetchImageWithFallback('puppy dog cute', { orientation: 'landscape', width: 1920, height: 600 })
+    if (image) {
+      heroImage.value = image.url
+    }
+  } catch (error) {
+    // Silently fail
+  }
+
+  try {
+    const img = await fetchImageWithFallback('dog breeder puppies', { orientation: 'landscape', width: 800, height: 600 })
+    if (img) {
+      infoImage.value = img
+    }
+  } catch (error) {
+    // Silently fail
+  }
+
+  try {
+    const emptyImg = await fetchImageWithFallback('cute dog', { orientation: 'portrait', width: 400, height: 400 })
+    if (emptyImg) {
+      emptyStateImage.value = emptyImg
+    }
+  } catch (error) {
+    // Silently fail
+  }
+})
 import { ref, onMounted, computed, watch } from 'vue'
 import { useSupabase } from '~/composables/useSupabase'
 import { useAuthStore } from '~/stores/auth'

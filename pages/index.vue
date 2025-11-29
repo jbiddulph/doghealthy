@@ -90,13 +90,16 @@
 
       <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
         <!-- Health Records -->
-        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-blue-500">
-          <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-3xl mb-4">
+        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-blue-500 overflow-hidden">
+          <div v-if="featureImages.health" class="w-full h-48 mb-4 rounded-lg overflow-hidden">
+            <img :src="featureImages.health.url" :alt="featureImages.health.description || 'Dog health care'" class="w-full h-full object-cover" />
+          </div>
+          <div v-else class="w-full h-48 bg-blue-100 rounded-lg mb-4 flex items-center justify-center text-6xl">
             📋
           </div>
           <h3 class="text-2xl font-bold text-gray-900 mb-3">Health Records</h3>
           <p class="text-gray-600 mb-4">
-            Keep detailed medical history, diagnoses, and treatments all in one secure place. Never lose important health information again.
+            Keep detailed medical history, diagnoses, and treatments all in one secure place. Never lose important health information again. Regular health tracking helps you spot potential issues early and maintain your dog's wellbeing.
           </p>
           <ul class="space-y-2 text-sm text-gray-600">
             <li class="flex items-start">
@@ -121,13 +124,16 @@
         </div>
 
         <!-- Vaccinations -->
-        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-purple-500">
-          <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center text-3xl mb-4">
+        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-purple-500 overflow-hidden">
+          <div v-if="featureImages.vaccination" class="w-full h-48 mb-4 rounded-lg overflow-hidden">
+            <img :src="featureImages.vaccination.url" :alt="featureImages.vaccination.description || 'Dog vaccination'" class="w-full h-full object-cover" />
+          </div>
+          <div v-else class="w-full h-48 bg-purple-100 rounded-lg mb-4 flex items-center justify-center text-6xl">
             💉
           </div>
           <h3 class="text-2xl font-bold text-gray-900 mb-3">Vaccinations</h3>
           <p class="text-gray-600 mb-4">
-            Never miss a vaccination with automatic reminders and complete immunization tracking for your dog.
+            Never miss a vaccination with automatic reminders and complete immunization tracking for your dog. Protect your furry friend from preventable diseases with timely vaccinations and boosters.
           </p>
           <ul class="space-y-2 text-sm text-gray-600">
             <li class="flex items-start">
@@ -152,13 +158,16 @@
         </div>
 
         <!-- Medications -->
-        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-pink-500">
-          <div class="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center text-3xl mb-4">
+        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-pink-500 overflow-hidden">
+          <div v-if="featureImages.medication" class="w-full h-48 mb-4 rounded-lg overflow-hidden">
+            <img :src="featureImages.medication.url" :alt="featureImages.medication.description || 'Dog medication'" class="w-full h-full object-cover" />
+          </div>
+          <div v-else class="w-full h-48 bg-pink-100 rounded-lg mb-4 flex items-center justify-center text-6xl">
             💊
           </div>
           <h3 class="text-2xl font-bold text-gray-900 mb-3">Medications</h3>
           <p class="text-gray-600 mb-4">
-            Manage all medications, dosages, and schedules to ensure your dog gets the right treatment at the right time.
+            Manage all medications, dosages, and schedules to ensure your dog gets the right treatment at the right time. Proper medication management is crucial for your dog's recovery and long-term health.
           </p>
           <ul class="space-y-2 text-sm text-gray-600">
             <li class="flex items-start">
@@ -183,13 +192,16 @@
         </div>
 
         <!-- Appointments -->
-        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-green-500">
-          <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-3xl mb-4">
+        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-green-500 overflow-hidden">
+          <div v-if="featureImages.appointment" class="w-full h-48 mb-4 rounded-lg overflow-hidden">
+            <img :src="featureImages.appointment.url" :alt="featureImages.appointment.description || 'Dog at vet appointment'" class="w-full h-full object-cover" />
+          </div>
+          <div v-else class="w-full h-48 bg-green-100 rounded-lg mb-4 flex items-center justify-center text-6xl">
             📅
           </div>
           <h3 class="text-2xl font-bold text-gray-900 mb-3">Appointments</h3>
           <p class="text-gray-600 mb-4">
-            Schedule and track all vet appointments with reminders so you never miss an important checkup.
+            Schedule and track all vet appointments with reminders so you never miss an important checkup. Regular veterinary visits are essential for preventive care and early detection of health issues.
           </p>
           <ul class="space-y-2 text-sm text-gray-600">
             <li class="flex items-start">
@@ -214,13 +226,16 @@
         </div>
 
         <!-- Vet Information -->
-        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-red-500">
-          <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-3xl mb-4">
+        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-red-500 overflow-hidden">
+          <div v-if="featureImages.vet" class="w-full h-48 mb-4 rounded-lg overflow-hidden">
+            <img :src="featureImages.vet.url" :alt="featureImages.vet.description || 'Veterinary clinic'" class="w-full h-full object-cover" />
+          </div>
+          <div v-else class="w-full h-48 bg-red-100 rounded-lg mb-4 flex items-center justify-center text-6xl">
             🏥
           </div>
           <h3 class="text-2xl font-bold text-gray-900 mb-3">Vet Contacts</h3>
           <p class="text-gray-600 mb-4">
-            Store all your vet contact information and emergency numbers for quick access when you need them most.
+            Store all your vet contact information and emergency numbers for quick access when you need them most. Having your veterinarian's details readily available can be crucial during emergencies.
           </p>
           <ul class="space-y-2 text-sm text-gray-600">
             <li class="flex items-start">
@@ -245,13 +260,16 @@
         </div>
 
         <!-- Food Finder -->
-        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-yellow-500">
-          <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center text-3xl mb-4">
+        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-yellow-500 overflow-hidden">
+          <div v-if="featureImages.food" class="w-full h-48 mb-4 rounded-lg overflow-hidden">
+            <img :src="featureImages.food.url" :alt="featureImages.food.description || 'Dog food'" class="w-full h-full object-cover" />
+          </div>
+          <div v-else class="w-full h-48 bg-yellow-100 rounded-lg mb-4 flex items-center justify-center text-6xl">
             🍖
           </div>
           <h3 class="text-2xl font-bold text-gray-900 mb-3">Dog Food Finder</h3>
           <p class="text-gray-600 mb-4">
-            Compare dog foods and find the perfect match based on your dog's breed, age, and dietary needs.
+            Compare dog foods and find the perfect match based on your dog's breed, age, and dietary needs. Proper nutrition is fundamental to your dog's health, energy levels, and overall wellbeing.
           </p>
           <ul class="space-y-2 text-sm text-gray-600">
             <li class="flex items-start">
@@ -276,13 +294,16 @@
         </div>
 
         <!-- Weight Tracking -->
-        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-indigo-500">
-          <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center text-3xl mb-4">
+        <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-indigo-500 overflow-hidden">
+          <div v-if="featureImages.weight" class="w-full h-48 mb-4 rounded-lg overflow-hidden">
+            <img :src="featureImages.weight.url" :alt="featureImages.weight.description || 'Dog weight tracking'" class="w-full h-full object-cover" />
+          </div>
+          <div v-else class="w-full h-48 bg-indigo-100 rounded-lg mb-4 flex items-center justify-center text-6xl">
             ⚖️
           </div>
           <h3 class="text-2xl font-bold text-gray-900 mb-3">Weight Tracking</h3>
           <p class="text-gray-600 mb-4">
-            Monitor your dog's weight over time with visual charts to ensure they stay healthy and fit.
+            Monitor your dog's weight over time with visual charts to ensure they stay healthy and fit. Maintaining a healthy weight helps prevent obesity-related health problems and keeps your dog active and happy.
           </p>
           <ul class="space-y-2 text-sm text-gray-600">
             <li class="flex items-start">
@@ -471,57 +492,55 @@
 
 <script setup lang="ts">
 const authStore = useAuthStore()
+const { fetchImageWithFallback } = useUnsplash()
 
 // Fetch hero image from Unsplash
 const heroImage = ref('')
 const photoCredit = ref<{ author: string; authorUrl: string } | null>(null)
 
-onMounted(async () => {
-  // Try to load random dog image using your actual API key
-  try {
-    const config = useRuntimeConfig()
-    const accessKey = config.public.unsplashAccessKey
-    
-    if (!accessKey) {
-      throw new Error('No Unsplash access key configured')
-    }
-    
-    const response = await fetch(
-      'https://api.unsplash.com/photos/random?query=dog&orientation=landscape&w=1920&h=1080',
-      {
-        headers: {
-          'Authorization': `Client-ID ${accessKey}`,
-          'Accept-Version': 'v1'
-        }
-      }
-    )
+// Feature images
+const featureImages = ref<Record<string, { url: string; description?: string; author?: string; authorUrl?: string }>>({})
 
-    if (response.ok) {
-      const data = await response.json()
-      
-      // Test if the image loads successfully
-      const img = new Image()
-      img.onload = () => {
-        heroImage.value = data.urls.regular
-        photoCredit.value = {
-          author: data.user.name,
-          authorUrl: data.user.links.html
-        }
-        console.log('Successfully loaded random dog image from Unsplash API')
+onMounted(async () => {
+  // Load hero image
+  try {
+    const hero = await fetchImageWithFallback('happy dog', { orientation: 'landscape', width: 1920, height: 1080 })
+    if (hero) {
+      heroImage.value = hero.url
+      photoCredit.value = {
+        author: hero.author,
+        authorUrl: hero.authorUrl
       }
-      img.onerror = () => {
-        throw new Error('Image failed to load')
-      }
-      img.src = data.urls.regular
-      
-    } else {
-      throw new Error('Unsplash API error')
     }
   } catch (error) {
-    console.log('Unsplash API not available, using clean blue gradient')
-    // Fallback to clean blue gradient
-    heroImage.value = ''
-    photoCredit.value = null
+    console.log('Hero image not available')
+  }
+
+  // Load feature images
+  const featureQueries = {
+    health: 'dog health checkup veterinary',
+    vaccination: 'dog vaccination veterinary care',
+    medication: 'dog medication pills',
+    appointment: 'dog at veterinarian clinic',
+    vet: 'veterinary clinic dog',
+    food: 'dog food bowl nutrition',
+    weight: 'dog exercise healthy weight'
+  }
+
+  for (const [key, query] of Object.entries(featureQueries)) {
+    try {
+      const image = await fetchImageWithFallback(query, { orientation: 'landscape', width: 800, height: 600 })
+      if (image) {
+        featureImages.value[key] = {
+          url: image.url,
+          description: image.description,
+          author: image.author,
+          authorUrl: image.authorUrl
+        }
+      }
+    } catch (error) {
+      // Silently fail for feature images
+    }
   }
 })
 
