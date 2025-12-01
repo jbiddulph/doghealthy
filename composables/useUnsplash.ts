@@ -9,8 +9,17 @@ export const useUnsplash = () => {
     count?: number
   } = {}) => {
     if (!accessKey) {
-      console.warn('Unsplash access key not configured')
+      console.warn('Unsplash access key not configured. Check that UNSPLASH_ACCESS_KEY is set in your environment variables.')
       return null
+    }
+
+    // Log if we're making too many requests (for debugging)
+    if (typeof window !== 'undefined') {
+      const requestCount = parseInt(sessionStorage.getItem('unsplash_request_count') || '0')
+      if (requestCount > 40) {
+        console.warn('High number of Unsplash requests detected. You may be approaching rate limits.')
+      }
+      sessionStorage.setItem('unsplash_request_count', (requestCount + 1).toString())
     }
 
     try {
@@ -33,7 +42,17 @@ export const useUnsplash = () => {
       )
 
       if (!response.ok) {
-        throw new Error('Unsplash API error')
+        const errorText = await response.text().catch(() => 'Unknown error')
+        console.error(`Unsplash API error (${response.status}):`, errorText)
+        
+        if (response.status === 403) {
+          console.warn('Unsplash API returned 403 Forbidden. This could mean:')
+          console.warn('1. Rate limit exceeded (50 requests/hour for demo apps)')
+          console.warn('2. Invalid or expired API key')
+          console.warn('3. API key not properly configured in production')
+        }
+        
+        throw new Error(`Unsplash API error: ${response.status}`)
       }
 
       const data = await response.json()
