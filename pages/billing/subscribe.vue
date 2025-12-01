@@ -121,6 +121,11 @@ const startSubscription = async (plan: PlanType) => {
       throw new Error('Stripe Payment Link URL not configured yet. Please set it in pages/billing/subscribe.vue.')
     }
 
+    // Optimistically mark that the user has started a subscription
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('doghealthy_has_subscription', 'true')
+    }
+
     window.location.href = url
   } catch (err: any) {
     console.error('Error starting subscription:', err)
