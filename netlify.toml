@@ -1,7 +1,7 @@
+# netlify.toml
 [build]
   command = "npm run build"
-  publish = ".netlify/publish"
-  
+  publish = "dist"
 [build.environment]
   NODE_VERSION = "22"
   # Configure secrets scanning to omit output directory and README
