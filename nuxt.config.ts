@@ -5,9 +5,9 @@ export default defineNuxtConfig({
   ssr: true,
   
   nitro: {
-    // Use a node server in development so /api routes work locally.
-    // In production on Netlify, use the netlify preset so /api routes are deployed as serverless functions.
-    preset: process.env.NODE_ENV === 'production' ? 'netlify' : 'node'
+    // Use the Netlify static preset so we can generate a static site (npm run generate -> dist)
+    // This avoids serverless function output and matches your current dist-based deploy.
+    preset: 'netlify-static'
   },
   
   modules: [
