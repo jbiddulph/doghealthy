@@ -86,56 +86,42 @@ definePageMeta({
   middleware: 'auth'
 })
 
-const router = useRouter()
-const authStore = useAuthStore()
-const supabase = useSupabase()
-
 const loading = ref(false)
 const error = ref('')
 
 type PlanType = 'monthly' | 'yearly'
 
-const checkExistingSubscription = async () => {
-  if (!authStore.userId) return null
+const router = useRouter()
+const route = useRoute()
 
-  const { data, error } = await supabase
-    .from('doghealthy_users')
-    .select('stripe_subscription_id, subscription_status')
-    .eq('id', authStore.userId)
-    .single()
-
-  if (error) {
-    console.error('Error checking subscription:', error)
-    return null
+// If we've just returned from a successful payment, mark subscription and send to add-dog page
+onMounted(() => {
+  if (route.query.subscription === 'success') {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('doghealthy_has_subscription', 'true')
+    }
+    router.replace('/dogs/new')
   }
-
-  return data
-}
+})
 
 const startSubscription = async (plan: PlanType) => {
   try {
     loading.value = true
     error.value = ''
 
-    // If user already has an active subscription, just send them to add a dog
-    const profile = await checkExistingSubscription()
-    if (profile?.stripe_subscription_id && profile?.subscription_status === 'active') {
-      router.push('/dogs/new')
-      return
+    // Stripe payment links created in your Stripe dashboard.
+    // Replace these placeholder URLs with your real Payment Link URLs.
+    const paymentLinks: Record<PlanType, string> = {
+      monthly: 'https://buy.stripe.com/YOUR_MONTHLY_PAYMENT_LINK',
+      yearly: 'https://buy.stripe.com/YOUR_YEARLY_PAYMENT_LINK'
     }
 
-    const response = await $fetch<{ url: string }>('/api/billing/create-subscription-checkout', {
-      method: 'POST',
-      body: {
-        plan
-      }
-    })
-
-    if (response?.url) {
-      window.location.href = response.url
-    } else {
-      throw new Error('No checkout URL received from server')
+    const url = paymentLinks[plan]
+    if (!url || url.includes('YOUR_')) {
+      throw new Error('Stripe Payment Link URL not configured yet. Please set it in pages/billing/subscribe.vue.')
     }
+
+    window.location.href = url
   } catch (err: any) {
     console.error('Error starting subscription:', err)
     error.value = err?.data?.statusMessage || err?.message || 'Unable to start subscription. Please try again.'

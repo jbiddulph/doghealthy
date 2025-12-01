@@ -1,8 +1,8 @@
 # netlify.toml
 [build]
-  # Full Nuxt build for Netlify preset (serverless functions + static assets)
-  command = "npm run build"
-  publish = ".output/public"
+  # Static Nuxt generate build. Netlify will serve from dist.
+  command = "npm run generate"
+  publish = "dist"
 [build.environment]
   NODE_VERSION = "22"
   # Configure secrets scanning to omit output directory and README

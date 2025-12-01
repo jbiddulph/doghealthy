@@ -263,13 +263,15 @@ const handleAddDogClick = async () => {
       return
     }
 
-    // If user has no dogs yet, take them to the subscription page first
-    if (!dogs.value || dogs.value.length === 0) {
+    // Check simple client-side flag to see if user has an active subscription
+    const hasSubscription =
+      typeof window !== 'undefined' && localStorage.getItem('doghealthy_has_subscription') === 'true'
+
+    if (!hasSubscription) {
       router.push('/billing/subscribe')
       return
     }
 
-    // Otherwise allow them to add another dog
     router.push('/dogs/new')
   } catch (err) {
     console.error('Error handling Add Dog click:', err)
