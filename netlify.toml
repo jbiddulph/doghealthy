@@ -1,7 +1,7 @@
 [build]
   # Use full Nitro build so that /api routes (Nitro + Netlify preset) are generated as Netlify functions
   command = "npm run build"
-  publish = ".netlify/builds"
+  publish = ".output/public"
 
 [build.environment]
   NODE_VERSION = "22"
