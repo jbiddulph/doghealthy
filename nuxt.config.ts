@@ -5,9 +5,9 @@ export default defineNuxtConfig({
   ssr: true,
   
   nitro: {
-    // Use the Netlify static preset so we can generate a static site (npm run generate -> dist)
-    // This avoids serverless function output and matches your current dist-based deploy.
-    preset: 'netlify-static'
+    // Use a node server in development so /api routes work locally.
+    // In production on Netlify, use the netlify preset so /api routes are deployed as serverless functions.
+    preset: process.env.NODE_ENV === 'production' ? 'netlify' : 'node'
   },
   
   modules: [
@@ -23,7 +23,7 @@ export default defineNuxtConfig({
       script: [
         { src: 'https://www.googletagmanager.com/gtag/js?id=G-EMYKQNQ3FJ', async: true },
         {
-          children: `window.dataLayer = window.dataLayer || [];\nfunction gtag(){dataLayer.push(arguments);}\ngtag('js', new Date());\n\ngtag('config', 'G-EMYKQNQ3FJ');`
+          innerHTML: `window.dataLayer = window.dataLayer || [];\nfunction gtag(){dataLayer.push(arguments);}\ngtag('js', new Date());\n\ngtag('config', 'G-EMYKQNQ3FJ');`
         },
         { 
           src: 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1907813559893319', 
