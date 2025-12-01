@@ -1,8 +1,7 @@
 [build]
-  # Use full Nitro build so that /api routes (Nitro + Netlify preset) are generated as Netlify functions
   command = "npm run build"
-  publish = ".output/public"
-
+  publish = ".netlify/publish"
+  
 [build.environment]
   NODE_VERSION = "22"
   # Configure secrets scanning to omit output directory and README
