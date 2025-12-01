@@ -82,8 +82,15 @@ export default defineEventHandler(async (event) => {
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   try {
-    const { listing_id, upgrade_type } = session.metadata || {}
-    
+    const { listing_id, upgrade_type, subscription_type, user_id } = session.metadata || {}
+
+    // Handle user subscription checkout
+    if (subscription_type && user_id) {
+      await handleUserSubscriptionSessionCompleted(session, subscription_type, user_id)
+      return
+    }
+
+    // Handle classifieds listing upgrade checkout
     if (!listing_id || !upgrade_type) {
       console.error('Missing metadata in checkout session:', session.id)
       return
@@ -134,5 +141,45 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
   } catch (error) {
     console.error('Error handling checkout session completed:', error)
+  }
+}
+
+async function handleUserSubscriptionSessionCompleted(
+  session: Stripe.Checkout.Session,
+  subscriptionType: string,
+  userId: string
+) {
+  try {
+    if (!session.subscription) {
+      console.error('No subscription on session for user subscription:', session.id)
+      return
+    }
+
+    const stripe = getStripeInstance()
+    const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+
+    const currentPeriodEnd = subscription.current_period_end
+      ? new Date(subscription.current_period_end * 1000).toISOString()
+      : null
+
+    const { error } = await supabase
+      .from('doghealthy_users')
+      .update({
+        stripe_customer_id: session.customer as string | null,
+        stripe_subscription_id: subscription.id,
+        subscription_status: subscription.status,
+        subscription_plan: subscriptionType,
+        subscription_current_period_end: currentPeriodEnd
+      })
+      .eq('id', userId)
+
+    if (error) {
+      console.error('Error updating user subscription after payment:', error)
+      return
+    }
+
+    console.log(`Successfully created/updated subscription for user ${userId} with plan ${subscriptionType}`)
+  } catch (error) {
+    console.error('Error handling user subscription checkout session completed:', error)
   }
 }

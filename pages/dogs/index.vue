@@ -3,10 +3,25 @@
     <!-- Hero Section with Image -->
     <div v-if="heroImage" class="relative h-64 bg-cover bg-center" :style="{ backgroundImage: `url(${heroImage})` }">
       <div class="absolute inset-0 bg-black opacity-30"></div>
-      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
         <div>
           <h1 class="text-4xl font-bold text-white mb-2">My Dogs</h1>
           <p class="text-xl text-white">Manage all your furry friends in one place</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <NuxtLink
+            to="/vets"
+            class="hidden sm:inline-flex bg-gray-100/90 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold transition-colors"
+          >
+            🏥 Vets
+          </NuxtLink>
+          <button
+            type="button"
+            @click="handleAddDogClick"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+          >
+            + Add Dog
+          </button>
         </div>
       </div>
     </div>
@@ -22,12 +37,13 @@
           >
             🏥 Vets
           </NuxtLink>
-          <NuxtLink
-            to="/dogs/new"
+          <button
+            type="button"
+            @click="handleAddDogClick"
             class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
           >
             + Add Dog
-          </NuxtLink>
+          </button>
         </div>
       </div>
       
@@ -51,12 +67,13 @@
         <h2 class="text-2xl font-semibold text-gray-900 mb-2">No dogs yet</h2>
         <p class="text-gray-600 mb-4">Start by adding your first furry friend! Tracking your dog's health information helps ensure they live a long, happy, and healthy life.</p>
         <p class="text-sm text-gray-500 mb-6">You can track vaccinations, medications, appointments, health records, and more for each of your dogs.</p>
-        <NuxtLink
-          to="/dogs/new"
+        <button
+          type="button"
+          @click="handleAddDogClick"
           class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
         >
           Add Your First Dog
-        </NuxtLink>
+        </button>
       </div>
       
       <!-- Dogs Grid -->
@@ -234,6 +251,29 @@ const formatAge = (birthDate: string) => {
     return months < 0 ? `${years - 1} years old` : `${years} years old`
   } else {
     return months > 0 ? `${months} months old` : 'Less than a month old'
+  }
+}
+
+const handleAddDogClick = async () => {
+  try {
+    await waitForAuth()
+
+    if (!authStore.isAuthenticated || !authStore.userId) {
+      router.push('/auth/login')
+      return
+    }
+
+    // If user has no dogs yet, take them to the subscription page first
+    if (!dogs.value || dogs.value.length === 0) {
+      router.push('/billing/subscribe')
+      return
+    }
+
+    // Otherwise allow them to add another dog
+    router.push('/dogs/new')
+  } catch (err) {
+    console.error('Error handling Add Dog click:', err)
+    router.push('/dogs/new')
   }
 }
 
