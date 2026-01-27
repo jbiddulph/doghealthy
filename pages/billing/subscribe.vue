@@ -109,16 +109,13 @@ const startSubscription = async (plan: PlanType) => {
     loading.value = true
     error.value = ''
 
-    // Stripe payment links created in your Stripe dashboard.
-    // Replace these placeholder URLs with your real Payment Link URLs.
-    const paymentLinks: Record<PlanType, string> = {
-      monthly: 'https://buy.stripe.com/test_fZu9AV66C9OLbcl287ds400',
-      yearly: 'https://buy.stripe.com/test_4gM8wReD8f951BL3cbds401'
-    }
+    const { url } = await $fetch('/api/billing/create-subscription-checkout', {
+      method: 'POST',
+      body: { plan }
+    })
 
-    const url = paymentLinks[plan]
-    if (!url || url.includes('YOUR_')) {
-      throw new Error('Stripe Payment Link URL not configured yet. Please set it in pages/billing/subscribe.vue.')
+    if (!url) {
+      throw new Error('Stripe checkout URL not returned. Please try again.')
     }
 
     // Optimistically mark that the user has started a subscription
@@ -134,5 +131,4 @@ const startSubscription = async (plan: PlanType) => {
   }
 }
 </script>
-
 
