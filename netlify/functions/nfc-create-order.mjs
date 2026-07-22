@@ -7,6 +7,8 @@ const NFC_API_BASE = (
   'https://nfc-me-a3a3437da95d.herokuapp.com/api/v1'
 ).replace(/\/$/, '')
 const NFC_API_KEY = process.env.NFC_ME_API_KEY
+// Must match an active product SKU in NFC Me (see GET /api/v1/products/)
+const NFC_PRODUCT_SKU = (process.env.NFC_ME_PRODUCT_SKU || 'DOG-NFC-TAG').toUpperCase()
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -94,34 +96,33 @@ export async function handler(event) {
 
     const orderId = crypto.randomUUID()
     const profileBase = PUBLIC_BASE_URL.replace(/\/$/, '')
+    const profileLines = dogs.map(
+      (dog) => `${dog.name}: ${profileBase}/p/${dog.id}`
+    )
 
+    // Payload shape from NFC Me docs (POST /api/v1/orders/)
     const nfcPayload = {
-      source: 'doghealthy',
-      external_id: orderId,
-      customer: {
-        id: user.id,
-        name: shipping.name,
-        email: shipping.email,
-        phone: shipping.phone || null
-      },
+      external_reference: orderId,
+      items: [
+        {
+          sku: NFC_PRODUCT_SKU,
+          quantity: dogs.length
+        }
+      ],
       shipping: {
         name: shipping.name,
         line1: shipping.line1,
         line2: shipping.line2 || null,
         city: shipping.city,
-        postcode: shipping.postcode,
+        postal_code: shipping.postcode,
         country: shipping.country || 'GB'
       },
-      tags: dogs.map((dog) => ({
-        pet_id: dog.id,
-        pet_name: dog.name,
-        breed: dog.breed || null,
-        gender: dog.gender || null,
-        color: dog.color || null,
-        microchip_number: dog.microchip_number || null,
-        photo_url: dog.photo_url || null,
-        profile_url: `${profileBase}/p/${dog.id}`
-      }))
+      notes: [
+        `DogHealthy order for ${shipping.email}`,
+        `Phone: ${shipping.phone || 'n/a'}`,
+        'Profile URLs:',
+        ...profileLines
+      ].join('\n')
     }
 
     // Create local order first
@@ -148,10 +149,11 @@ export async function handler(event) {
       return json(500, { error: 'Failed to create local NFC order' })
     }
 
-    // Forward to nfc-me
+    // Forward to nfc-me (supports X-API-Key or Bearer)
     const nfcResponse = await fetch(NFC_ORDERS_URL, {
       method: 'POST',
       headers: {
+        'X-API-Key': NFC_API_KEY,
         Authorization: `Bearer ${NFC_API_KEY}`,
         'Content-Type': 'application/json',
         Accept: 'application/json'
@@ -184,10 +186,14 @@ export async function handler(event) {
       })
     }
 
+    const remoteOrder =
+      responseJson?.order ||
+      responseJson
     const remoteOrderId =
+      remoteOrder?.id ||
+      remoteOrder?.order_number ||
       responseJson?.id ||
       responseJson?.order_id ||
-      responseJson?.orderId ||
       null
 
     await admin
