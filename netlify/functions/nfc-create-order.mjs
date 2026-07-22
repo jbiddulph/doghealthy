@@ -54,7 +54,9 @@ export async function handler(event) {
     const body = JSON.parse(event.body || '{}')
     const {
       dogIds,
-      shipping
+      shipping,
+      productSku,
+      productId
     } = body
 
     if (!Array.isArray(dogIds) || dogIds.length === 0) {
@@ -78,6 +80,32 @@ export async function handler(event) {
     // Service role for ownership checks + order writes that need elevated update
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
+    // Resolve product from shared nfcme_products table (user choice, else env default)
+    let productQuery = admin
+      .from('nfcme_products')
+      .select('id, sku, name, unit_price_cents, currency, min_order_qty, is_active')
+      .eq('is_active', true)
+
+    if (productId) {
+      productQuery = productQuery.eq('id', productId)
+    } else {
+      const requestedSku = String(productSku || NFC_PRODUCT_SKU).trim().toUpperCase()
+      productQuery = productQuery.eq('sku', requestedSku)
+    }
+
+    const { data: productRows, error: productError } = await productQuery.limit(1)
+    if (productError) {
+      console.error('Product lookup error:', productError)
+      return json(500, { error: 'Failed to look up NFC product' })
+    }
+
+    const product = productRows?.[0]
+    if (!product) {
+      return json(400, {
+        error: `Unknown or inactive product: ${productSku || productId || NFC_PRODUCT_SKU}`
+      })
+    }
+
     const { data: dogs, error: dogsError } = await admin
       .from('doghealthy_dogs')
       .select('id, name, breed, photo_url, gender, color, microchip_number')
@@ -94,6 +122,14 @@ export async function handler(event) {
       return json(400, { error: 'One or more selected dogs were not found on your account' })
     }
 
+    const quantity = dogs.length
+    const minQty = Number(product.min_order_qty || 1)
+    if (quantity < minQty) {
+      return json(400, {
+        error: `Minimum order quantity for ${product.sku} is ${minQty}. Select at least ${minQty} dogs, or choose a different product.`
+      })
+    }
+
     const orderId = crypto.randomUUID()
     const profileBase = PUBLIC_BASE_URL.replace(/\/$/, '')
     const profileLines = dogs.map(
@@ -105,8 +141,8 @@ export async function handler(event) {
       external_reference: orderId,
       items: [
         {
-          sku: NFC_PRODUCT_SKU,
-          quantity: dogs.length
+          sku: product.sku,
+          quantity
         }
       ],
       shipping: {
@@ -219,6 +255,11 @@ export async function handler(event) {
       success: true,
       orderId,
       nfcMeOrderId: remoteOrderId,
+      product: {
+        id: product.id,
+        sku: product.sku,
+        name: product.name
+      },
       dogs: dogs.map((d) => ({
         id: d.id,
         name: d.name,
