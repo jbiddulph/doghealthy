@@ -47,7 +47,10 @@ export default defineNuxtConfig({
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
     nfcMeApiKey: process.env.NFC_ME_API_KEY,
-    nfcMeApiBaseUrl: process.env.NFC_ME_API_BASE_URL || 'https://nfc-me-a3a3437da95d.herokuapp.com/api/v1',
+    nfcMeApiBaseUrl:
+      process.env.NFC_ME_BASE_URL ||
+      process.env.NFC_ME_API_BASE_URL ||
+      'https://nfc-me-a3a3437da95d.herokuapp.com/api/v1',
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseKey: process.env.SUPABASE_ANON_KEY,

@@ -1,11 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 
-const NFC_API_BASE = process.env.NFC_ME_API_BASE_URL || 'https://nfc-me-a3a3437da95d.herokuapp.com/api/v1'
+// Accept either NFC_ME_BASE_URL or NFC_ME_API_BASE_URL from Netlify env
+const NFC_API_BASE = (
+  process.env.NFC_ME_BASE_URL ||
+  process.env.NFC_ME_API_BASE_URL ||
+  'https://nfc-me-a3a3437da95d.herokuapp.com/api/v1'
+).replace(/\/$/, '')
 const NFC_API_KEY = process.env.NFC_ME_API_KEY
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const PUBLIC_BASE_URL = process.env.NUXT_PUBLIC_BASE_URL || 'https://doghealthy.uk'
+
+// Django APPEND_SLASH requires the trailing slash on POST
+const NFC_ORDERS_URL = `${NFC_API_BASE}/orders/`
 
 const json = (statusCode, body) => ({
   statusCode,
@@ -141,7 +149,7 @@ export async function handler(event) {
     }
 
     // Forward to nfc-me
-    const nfcResponse = await fetch(`${NFC_API_BASE.replace(/\/$/, '')}/orders`, {
+    const nfcResponse = await fetch(NFC_ORDERS_URL, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${NFC_API_KEY}`,
