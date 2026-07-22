@@ -11,10 +11,16 @@
       </div>
 
       <div class="bg-white rounded-2xl shadow-lg p-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-4">Unlock Full DogHealthy Access</h1>
-        <p class="text-gray-600 mb-6">
-          Add dogs to your account and track their health, vaccinations, medications, appointments, and more.
-          Choose a subscription that works best for you.
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">Upgrade to DogHealthy Subscriber</h1>
+        <p class="text-gray-600 mb-4">
+          Free accounts include up to {{ freeLimit }} dogs and up to {{ freeLimit }} of each record type
+          (medications, vaccinations, appointments, health records, and vets).
+        </p>
+        <p v-if="reasonMessage" class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6">
+          {{ reasonMessage }}
+        </p>
+        <p v-else class="text-gray-600 mb-6">
+          Subscribe for unlimited pets and records across your DogHealthy account.
         </p>
 
         <div v-if="error" class="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
@@ -32,10 +38,10 @@
             <p class="text-gray-600 mb-4">Perfect if you want flexibility with monthly billing.</p>
             <div class="text-3xl font-bold text-gray-900 mb-1">£6.50<span class="text-base font-normal text-gray-500"> / month</span></div>
             <p class="text-xs text-gray-500 mb-4">Billed monthly. Cancel anytime.</p>
-            <ul class="text-sm text-gray-600 space-y-2 mb-6">
-              <li>✓ Add and manage all of your dogs</li>
-              <li>✓ Track health records & vaccinations</li>
-              <li>✓ Manage medications & appointments</li>
+            <ul class="space-y-2 text-sm text-gray-600 mb-6">
+              <li>✓ Unlimited dogs</li>
+              <li>✓ Unlimited health records & vaccinations</li>
+              <li>✓ Unlimited medications, appointments & vets</li>
             </ul>
             <button
               type="button"
@@ -56,7 +62,7 @@
             <p class="text-gray-600 mb-4">Save more with a yearly subscription.</p>
             <div class="text-3xl font-bold text-gray-900 mb-1">£70<span class="text-base font-normal text-gray-500"> / year</span></div>
             <p class="text-xs text-gray-500 mb-4">Equivalent to less than £5.84 per month.</p>
-            <ul class="text-sm text-gray-600 space-y-2 mb-6">
+            <ul class="space-y-2 text-sm text-gray-600 mb-6">
               <li>✓ Everything in Monthly</li>
               <li>✓ Best value for long‑term use</li>
               <li>✓ Priority for new features</li>
@@ -73,8 +79,7 @@
         </div>
 
         <p class="text-xs text-gray-500">
-          Payments are securely processed by Stripe. You can manage or cancel your subscription at any time
-          through your Stripe customer portal (coming soon) or by contacting support.
+          Payments are securely processed by Stripe Payment Links. After paying, return to DogHealthy and continue where you left off.
         </p>
       </div>
     </div>
@@ -93,14 +98,20 @@ type PlanType = 'monthly' | 'yearly'
 
 const router = useRouter()
 const route = useRoute()
+const config = useRuntimeConfig()
+const { freeLimit, markSubscribed, resourceLabel } = usePlanLimits()
 
-// If we've just returned from a successful payment, mark subscription and send to add-dog page
+const reasonMessage = computed(() => {
+  const reason = route.query.reason as string | undefined
+  if (!reason) return ''
+  const label = resourceLabel(reason as any)
+  return `You've reached the free limit of ${freeLimit} ${label}. Subscribe to add more.`
+})
+
 onMounted(() => {
   if (route.query.subscription === 'success') {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('doghealthy_has_subscription', 'true')
-    }
-    router.replace('/dogs/new')
+    markSubscribed()
+    router.replace('/dogs')
   }
 })
 
@@ -109,26 +120,30 @@ const startSubscription = async (plan: PlanType) => {
     loading.value = true
     error.value = ''
 
-    const { url } = await $fetch('/api/billing/create-subscription-checkout', {
-      method: 'POST',
-      body: { plan }
-    })
-
-    if (!url) {
-      throw new Error('Stripe checkout URL not returned. Please try again.')
+    // Prefer env-configured Payment Links (works on static Netlify deploys)
+    const paymentLinks: Record<PlanType, string> = {
+      monthly:
+        (config.public.stripePaymentLinkMonthly as string) ||
+        'https://buy.stripe.com/YOUR_MONTHLY_PAYMENT_LINK',
+      yearly:
+        (config.public.stripePaymentLinkYearly as string) ||
+        'https://buy.stripe.com/YOUR_YEARLY_PAYMENT_LINK'
     }
 
-    // Optimistically mark that the user has started a subscription
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('doghealthy_has_subscription', 'true')
+    const url = paymentLinks[plan]
+    if (!url || url.includes('YOUR_')) {
+      throw new Error(
+        'Stripe Payment Link is not configured yet. Set NUXT_PUBLIC_STRIPE_PAYMENT_LINK_MONTHLY / YEARLY in your environment.'
+      )
     }
 
+    // Optimistically mark subscribed so returning users aren't blocked
+    markSubscribed()
     window.location.href = url
   } catch (err: any) {
     console.error('Error starting subscription:', err)
-    error.value = err?.data?.statusMessage || err?.message || 'Unable to start subscription. Please try again.'
+    error.value = err?.message || 'Unable to start subscription. Please try again.'
     loading.value = false
   }
 }
 </script>
-

@@ -15,6 +15,12 @@
           >
             🏥 Vets
           </NuxtLink>
+          <NuxtLink
+            to="/nfc-tags"
+            class="hidden sm:inline-flex bg-white/90 hover:bg-white text-gray-800 px-4 py-2 rounded-lg font-semibold transition-colors"
+          >
+            NFC Tags
+          </NuxtLink>
           <button
             type="button"
             @click="handleAddDogClick"
@@ -36,6 +42,12 @@
             class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold transition-colors"
           >
             🏥 Vets
+          </NuxtLink>
+          <NuxtLink
+            to="/nfc-tags"
+            class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold transition-colors"
+          >
+            NFC Tags
           </NuxtLink>
           <button
             type="button"
@@ -263,14 +275,10 @@ const handleAddDogClick = async () => {
       return
     }
 
-    // Check simple client-side flag to see if user has an active subscription
-    const hasSubscription =
-      typeof window !== 'undefined' && localStorage.getItem('doghealthy_has_subscription') === 'true'
-
-    if (!hasSubscription) {
-      router.push('/billing/subscribe')
-      return
-    }
+    // Free accounts can add up to 3 dogs; 4th requires subscription
+    const { ensureCanCreate } = usePlanLimits()
+    const allowed = await ensureCanCreate('dogs', dogs.value.length)
+    if (!allowed) return
 
     router.push('/dogs/new')
   } catch (err) {

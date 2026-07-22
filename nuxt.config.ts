@@ -46,13 +46,17 @@ export default defineNuxtConfig({
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    nfcMeApiKey: process.env.NFC_ME_API_KEY,
+    nfcMeApiBaseUrl: process.env.NFC_ME_API_BASE_URL || 'https://nfc-me-a3a3437da95d.herokuapp.com/api/v1',
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseKey: process.env.SUPABASE_ANON_KEY,
-      stripePublishableKey: process.env.NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+      stripePublishableKey: process.env.NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY,
       baseUrl: process.env.NUXT_PUBLIC_BASE_URL,
       adsenseClient: process.env.NUXT_PUBLIC_ADSENSE_CLIENT,
-      unsplashAccessKey: process.env.UNSPLASH_ACCESS_KEY
+      unsplashAccessKey: process.env.UNSPLASH_ACCESS_KEY,
+      stripePaymentLinkMonthly: process.env.NUXT_PUBLIC_STRIPE_PAYMENT_LINK_MONTHLY,
+      stripePaymentLinkYearly: process.env.NUXT_PUBLIC_STRIPE_PAYMENT_LINK_YEARLY
     }
   }
 })

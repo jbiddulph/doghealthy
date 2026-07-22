@@ -3,6 +3,10 @@
   # Static Nuxt generate build. Netlify will serve from dist.
   command = "npm run generate"
   publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+
 [build.environment]
   NODE_VERSION = "22"
   # Configure secrets scanning to omit output directory and README
@@ -20,4 +24,4 @@
   [headers.values]
     cache-control = "public, max-age=31536000, immutable"
 
-# API routes are handled automatically by Nitro with the netlify preset
+# NFC order proxy lives in netlify/functions/nfc-create-order.mjs

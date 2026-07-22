@@ -445,12 +445,28 @@ const handleSubmit = async () => {
     error.value = 'You must be logged in to add a dog'
     return
   }
-  
+
   error.value = ''
   success.value = false
   loading.value = true
-  
+
   try {
+    // Free accounts: max 3 dogs
+    const { count, error: countError } = await supabase
+      .from('doghealthy_dogs')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', authStore.userId)
+      .eq('is_active', true)
+
+    if (countError) throw countError
+
+    const { ensureCanCreate } = usePlanLimits()
+    const allowed = await ensureCanCreate('dogs', count || 0)
+    if (!allowed) {
+      loading.value = false
+      return
+    }
+
     // Determine the breed value
     const breedValue = form.value.breedSelection === 'Other' 
       ? form.value.customBreed 

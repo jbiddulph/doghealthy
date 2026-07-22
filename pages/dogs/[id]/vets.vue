@@ -19,7 +19,7 @@
           <p class="text-gray-600 mt-2">Manage vet contacts and clinic information</p>
         </div>
         <button
-          @click="showAddModal = true"
+          @click="openAddModal"
           class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors inline-flex items-center"
         >
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,7 +126,7 @@
         <h3 class="text-xl font-semibold text-gray-900 mb-2">No Vets Added Yet</h3>
         <p class="text-gray-600 mb-6">Add your veterinarian's contact information to keep everything organized</p>
         <button
-          @click="showAddModal = true"
+          @click="openAddModal"
           class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
         >
           Add Your First Vet
@@ -418,10 +418,27 @@ const closeModal = () => {
   formError.value = ''
 }
 
+const openAddModal = async () => {
+  const { ensureCanCreate } = usePlanLimits()
+  const allowed = await ensureCanCreate('vets', vets.value.length)
+  if (!allowed) return
+  editingVet.value = null
+  showAddModal.value = true
+}
+
 const saveVet = async () => {
   try {
     saving.value = true
     formError.value = ''
+
+    if (!editingVet.value) {
+      const { ensureCanCreate } = usePlanLimits()
+      const allowed = await ensureCanCreate('vets', vets.value.length)
+      if (!allowed) {
+        saving.value = false
+        return
+      }
+    }
 
     const vetData = {
       user_id: authStore.userId,

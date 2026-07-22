@@ -19,7 +19,7 @@
           <p class="text-gray-600 mt-2">Manage medications for {{ dogName }}</p>
         </div>
         <button
-          @click="showAddModal = true"
+          @click="openAddModal"
           class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors inline-flex items-center"
         >
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,7 +193,7 @@
         <h3 class="text-xl font-semibold text-gray-900 mb-2">No Medications Yet</h3>
         <p class="text-gray-600 mb-6">Track medications and dosages for {{ dogName }}</p>
         <button
-          @click="showAddModal = true"
+          @click="openAddModal"
           class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
         >
           Add First Medication
@@ -557,10 +557,27 @@ const closeModal = () => {
   formError.value = ''
 }
 
+const openAddModal = async () => {
+  const { ensureCanCreate } = usePlanLimits()
+  const allowed = await ensureCanCreate('medications', medications.value.length)
+  if (!allowed) return
+  editingMedication.value = null
+  showAddModal.value = true
+}
+
 const saveMedication = async () => {
   try {
     saving.value = true
     formError.value = ''
+
+    if (!editingMedication.value) {
+      const { ensureCanCreate } = usePlanLimits()
+      const allowed = await ensureCanCreate('medications', medications.value.length)
+      if (!allowed) {
+        saving.value = false
+        return
+      }
+    }
 
     const medicationData = {
       dog_id: dogId,
