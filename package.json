@@ -16,6 +16,7 @@
     "@prisma/client": "^6.17.1",
     "@stripe/stripe-js": "^8.0.0",
     "@supabase/supabase-js": "^2.75.0",
+    "mapbox-gl": "^3.27.0",
     "nuxt": "^3.13.2",
     "pinia": "^2.2.0",
     "prisma": "^6.17.1",

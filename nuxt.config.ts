@@ -59,7 +59,8 @@ export default defineNuxtConfig({
       adsenseClient: process.env.NUXT_PUBLIC_ADSENSE_CLIENT,
       unsplashAccessKey: process.env.UNSPLASH_ACCESS_KEY,
       stripePaymentLinkMonthly: process.env.NUXT_PUBLIC_STRIPE_PAYMENT_LINK_MONTHLY,
-      stripePaymentLinkYearly: process.env.NUXT_PUBLIC_STRIPE_PAYMENT_LINK_YEARLY
+      stripePaymentLinkYearly: process.env.NUXT_PUBLIC_STRIPE_PAYMENT_LINK_YEARLY,
+      mapboxToken: process.env.NUXT_PUBLIC_MAPBOX_TOKEN
     }
   }
 })

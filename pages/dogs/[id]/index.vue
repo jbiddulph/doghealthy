@@ -64,10 +64,26 @@
               <p class="text-gray-800 whitespace-pre-wrap">{{ publicDog.notes }}</p>
             </div>
 
-            <div class="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900">
-              If you have found this dog, please contact the owner using the details they have shared,
-              or take them to a local vet/rescue so the microchip can be checked.
+            <div class="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900 mb-6">
+              If you have found this dog, tap the button below to alert the owner by SMS (with your approximate location if you allow it).
+              You can also take them to a local vet/rescue so the microchip can be checked.
             </div>
+
+            <div v-if="foundSuccess" class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+              {{ foundSuccess }}
+            </div>
+            <div v-if="foundError" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {{ foundError }}
+            </div>
+
+            <button
+              type="button"
+              class="w-full sm:w-auto bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-lg"
+              :disabled="foundSubmitting"
+              @click="reportFound"
+            >
+              {{ foundSubmitting ? 'Notifying owner…' : 'I found this dog — alert owner' }}
+            </button>
 
             <p v-if="scanRecorded" class="mt-4 text-xs text-gray-500">
               Scan recorded{{ locationShared ? ' with approximate location' : '' }}.
@@ -215,16 +231,34 @@
         <!-- Recent scans -->
         <div class="bg-white rounded-lg shadow-md p-6">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent tag scans</h2>
+
+          <div class="mb-6">
+            <ScanLocationMap :token="mapboxToken" :points="scanMapPoints" />
+          </div>
+
+          <div v-if="!ownerHasPhone" class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Add a mobile number to your profile so we can SMS you when someone reports finding {{ dog.name }}.
+          </div>
+
           <div v-if="recentScans.length === 0" class="text-gray-600 text-sm">
             No scans yet. After someone opens the tag URL, they will appear here.
           </div>
           <ul v-else class="divide-y divide-gray-100">
             <li v-for="scan in recentScans" :key="scan.id" class="py-3 flex flex-wrap justify-between gap-2 text-sm">
               <div>
-                <p class="font-medium text-gray-900">{{ formatDateTimeShort(scan.scanned_at) }}</p>
+                <p class="font-medium text-gray-900">
+                  {{ formatDateTimeShort(scan.scanned_at) }}
+                  <span
+                    v-if="scan.intent === 'found'"
+                    class="ml-2 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800"
+                  >
+                    Found report
+                  </span>
+                </p>
                 <p class="text-gray-500">
                   {{ scan.device?.platform || 'device unknown' }}
                   <span v-if="scan.ip"> · {{ scan.ip }}</span>
+                  <span v-if="scan.sms_sent_at" class="text-green-700"> · SMS sent</span>
                 </p>
               </div>
               <div class="text-gray-500">
@@ -288,6 +322,7 @@
 
 <script setup lang="ts">
 import AdUnit from '~/components/ads/AdUnit.vue'
+import ScanLocationMap from '~/components/ScanLocationMap.vue'
 import QRCode from 'qrcode'
 
 const route = useRoute()
@@ -336,6 +371,8 @@ interface TagScan {
   ip: string | null
   latitude: number | null
   longitude: number | null
+  intent?: string | null
+  sms_sent_at?: string | null
   device: { platform?: string; isMobile?: boolean } | null
 }
 
@@ -346,6 +383,12 @@ const error = ref('')
 const viewMode = ref<'owner' | 'public' | 'error'>('error')
 const scanRecorded = ref(false)
 const locationShared = ref(false)
+const lastScanId = ref<string | null>(null)
+const lastGeo = ref<{ latitude?: number; longitude?: number; accuracyM?: number }>({})
+
+const foundSubmitting = ref(false)
+const foundSuccess = ref('')
+const foundError = ref('')
 
 const activeTag = ref<ActiveTag | null>(null)
 const tagUrl = ref('')
@@ -354,6 +397,7 @@ const tagLoading = ref(false)
 const tagError = ref('')
 const copied = ref(false)
 const recentScans = ref<TagScan[]>([])
+const ownerHasPhone = ref(true)
 
 const counts = ref({
   healthRecords: 0,
@@ -367,6 +411,19 @@ const counts = ref({
 
 const baseUrl = computed(() =>
   String(config.public.baseUrl || 'https://doghealthy.co.uk').replace(/\/$/, '')
+)
+const mapboxToken = computed(() => String(config.public.mapboxToken || ''))
+
+const scanMapPoints = computed(() =>
+  recentScans.value
+    .filter((s) => s.latitude != null && s.longitude != null)
+    .map((s) => ({
+      id: s.id,
+      latitude: Number(s.latitude),
+      longitude: Number(s.longitude),
+      label: `${s.intent === 'found' ? 'Found' : 'Scan'} · ${formatDateTimeShort(s.scanned_at)}`,
+      color: s.intent === 'found' ? '#dc2626' : '#2563eb'
+    }))
 )
 
 const waitForAuth = async () => {
@@ -486,12 +543,22 @@ const loadRecentScans = async () => {
   }
   const { data } = await supabase
     .from('doghealthy_scans')
-    .select('id, scanned_at, ip, latitude, longitude, device')
+    .select('id, scanned_at, ip, latitude, longitude, device, intent, sms_sent_at')
     .eq('tag_id', activeTag.value.id)
     .order('scanned_at', { ascending: false })
-    .limit(10)
+    .limit(20)
 
   recentScans.value = (data || []) as TagScan[]
+}
+
+const loadOwnerPhoneHint = async () => {
+  if (!authStore.userId) return
+  const { data } = await supabase
+    .from('doghealthy_users')
+    .select('phone')
+    .eq('id', authStore.userId)
+    .maybeSingle()
+  ownerHasPhone.value = !!(data?.phone && String(data.phone).trim())
 }
 
 const loadOwnerTag = async (petId: string) => {
@@ -583,6 +650,7 @@ const getOptionalGeo = (): Promise<{ latitude?: number; longitude?: number; accu
 
 const loadPublicScan = async (petId: string) => {
   const geo = await getOptionalGeo()
+  lastGeo.value = geo
   const result = await $fetch<{
     dog: PublicDog
     scanId: string
@@ -595,8 +663,45 @@ const loadPublicScan = async (petId: string) => {
   })
 
   publicDog.value = result.dog
+  lastScanId.value = result.scanId
   scanRecorded.value = true
   viewMode.value = 'public'
+}
+
+const reportFound = async () => {
+  if (!publicDog.value) return
+  foundSubmitting.value = true
+  foundSuccess.value = ''
+  foundError.value = ''
+  try {
+    // Refresh GPS when reporting found (more accurate than initial passive scan)
+    const geo = await getOptionalGeo()
+    const result = await $fetch<{
+      success: boolean
+      message: string
+      sms?: { sent?: boolean; skipped?: boolean; reason?: string | null }
+    }>('/.netlify/functions/tag-report-found', {
+      method: 'POST',
+      body: {
+        petId: publicDog.value.id,
+        scanId: lastScanId.value,
+        ...geo
+      }
+    })
+
+    foundSuccess.value = result.message
+    if (result.sms?.skipped && result.sms.reason) {
+      foundSuccess.value += ` (${result.sms.reason})`
+    } else if (result.sms?.sent === false && result.sms?.reason) {
+      foundError.value = `Report saved, but SMS failed: ${result.sms.reason}`
+    }
+  } catch (err: any) {
+    console.error(err)
+    foundError.value =
+      err?.data?.error || err?.message || 'Could not notify the owner. Please try again.'
+  } finally {
+    foundSubmitting.value = false
+  }
 }
 
 const bootstrap = async () => {
@@ -618,7 +723,7 @@ const bootstrap = async () => {
       if (!fetchError && data) {
         dog.value = data
         viewMode.value = 'owner'
-        await Promise.all([fetchCountsAndActivity(), loadOwnerTag(dogId)])
+        await Promise.all([fetchCountsAndActivity(), loadOwnerTag(dogId), loadOwnerPhoneHint()])
         return
       }
     }

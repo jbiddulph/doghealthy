@@ -23,6 +23,13 @@
           Subscribe for unlimited pets and records across your DogHealthy account.
         </p>
 
+        <div v-if="!linksConfigured" class="mb-6 rounded-md bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
+          Stripe Payment Links are not set. Add
+          <code class="text-xs">NUXT_PUBLIC_STRIPE_PAYMENT_LINK_MONTHLY</code> and
+          <code class="text-xs">NUXT_PUBLIC_STRIPE_PAYMENT_LINK_YEARLY</code>
+          in Netlify (and locally), then redeploy.
+        </div>
+
         <div v-if="error" class="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {{ error }}
         </div>
@@ -101,6 +108,17 @@ const route = useRoute()
 const config = useRuntimeConfig()
 const { freeLimit, markSubscribed, resourceLabel } = usePlanLimits()
 
+const paymentLinks = computed<Record<PlanType, string>>(() => ({
+  monthly: String(config.public.stripePaymentLinkMonthly || '').trim(),
+  yearly: String(config.public.stripePaymentLinkYearly || '').trim()
+}))
+
+const linksConfigured = computed(() => {
+  const monthly = paymentLinks.value.monthly
+  const yearly = paymentLinks.value.yearly
+  return Boolean(monthly && yearly && !monthly.includes('YOUR_') && !yearly.includes('YOUR_'))
+})
+
 const reasonMessage = computed(() => {
   const reason = route.query.reason as string | undefined
   if (!reason) return ''
@@ -120,17 +138,7 @@ const startSubscription = async (plan: PlanType) => {
     loading.value = true
     error.value = ''
 
-    // Prefer env-configured Payment Links (works on static Netlify deploys)
-    const paymentLinks: Record<PlanType, string> = {
-      monthly:
-        (config.public.stripePaymentLinkMonthly as string) ||
-        'https://buy.stripe.com/YOUR_MONTHLY_PAYMENT_LINK',
-      yearly:
-        (config.public.stripePaymentLinkYearly as string) ||
-        'https://buy.stripe.com/YOUR_YEARLY_PAYMENT_LINK'
-    }
-
-    const url = paymentLinks[plan]
+    const url = paymentLinks.value[plan]
     if (!url || url.includes('YOUR_')) {
       throw new Error(
         'Stripe Payment Link is not configured yet. Set NUXT_PUBLIC_STRIPE_PAYMENT_LINK_MONTHLY / YEARLY in your environment.'

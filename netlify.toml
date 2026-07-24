@@ -26,4 +26,7 @@
 
 # Netlify functions in netlify/functions/
 # - nfc-list-products.mjs / nfc-create-order.mjs
-# - tag-ensure.mjs / tag-record-scan.mjs
+# - tag-ensure.mjs / tag-record-scan.mjs / tag-report-found.mjs
+#
+# Found-dog SMS (Twilio): TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER
+# Mapbox (scan map): NUXT_PUBLIC_MAPBOX_TOKEN
