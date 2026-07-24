@@ -1,41 +1,85 @@
 <template>
   <div class="min-h-screen bg-gray-50 py-8">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <!-- Back Button -->
-      <NuxtLink
-        to="/dogs"
-        class="text-blue-600 hover:text-blue-700 font-medium mb-6 inline-flex items-center"
-      >
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        Back to My Dogs
-      </NuxtLink>
+      <div v-if="viewMode === 'owner'" class="mb-6">
+        <NuxtLink
+          to="/dogs"
+          class="text-blue-600 hover:text-blue-700 font-medium inline-flex items-center"
+        >
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to My Dogs
+        </NuxtLink>
+      </div>
 
-      <!-- Loading State -->
       <div v-if="loading" class="text-center py-12">
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         <p class="mt-4 text-gray-600">Loading dog details...</p>
       </div>
 
-      <!-- Error State -->
-      <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-lg p-6">
-        <h2 class="text-xl font-semibold text-red-800 mb-2">Error Loading Dog</h2>
+      <div v-else-if="error && viewMode !== 'public'" class="bg-red-50 border border-red-200 rounded-lg p-6">
+        <h2 class="text-xl font-semibold text-red-800 mb-2">Pet profile unavailable</h2>
         <p class="text-red-600">{{ error }}</p>
-        <NuxtLink
-          to="/dogs"
-          class="mt-4 inline-block text-blue-600 hover:text-blue-700"
-        >
-          Return to Dogs List
+        <NuxtLink to="/" class="mt-4 inline-block text-blue-600 hover:text-blue-700">
+          Go to DogHealthy
         </NuxtLink>
       </div>
 
-      <!-- Dog Details -->
-      <div v-else-if="dog" class="space-y-6">
-        <!-- Header with Photo -->
+      <!-- Public found-pet view (NFC / QR scan) -->
+      <div v-else-if="viewMode === 'public' && publicDog" class="max-w-3xl mx-auto">
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+          <div class="h-56 bg-gray-100">
+            <img
+              v-if="publicDog.photo_url"
+              :src="publicDog.photo_url"
+              :alt="publicDog.name"
+              class="w-full h-full object-cover"
+            />
+            <div v-else class="w-full h-full flex items-center justify-center text-7xl">🐕</div>
+          </div>
+
+          <div class="p-8">
+            <p class="text-sm font-semibold text-blue-600 mb-2">Found pet profile</p>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ publicDog.name }}</h1>
+            <p v-if="publicDog.breed" class="text-lg text-gray-600 mb-6">{{ publicDog.breed }}</p>
+
+            <div class="grid sm:grid-cols-2 gap-4 mb-6">
+              <div v-if="publicDog.gender" class="bg-gray-50 rounded-lg p-4">
+                <p class="text-xs uppercase tracking-wide text-gray-500">Gender</p>
+                <p class="font-medium text-gray-900 capitalize">{{ publicDog.gender }}</p>
+              </div>
+              <div v-if="publicDog.color" class="bg-gray-50 rounded-lg p-4">
+                <p class="text-xs uppercase tracking-wide text-gray-500">Colour</p>
+                <p class="font-medium text-gray-900">{{ publicDog.color }}</p>
+              </div>
+              <div v-if="publicDog.microchip_number" class="bg-gray-50 rounded-lg p-4 sm:col-span-2">
+                <p class="text-xs uppercase tracking-wide text-gray-500">Microchip</p>
+                <p class="font-mono text-sm text-gray-900">{{ publicDog.microchip_number }}</p>
+              </div>
+            </div>
+
+            <div v-if="publicDog.notes" class="mb-6">
+              <p class="text-sm font-medium text-gray-500 mb-1">Owner notes</p>
+              <p class="text-gray-800 whitespace-pre-wrap">{{ publicDog.notes }}</p>
+            </div>
+
+            <div class="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900">
+              If you have found this dog, please contact the owner using the details they have shared,
+              or take them to a local vet/rescue so the microchip can be checked.
+            </div>
+
+            <p v-if="scanRecorded" class="mt-4 text-xs text-gray-500">
+              Scan recorded{{ locationShared ? ' with approximate location' : '' }}.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Owner private dashboard -->
+      <div v-else-if="viewMode === 'owner' && dog" class="space-y-6">
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
           <div class="md:flex">
-            <!-- Photo -->
             <div class="md:w-1/3">
               <img
                 v-if="dog.photo_url"
@@ -53,7 +97,6 @@
               </div>
             </div>
 
-            <!-- Info -->
             <div class="md:w-2/3 p-6">
               <div class="flex justify-between items-start mb-4">
                 <div>
@@ -68,12 +111,8 @@
                 </NuxtLink>
               </div>
 
-              <!-- Details Grid -->
               <div class="grid md:grid-cols-2 gap-4 mt-6">
                 <div v-if="dog.birth_date" class="flex items-start">
-                  <svg class="w-5 h-5 text-gray-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
                   <div>
                     <p class="text-sm font-medium text-gray-500">Date of Birth</p>
                     <p class="text-gray-900">{{ formatDate(dog.birth_date) }}</p>
@@ -82,9 +121,6 @@
                 </div>
 
                 <div v-if="dog.gender" class="flex items-start">
-                  <svg class="w-5 h-5 text-gray-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
                   <div>
                     <p class="text-sm font-medium text-gray-500">Gender</p>
                     <p class="text-gray-900 capitalize">{{ dog.gender }}</p>
@@ -92,9 +128,6 @@
                 </div>
 
                 <div v-if="dog.weight_kg" class="flex items-start">
-                  <svg class="w-5 h-5 text-gray-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                  </svg>
                   <div>
                     <p class="text-sm font-medium text-gray-500">Weight</p>
                     <p class="text-gray-900">{{ dog.weight_kg }} kg</p>
@@ -102,9 +135,6 @@
                 </div>
 
                 <div v-if="dog.microchip_number" class="flex items-start">
-                  <svg class="w-5 h-5 text-gray-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-                  </svg>
                   <div>
                     <p class="text-sm font-medium text-gray-500">Microchip</p>
                     <p class="text-gray-900 font-mono text-sm">{{ dog.microchip_number }}</p>
@@ -112,7 +142,6 @@
                 </div>
               </div>
 
-              <!-- Notes -->
               <div v-if="dog.notes" class="mt-6">
                 <p class="text-sm font-medium text-gray-500 mb-2">Notes</p>
                 <p class="text-gray-900">{{ dog.notes }}</p>
@@ -121,7 +150,93 @@
           </div>
         </div>
 
-        <!-- Quick Actions -->
+        <!-- QR / NFC tag panel -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
+            <div>
+              <h2 class="text-xl font-semibold text-gray-900">QR / NFC tag</h2>
+              <p class="text-sm text-gray-600 mt-1">
+                Encode this URL on a QR code or NFC sticker. Anyone who scans it sees {{ dog.name }}’s public found-pet profile.
+              </p>
+            </div>
+            <button
+              type="button"
+              class="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-4 py-2 rounded-lg text-sm font-semibold"
+              :disabled="tagLoading"
+              @click="ensureTag"
+            >
+              {{ tagLoading ? 'Preparing…' : activeTag ? 'Refresh tag' : 'Create tag + QR' }}
+            </button>
+          </div>
+
+          <div v-if="tagError" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {{ tagError }}
+          </div>
+
+          <div v-if="activeTag && tagUrl" class="grid md:grid-cols-2 gap-6 items-start">
+            <div class="flex flex-col items-center">
+              <img
+                v-if="qrDataUrl"
+                :src="qrDataUrl"
+                alt="QR code for pet tag"
+                class="w-56 h-56 border border-gray-200 rounded-lg bg-white p-2"
+              />
+              <p class="mt-2 text-xs text-gray-500">Scan with a phone camera to test</p>
+            </div>
+            <div class="space-y-3">
+              <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 mb-1">Tag URL (write this to NFC)</p>
+                <div class="flex gap-2">
+                  <input
+                    :value="tagUrl"
+                    readonly
+                    class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono bg-gray-50"
+                  />
+                  <button
+                    type="button"
+                    class="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium hover:bg-gray-50"
+                    @click="copyTagUrl"
+                  >
+                    {{ copied ? 'Copied' : 'Copy' }}
+                  </button>
+                </div>
+              </div>
+              <p class="text-sm text-gray-600">
+                UID: <code class="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{{ activeTag.uid }}</code>
+                · Status: <span class="capitalize">{{ activeTag.status }}</span>
+              </p>
+              <p class="text-sm text-gray-500">
+                Home test: copy the URL into an NFC writer app (e.g. NFC Tools), write to your sticker, then scan in a private browser window.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent scans -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent tag scans</h2>
+          <div v-if="recentScans.length === 0" class="text-gray-600 text-sm">
+            No scans yet. After someone opens the tag URL, they will appear here.
+          </div>
+          <ul v-else class="divide-y divide-gray-100">
+            <li v-for="scan in recentScans" :key="scan.id" class="py-3 flex flex-wrap justify-between gap-2 text-sm">
+              <div>
+                <p class="font-medium text-gray-900">{{ formatDateTimeShort(scan.scanned_at) }}</p>
+                <p class="text-gray-500">
+                  {{ scan.device?.platform || 'device unknown' }}
+                  <span v-if="scan.ip"> · {{ scan.ip }}</span>
+                </p>
+              </div>
+              <div class="text-gray-500">
+                <span v-if="scan.latitude != null && scan.longitude != null">
+                  {{ Number(scan.latitude).toFixed(4) }}, {{ Number(scan.longitude).toFixed(4) }}
+                </span>
+                <span v-else>No GPS</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
         <div class="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
           <NuxtLink
             :to="`/dogs/${dog.id}/health-records`"
@@ -136,7 +251,7 @@
             :to="`/dogs/${dog.id}/vaccinations`"
             class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center"
           >
-            <div class="text-4xl mb-2">🐾<i class="bi bi-syringe"></i></div>
+            <div class="text-4xl mb-2"><i class="bi bi-syringe"></i></div>
             <h3 class="font-semibold text-gray-900">{{ dog.name }}'s Vaccinations</h3>
             <p class="text-sm text-gray-600 mt-1">Active {{ counts.vaccinationsUpcoming }} · Inactive {{ counts.vaccinationsPast }}</p>
           </NuxtLink>
@@ -158,22 +273,13 @@
             <h3 class="font-semibold text-gray-900">{{ dog.name }}'s Appointments</h3>
             <p class="text-sm text-gray-600 mt-1">Upcoming {{ counts.appointmentsUpcoming }} · Past {{ counts.appointmentsPast }}</p>
           </NuxtLink>
-
-          
         </div>
 
-        <!-- Ad Space -->
         <div class="bg-white rounded-lg shadow-md p-6">
-          <AdUnit 
+          <AdUnit
             ad-slot="dog-detail-sidebar"
             ad-format="horizontal"
           />
-        </div>
-
-        <!-- Recent Activity -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
-          <p class="text-gray-600">No recent activity yet. Start by adding health records or appointments.</p>
         </div>
       </div>
     </div>
@@ -182,11 +288,12 @@
 
 <script setup lang="ts">
 import AdUnit from '~/components/ads/AdUnit.vue'
+import QRCode from 'qrcode'
 
 const route = useRoute()
-const router = useRouter()
 const supabase = useSupabase()
 const authStore = useAuthStore()
+const config = useRuntimeConfig()
 
 interface Dog {
   id: string
@@ -201,14 +308,53 @@ interface Dog {
   photo_url: string | null
   notes: string | null
   is_active: boolean
+  nfc_tag_enabled?: boolean
   created_at: string
   updated_at: string
 }
 
+interface PublicDog {
+  id: string
+  name: string
+  breed: string | null
+  gender: string | null
+  color: string | null
+  microchip_number: string | null
+  photo_url: string | null
+  notes: string | null
+}
+
+interface ActiveTag {
+  id: string
+  uid: string
+  status: string
+}
+
+interface TagScan {
+  id: string
+  scanned_at: string
+  ip: string | null
+  latitude: number | null
+  longitude: number | null
+  device: { platform?: string; isMobile?: boolean } | null
+}
+
 const dog = ref<Dog | null>(null)
+const publicDog = ref<PublicDog | null>(null)
 const loading = ref(true)
 const error = ref('')
-const recentActivity = ref<any[]>([])
+const viewMode = ref<'owner' | 'public' | 'error'>('error')
+const scanRecorded = ref(false)
+const locationShared = ref(false)
+
+const activeTag = ref<ActiveTag | null>(null)
+const tagUrl = ref('')
+const qrDataUrl = ref('')
+const tagLoading = ref(false)
+const tagError = ref('')
+const copied = ref(false)
+const recentScans = ref<TagScan[]>([])
+
 const counts = ref({
   healthRecords: 0,
   vaccinationsUpcoming: 0,
@@ -219,215 +365,294 @@ const counts = ref({
   appointmentsPast: 0
 })
 
-const fetchDog = async () => {
-  try {
-    loading.value = true
-    error.value = ''
-    
-    const dogId = route.params.id as string
-    
-    const { data, error: fetchError } = await supabase
-      .from('doghealthy_dogs')
-      .select('*')
-      .eq('id', dogId)
-      .eq('user_id', authStore.userId)
-      .single()
-    
-    if (fetchError) {
-      console.error('Error fetching dog:', fetchError)
-      error.value = 'Dog not found or you do not have permission to view it'
-      return
-    }
-    
-    dog.value = data
-  } catch (err: any) {
-    console.error('Error:', err)
-    error.value = err.message || 'Failed to load dog details'
-  } finally {
-    loading.value = false
+const baseUrl = computed(() =>
+  String(config.public.baseUrl || 'https://doghealthy.co.uk').replace(/\/$/, '')
+)
+
+const waitForAuth = async () => {
+  if ((authStore as any).loading) {
+    await new Promise<void>((resolve) => {
+      const check = () => {
+        if (!(authStore as any).loading) resolve()
+        else setTimeout(check, 50)
+      }
+      check()
+    })
   }
 }
 
 const formatDate = (dateStr: string | null) => {
   if (!dateStr) return 'Unknown'
   const date = new Date(dateStr)
-  return date.toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  return date.toLocaleDateString('en-GB', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   })
 }
 
 const calculateAge = (dateStr: string | null) => {
   if (!dateStr) return ''
-  
+
   const birthDate = new Date(dateStr)
   const today = new Date()
   let years = today.getFullYear() - birthDate.getFullYear()
   let months = today.getMonth() - birthDate.getMonth()
-  
+
   if (months < 0) {
     years--
     months += 12
   }
-  
+
   if (years === 0) {
     return `${months} month${months !== 1 ? 's' : ''} old`
   } else if (months === 0) {
     return `${years} year${years !== 1 ? 's' : ''} old`
-  } else {
-    return `${years} year${years !== 1 ? 's' : ''}, ${months} month${months !== 1 ? 's' : ''} old`
+  }
+  return `${years} year${years !== 1 ? 's' : ''}, ${months} month${months !== 1 ? 's' : ''} old`
+}
+
+const formatDateTimeShort = (dateStr: string) => {
+  const date = new Date(dateStr)
+  return date.toLocaleString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit'
+  })
+}
+
+const getAccessToken = async () => {
+  const { data: sessionData } = await supabase.auth.getSession()
+  return sessionData.session?.access_token || null
+}
+
+const renderQr = async (url: string) => {
+  qrDataUrl.value = await QRCode.toDataURL(url, {
+    width: 448,
+    margin: 2,
+    errorCorrectionLevel: 'M'
+  })
+}
+
+const ensureTag = async () => {
+  if (!dog.value) return
+  tagLoading.value = true
+  tagError.value = ''
+  try {
+    const accessToken = await getAccessToken()
+    if (!accessToken) throw new Error('Please log in again to manage tags')
+
+    const result = await $fetch<{
+      tag: ActiveTag & { petId: string }
+      tagUrl: string
+    }>('/.netlify/functions/tag-ensure', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: { petId: dog.value.id }
+    })
+
+    activeTag.value = {
+      id: result.tag.id,
+      uid: result.tag.uid,
+      status: result.tag.status
+    }
+    tagUrl.value = result.tagUrl || `${baseUrl.value}/dogs/${dog.value.id}`
+    await renderQr(tagUrl.value)
+    await loadRecentScans()
+  } catch (err: any) {
+    console.error(err)
+    tagError.value = err?.data?.error || err?.message || 'Failed to create tag'
+  } finally {
+    tagLoading.value = false
+  }
+}
+
+const copyTagUrl = async () => {
+  if (!tagUrl.value) return
+  try {
+    await navigator.clipboard.writeText(tagUrl.value)
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 2000)
+  } catch {
+    tagError.value = 'Could not copy URL'
+  }
+}
+
+const loadRecentScans = async () => {
+  if (!activeTag.value) {
+    recentScans.value = []
+    return
+  }
+  const { data } = await supabase
+    .from('doghealthy_scans')
+    .select('id, scanned_at, ip, latitude, longitude, device')
+    .eq('tag_id', activeTag.value.id)
+    .order('scanned_at', { ascending: false })
+    .limit(10)
+
+  recentScans.value = (data || []) as TagScan[]
+}
+
+const loadOwnerTag = async (petId: string) => {
+  const { data } = await supabase
+    .from('doghealthy_tags')
+    .select('id, uid, status')
+    .eq('pet_id', petId)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (data) {
+    activeTag.value = data
+    tagUrl.value = `${baseUrl.value}/dogs/${petId}`
+    await renderQr(tagUrl.value)
+    await loadRecentScans()
   }
 }
 
 const fetchCountsAndActivity = async () => {
   if (!dog.value) return
-  
+
   try {
     const dogId = dog.value.id
-    
-    // Fetch health records count
+
     const { count: healthCount } = await supabase
       .from('doghealthy_health_records')
       .select('*', { count: 'exact', head: true })
       .eq('dog_id', dogId)
-    
-    // Fetch vaccinations
+
     const { data: vaccinations } = await supabase
       .from('doghealthy_vaccinations')
       .select('vaccination_date, next_due_date')
       .eq('dog_id', dogId)
-    
-    // Fetch medications
+
     const { data: medications } = await supabase
       .from('doghealthy_medications')
       .select('is_active')
       .eq('dog_id', dogId)
-    
-    // Fetch appointments
+
     const { data: appointments } = await supabase
       .from('doghealthy_appointments')
       .select('appointment_date, status')
       .eq('dog_id', dogId)
-    
-    // Update counts
+
     counts.value.healthRecords = healthCount || 0
-    
+
     const now = new Date()
-    counts.value.vaccinationsUpcoming = vaccinations?.filter(v => 
+    counts.value.vaccinationsUpcoming = vaccinations?.filter(v =>
       v.next_due_date && new Date(v.next_due_date) >= now
     ).length || 0
-    counts.value.vaccinationsPast = vaccinations?.filter(v => 
+    counts.value.vaccinationsPast = vaccinations?.filter(v =>
       v.vaccination_date && new Date(v.vaccination_date) < now
     ).length || 0
-    
+
     counts.value.medicationsActive = medications?.filter(m => m.is_active).length || 0
     counts.value.medicationsInactive = medications?.filter(m => !m.is_active).length || 0
-    
-    counts.value.appointmentsUpcoming = appointments?.filter(a => 
+
+    counts.value.appointmentsUpcoming = appointments?.filter(a =>
       new Date(a.appointment_date) >= now && (a.status === 'scheduled' || a.status === 'confirmed')
     ).length || 0
-    counts.value.appointmentsPast = appointments?.filter(a => 
+    counts.value.appointmentsPast = appointments?.filter(a =>
       new Date(a.appointment_date) < now || a.status === 'completed' || a.status === 'cancelled'
     ).length || 0
-    
-    // Build recent activity
-    const activity: any[] = []
-    
-    // Health records (last 5)
-    const { data: recentHealth } = await supabase
-      .from('doghealthy_health_records')
-      .select('id, record_date, record_type, diagnosis')
-      .eq('dog_id', dogId)
-      .order('record_date', { ascending: false })
-      .limit(5)
-    
-    recentHealth?.forEach(record => {
-      activity.push({
-        id: `health-${record.id}`,
-        type: 'health',
-        icon: '🏥',
-        title: record.record_type || 'Health Record',
-        subtitle: record.diagnosis || 'Medical checkup',
-        date: record.record_date,
-        created_at: record.record_date
-      })
-    })
-    
-    // Recent vaccinations
-    const { data: recentVaccinations } = await supabase
-      .from('doghealthy_vaccinations')
-      .select('id, vaccination_date, vaccine_name')
-      .eq('dog_id', dogId)
-      .order('vaccination_date', { ascending: false })
-      .limit(3)
-    
-    recentVaccinations?.forEach(vaccination => {
-      activity.push({
-        id: `vaccination-${vaccination.id}`,
-        type: 'vaccination',
-        icon: '💉',
-        title: 'Vaccination',
-        subtitle: vaccination.vaccine_name || 'Vaccine administered',
-        date: vaccination.vaccination_date,
-        created_at: vaccination.vaccination_date
-      })
-    })
-    
-    // Recent appointments
-    const { data: recentAppointments } = await supabase
-      .from('doghealthy_appointments')
-      .select('id, appointment_date, title, status')
-      .eq('dog_id', dogId)
-      .order('appointment_date', { ascending: false })
-      .limit(3)
-    
-    recentAppointments?.forEach(appointment => {
-      activity.push({
-        id: `appointment-${appointment.id}`,
-        type: 'appointment',
-        icon: '📅',
-        title: appointment.title,
-        subtitle: `Status: ${appointment.status}`,
-        date: appointment.appointment_date,
-        created_at: appointment.appointment_date
-      })
-    })
-    
-    // Sort by date and take most recent 8
-    recentActivity.value = activity
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 8)
-      
   } catch (err) {
-    console.error('Error fetching counts and activity:', err)
+    console.error('Error fetching counts:', err)
   }
 }
 
-const formatDateTimeShort = (dateStr: string) => {
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-  
-  if (diffInHours < 24) {
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-  } else if (diffInHours < 24 * 7) {
-    return date.toLocaleDateString('en-US', { weekday: 'short' })
-  } else {
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+const getOptionalGeo = (): Promise<{ latitude?: number; longitude?: number; accuracyM?: number }> => {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve({})
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        locationShared.value = true
+        resolve({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracyM: pos.coords.accuracy
+        })
+      },
+      () => resolve({}),
+      { enableHighAccuracy: false, timeout: 4000, maximumAge: 60000 }
+    )
+  })
+}
+
+const loadPublicScan = async (petId: string) => {
+  const geo = await getOptionalGeo()
+  const result = await $fetch<{
+    dog: PublicDog
+    scanId: string
+  }>('/.netlify/functions/tag-record-scan', {
+    method: 'POST',
+    body: {
+      petId,
+      ...geo
+    }
+  })
+
+  publicDog.value = result.dog
+  scanRecorded.value = true
+  viewMode.value = 'public'
+}
+
+const bootstrap = async () => {
+  loading.value = true
+  error.value = ''
+  const dogId = route.params.id as string
+
+  try {
+    await waitForAuth()
+
+    if (authStore.isAuthenticated && authStore.userId) {
+      const { data, error: fetchError } = await supabase
+        .from('doghealthy_dogs')
+        .select('*')
+        .eq('id', dogId)
+        .eq('user_id', authStore.userId)
+        .maybeSingle()
+
+      if (!fetchError && data) {
+        dog.value = data
+        viewMode.value = 'owner'
+        await Promise.all([fetchCountsAndActivity(), loadOwnerTag(dogId)])
+        return
+      }
+    }
+
+    // Guest or non-owner: try public scan path
+    try {
+      await loadPublicScan(dogId)
+    } catch (publicErr: any) {
+      console.error(publicErr)
+      error.value =
+        publicErr?.data?.error ||
+        publicErr?.message ||
+        'This pet profile is not available.'
+      viewMode.value = 'error'
+    }
+  } catch (err: any) {
+    console.error(err)
+    error.value = err?.message || 'Failed to load dog details'
+    viewMode.value = 'error'
+  } finally {
+    loading.value = false
   }
 }
 
-onMounted(async () => {
-  if (!authStore.isAuthenticated) {
-    router.push('/auth/login')
-    return
-  }
-  
-  await fetchDog()
-  if (dog.value) {
-    await fetchCountsAndActivity()
-  }
-})
+onMounted(bootstrap)
+
+useHead(() => ({
+  title: dog.value?.name
+    ? `${dog.value.name} | DogHealthy`
+    : publicDog.value?.name
+      ? `${publicDog.value.name} | DogHealthy`
+      : 'Pet Profile | DogHealthy',
+  meta: viewMode.value === 'public'
+    ? [{ name: 'robots', content: 'noindex' }]
+    : []
+}))
 </script>
-

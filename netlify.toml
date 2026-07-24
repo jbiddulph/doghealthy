@@ -24,6 +24,6 @@
   [headers.values]
     cache-control = "public, max-age=31536000, immutable"
 
-# NFC order functions live in netlify/functions/nfc-*.mjs
-# - nfc-list-products.mjs
-# - nfc-create-order.mjs
+# Netlify functions in netlify/functions/
+# - nfc-list-products.mjs / nfc-create-order.mjs
+# - tag-ensure.mjs / tag-record-scan.mjs

@@ -12,7 +12,7 @@ const NFC_PRODUCT_SKU = (process.env.NFC_ME_PRODUCT_SKU || 'DOG-NFC-TAG').toUppe
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const PUBLIC_BASE_URL = process.env.NUXT_PUBLIC_BASE_URL || 'https://doghealthy.uk'
+const PUBLIC_BASE_URL = process.env.NUXT_PUBLIC_BASE_URL || 'https://doghealthy.co.uk'
 
 // Django APPEND_SLASH requires the trailing slash on POST
 const NFC_ORDERS_URL = `${NFC_API_BASE}/orders/`
@@ -133,7 +133,7 @@ export async function handler(event) {
     const orderId = crypto.randomUUID()
     const profileBase = PUBLIC_BASE_URL.replace(/\/$/, '')
     const profileLines = dogs.map(
-      (dog) => `${dog.name}: ${profileBase}/p/${dog.id}`
+      (dog) => `${dog.name}: ${profileBase}/dogs/${dog.id}`
     )
 
     // Payload shape from NFC Me docs (POST /api/v1/orders/)
@@ -241,15 +241,35 @@ export async function handler(event) {
       })
       .eq('id', orderId)
 
-    // Mark selected dogs as NFC-enabled so public tag pages work
+    // Mark selected dogs as NFC-enabled and ensure one active tag each
+    const nowIso = new Date().toISOString()
     await admin
       .from('doghealthy_dogs')
       .update({
         nfc_tag_enabled: true,
-        nfc_ordered_at: new Date().toISOString()
+        nfc_ordered_at: nowIso
       })
       .in('id', dogIds)
       .eq('user_id', user.id)
+
+    for (const dog of dogs) {
+      const { data: existingTag } = await admin
+        .from('doghealthy_tags')
+        .select('id')
+        .eq('pet_id', dog.id)
+        .eq('status', 'active')
+        .maybeSingle()
+
+      if (!existingTag) {
+        await admin.from('doghealthy_tags').insert({
+          uid: crypto.randomUUID().replace(/-/g, '').slice(0, 16),
+          pet_id: dog.id,
+          status: 'active',
+          manufacturer_id: product.sku,
+          activated_at: nowIso
+        })
+      }
+    }
 
     return json(200, {
       success: true,
@@ -263,7 +283,7 @@ export async function handler(event) {
       dogs: dogs.map((d) => ({
         id: d.id,
         name: d.name,
-        profileUrl: `${profileBase}/p/${d.id}`
+        profileUrl: `${profileBase}/dogs/${d.id}`
       }))
     })
   } catch (error) {
