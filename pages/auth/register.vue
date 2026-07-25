@@ -44,6 +44,32 @@
             placeholder="you@example.com"
           />
         </div>
+
+        <div>
+          <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">
+            UK mobile number
+          </label>
+          <div class="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
+            <span class="inline-flex items-center px-3 bg-gray-50 text-gray-600 text-sm border-r border-gray-300">
+              +44
+            </span>
+            <input
+              id="phone"
+              v-model="phoneLocal"
+              type="tel"
+              inputmode="numeric"
+              required
+              maxlength="11"
+              :disabled="loading"
+              class="flex-1 px-3 py-2 border-0 focus:outline-none disabled:bg-gray-100"
+              placeholder="7XXX XXXXXX"
+            />
+          </div>
+          <p class="mt-1 text-xs text-gray-500">
+            Required for found-dog SMS alerts. Enter without the leading 0 (or paste 07…).
+            Stored as <code class="bg-gray-100 px-1 rounded">+44</code> + 10 digits.
+          </p>
+        </div>
         
         <div>
           <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
@@ -102,12 +128,15 @@
 </template>
 
 <script setup lang="ts">
+import { normalizeUkMobile } from '~/utils/ukPhone'
+
 definePageMeta({
   layout: false
 })
 
 const fullName = ref('')
 const email = ref('')
+const phoneLocal = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 const loading = ref(false)
@@ -116,6 +145,14 @@ const success = ref('')
 
 const authStore = useAuthStore()
 const router = useRouter()
+
+const resolvePhone = () => {
+  const raw = phoneLocal.value.trim()
+  if (raw.startsWith('+') || raw.startsWith('0') || raw.startsWith('44') || raw.startsWith('00')) {
+    return normalizeUkMobile(raw)
+  }
+  return normalizeUkMobile(`+44${raw.replace(/^0/, '')}`)
+}
 
 const handleRegister = async () => {
   loading.value = true
@@ -128,9 +165,16 @@ const handleRegister = async () => {
     loading.value = false
     return
   }
+
+  const phone = resolvePhone()
+  if (!phone) {
+    error.value = 'Enter a valid UK mobile number (+44 followed by 10 digits, no leading 0).'
+    loading.value = false
+    return
+  }
   
   try {
-    await authStore.signUp(email.value, password.value, fullName.value)
+    await authStore.signUp(email.value, password.value, fullName.value, phone)
     success.value = 'Account created successfully! Please check your email to verify your account.'
     
     // Redirect to login after 2 seconds

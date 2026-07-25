@@ -57,7 +57,9 @@ export const useAuthStore = defineStore('auth', {
           .insert({
             id: user.id,
             email: user.email,
-            full_name: user.user_metadata?.full_name || null
+            full_name: user.user_metadata?.full_name || null,
+            phone: user.user_metadata?.phone || null,
+            notify_found_sms: true
           })
         
         if (profileError) {
@@ -66,7 +68,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     
-    async signUp(email: string, password: string, fullName?: string) {
+    async signUp(email: string, password: string, fullName?: string, phone?: string) {
       const supabase = useSupabase()
       
       const { data, error } = await supabase.auth.signUp({
@@ -74,7 +76,8 @@ export const useAuthStore = defineStore('auth', {
         password,
         options: {
           data: {
-            full_name: fullName
+            full_name: fullName,
+            phone: phone || null
           }
         }
       })
@@ -88,11 +91,20 @@ export const useAuthStore = defineStore('auth', {
           .insert({
             id: data.user.id,
             email: data.user.email,
-            full_name: fullName
+            full_name: fullName,
+            phone: phone || null,
+            notify_found_sms: true
           })
         
         if (profileError) {
           console.error('Error creating user profile:', profileError)
+          // Profile may already exist from a trigger; try update
+          if (phone) {
+            await supabase
+              .from('doghealthy_users')
+              .update({ phone, full_name: fullName })
+              .eq('id', data.user.id)
+          }
         }
       }
       
@@ -127,14 +139,15 @@ export const useAuthStore = defineStore('auth', {
       const supabase = useSupabase()
       
       if (!this.user) throw new Error('Not authenticated')
+
+      const payload: Record<string, string | null> = {}
+      if (updates.fullName !== undefined) payload.full_name = updates.fullName
+      if (updates.phone !== undefined) payload.phone = updates.phone
+      if (updates.avatarUrl !== undefined) payload.avatar_url = updates.avatarUrl
       
       const { error } = await supabase
         .from('doghealthy_users')
-        .update({
-          full_name: updates.fullName,
-          phone: updates.phone,
-          avatar_url: updates.avatarUrl
-        })
+        .update(payload)
         .eq('id', this.user.id)
       
       if (error) throw error

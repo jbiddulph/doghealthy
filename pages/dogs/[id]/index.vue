@@ -237,7 +237,9 @@
           </div>
 
           <div v-if="!ownerHasPhone" class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Add a mobile number to your profile so we can SMS you when someone reports finding {{ dog.name }}.
+            Add a UK mobile number on your
+            <NuxtLink to="/profile" class="font-semibold underline">profile</NuxtLink>
+            so we can SMS you when someone reports finding {{ dog.name }}.
           </div>
 
           <div v-if="recentScans.length === 0" class="text-gray-600 text-sm">
@@ -558,7 +560,7 @@ const loadOwnerPhoneHint = async () => {
     .select('phone')
     .eq('id', authStore.userId)
     .maybeSingle()
-  ownerHasPhone.value = !!(data?.phone && String(data.phone).trim())
+  ownerHasPhone.value = !!(data?.phone && /^\+44\d{10}$/.test(String(data.phone).trim()))
 }
 
 const loadOwnerTag = async (petId: string) => {

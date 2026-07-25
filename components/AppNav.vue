@@ -42,6 +42,12 @@
             >
               NFC Tags
             </NuxtLink>
+            <NuxtLink
+              to="/profile"
+              class="text-secondary hover:text-dark font-medium"
+            >
+              Profile
+            </NuxtLink>
             <NotificationBell />
             <button
               @click="handleLogout"
@@ -97,6 +103,7 @@
         <template v-if="authStore.isAuthenticated">
           <NuxtLink @click="mobileOpen=false" to="/dogs" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">My Dogs</NuxtLink>
           <NuxtLink @click="mobileOpen=false" to="/nfc-tags" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">NFC Tags</NuxtLink>
+          <NuxtLink @click="mobileOpen=false" to="/profile" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">Profile</NuxtLink>
           <div class="px-3 py-2">
             <NotificationBell />
           </div>

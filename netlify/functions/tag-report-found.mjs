@@ -45,11 +45,14 @@ const parseDevice = (ua) => {
 
 const normalizeUkPhone = (raw) => {
   if (!raw) return null
-  let phone = String(raw).replace(/[\s()-]/g, '')
+  let phone = String(raw).trim().replace(/[\s()-]/g, '')
   if (phone.startsWith('00')) phone = `+${phone.slice(2)}`
-  if (phone.startsWith('07')) phone = `+44${phone.slice(1)}`
+  if (phone.startsWith('0') && phone.length === 11) phone = `+44${phone.slice(1)}`
   if (phone.startsWith('44') && !phone.startsWith('+')) phone = `+${phone}`
-  if (!/^\+[1-9]\d{7,14}$/.test(phone)) return null
+  // Strip accidental 0 after country code: +4407... → +447...
+  if (phone.startsWith('+440') && phone.length === 14) phone = `+44${phone.slice(4)}`
+  // Require +44 + exactly 10 digits
+  if (!/^\+44\d{10}$/.test(phone)) return null
   return phone
 }
 
