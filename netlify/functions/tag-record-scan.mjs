@@ -129,9 +129,21 @@ export async function handler(event) {
       return json(500, { error: 'Failed to record scan' })
     }
 
+    const { data: recentWalks } = await admin
+      .from('doghealthy_scans')
+      .select('intent')
+      .eq('tag_id', tag.id)
+      .in('intent', ['walk_start', 'walk_end', 'walk'])
+      .order('scanned_at', { ascending: false })
+      .limit(1)
+
+    const lastWalk = recentWalks?.[0]?.intent
+    const onWalk = lastWalk === 'walk_start' || lastWalk === 'walk'
+
     return json(200, {
       scanId: scan.id,
       scannedAt: scan.scanned_at,
+      onWalk,
       tag: { id: tag.id, uid: tag.uid },
       dog: {
         id: dog.id,

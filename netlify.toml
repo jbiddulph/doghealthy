@@ -28,5 +28,9 @@
 # - nfc-list-products.mjs / nfc-create-order.mjs
 # - tag-ensure.mjs / tag-record-scan.mjs / tag-report-found.mjs
 #
-# Found-dog SMS (Twilio): TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER
+# Found-dog SMS (Twilio):
+#   TWILIO_ACCOUNT_SID=ACxxxx   (NOT SKxxxx)
+#   TWILIO_AUTH_TOKEN=...
+#   TWILIO_FROM_NUMBER=+44...
 # Mapbox (scan map): NUXT_PUBLIC_MAPBOX_TOKEN
+# Care actions: tag-care-action.mjs (check in/out, walk start/end — no SMS)

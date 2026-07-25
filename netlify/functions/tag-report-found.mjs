@@ -3,9 +3,13 @@ import { createClient } from '@supabase/supabase-js'
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const PUBLIC_BASE_URL = (process.env.NUXT_PUBLIC_BASE_URL || 'https://doghealthy.co.uk').replace(/\/$/, '')
-const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID
-const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN
-const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER
+const TWILIO_ACCOUNT_SID = (process.env.TWILIO_ACCOUNT_SID || '').trim()
+const TWILIO_AUTH_TOKEN = (process.env.TWILIO_AUTH_TOKEN || '').trim()
+const TWILIO_FROM_NUMBER = (process.env.TWILIO_FROM_NUMBER || '').trim()
+// Optional API Key auth (preferred over Auth Token in production):
+// TWILIO_ACCOUNT_SID=ACxxxx  TWILIO_API_KEY_SID=SKxxxx  TWILIO_API_KEY_SECRET=...
+const TWILIO_API_KEY_SID = (process.env.TWILIO_API_KEY_SID || '').trim()
+const TWILIO_API_KEY_SECRET = (process.env.TWILIO_API_KEY_SECRET || '').trim()
 const SMS_COOLDOWN_MINUTES = Number(process.env.FOUND_SMS_COOLDOWN_MINUTES || 30)
 
 const json = (statusCode, body) => ({
@@ -62,11 +66,42 @@ const mapsLink = (lat, lng) =>
     : null
 
 async function sendTwilioSms({ to, body }) {
-  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM_NUMBER) {
-    return { ok: false, error: 'Twilio is not configured' }
+  if (!TWILIO_FROM_NUMBER) {
+    return { ok: false, error: 'TWILIO_FROM_NUMBER is not configured' }
   }
 
-  const auth = Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64')
+  // Account SID must be ACxxxx — SKxxxx is an API Key SID, not an Account SID
+  if (TWILIO_ACCOUNT_SID.startsWith('SK')) {
+    return {
+      ok: false,
+      error:
+        'TWILIO_ACCOUNT_SID looks like an API Key (SK…). Use your Account SID (AC…) from the Twilio Console. If using an API Key, set TWILIO_ACCOUNT_SID=AC…, TWILIO_API_KEY_SID=SK…, TWILIO_API_KEY_SECRET=…'
+    }
+  }
+
+  if (!TWILIO_ACCOUNT_SID.startsWith('AC')) {
+    return {
+      ok: false,
+      error: 'TWILIO_ACCOUNT_SID must start with AC (from Twilio Console → Account info)'
+    }
+  }
+
+  let username = TWILIO_ACCOUNT_SID
+  let password = TWILIO_AUTH_TOKEN
+
+  if (TWILIO_API_KEY_SID && TWILIO_API_KEY_SECRET) {
+    username = TWILIO_API_KEY_SID
+    password = TWILIO_API_KEY_SECRET
+  }
+
+  if (!password) {
+    return {
+      ok: false,
+      error: 'Set TWILIO_AUTH_TOKEN (or TWILIO_API_KEY_SID + TWILIO_API_KEY_SECRET)'
+    }
+  }
+
+  const auth = Buffer.from(`${username}:${password}`).toString('base64')
   const params = new URLSearchParams({
     To: to,
     From: TWILIO_FROM_NUMBER,
@@ -87,9 +122,17 @@ async function sendTwilioSms({ to, body }) {
 
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
+    const detail = data?.message || data?.error_message || `Twilio error ${response.status}`
+    const code = data?.code ? ` (code ${data.code})` : ''
+    const diag = [
+      `sidPrefix=${TWILIO_ACCOUNT_SID.slice(0, 2) || 'none'}`,
+      `authToken=${TWILIO_AUTH_TOKEN ? 'set' : 'missing'}`,
+      `apiKey=${TWILIO_API_KEY_SID ? 'set' : 'missing'}`,
+      `from=${TWILIO_FROM_NUMBER ? 'set' : 'missing'}`
+    ].join(', ')
     return {
       ok: false,
-      error: data?.message || data?.error_message || `Twilio error ${response.status}`
+      error: `${detail}${code}. Check Netlify Twilio env (${diag}). Account SID must be AC… and Auth Token must match.`
     }
   }
   return { ok: true, sid: data.sid }

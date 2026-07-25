@@ -65,8 +65,7 @@
             </div>
 
             <div class="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900 mb-6">
-              If you have found this dog, tap the button below to alert the owner by SMS (with your approximate location if you allow it).
-              You can also take them to a local vet/rescue so the microchip can be checked.
+              If you have found this dog, alert the owner below. Walkers and sitters can check in/out or log a walk — these are saved with location, but do not send SMS.
             </div>
 
             <div v-if="foundSuccess" class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
@@ -75,15 +74,56 @@
             <div v-if="foundError" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {{ foundError }}
             </div>
+            <div v-if="careSuccess" class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+              {{ careSuccess }}
+            </div>
+            <div v-if="careError" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {{ careError }}
+            </div>
 
-            <button
-              type="button"
-              class="w-full sm:w-auto bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-lg"
-              :disabled="foundSubmitting"
-              @click="reportFound"
-            >
-              {{ foundSubmitting ? 'Notifying owner…' : 'I found this dog — alert owner' }}
-            </button>
+            <div class="space-y-3 mb-6">
+              <p class="text-sm font-semibold text-gray-800">Care actions</p>
+              <div class="grid sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  class="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold px-4 py-3 rounded-lg"
+                  :disabled="careSubmitting"
+                  @click="recordCareAction('check_in')"
+                >
+                  Check in
+                </button>
+                <button
+                  type="button"
+                  class="bg-slate-700 hover:bg-slate-800 disabled:opacity-60 text-white font-semibold px-4 py-3 rounded-lg"
+                  :disabled="careSubmitting"
+                  @click="recordCareAction('check_out')"
+                >
+                  Check out
+                </button>
+                <button
+                  type="button"
+                  class="sm:col-span-2 font-semibold px-4 py-3 rounded-lg disabled:opacity-60 text-white"
+                  :class="onWalk ? 'bg-orange-600 hover:bg-orange-700' : 'bg-emerald-600 hover:bg-emerald-700'"
+                  :disabled="careSubmitting"
+                  @click="recordCareAction(onWalk ? 'walk_end' : 'walk_start')"
+                >
+                  {{ careSubmitting ? 'Saving…' : onWalk ? 'End walk' : 'Start walk' }}
+                </button>
+              </div>
+              <p v-if="onWalk" class="text-sm text-emerald-700">Walk in progress for {{ publicDog.name }}.</p>
+            </div>
+
+            <div class="border-t border-gray-100 pt-6">
+              <p class="text-sm font-semibold text-gray-800 mb-3">Found this dog?</p>
+              <button
+                type="button"
+                class="w-full sm:w-auto bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-lg"
+                :disabled="foundSubmitting"
+                @click="reportFound"
+              >
+                {{ foundSubmitting ? 'Notifying owner…' : 'I found this dog — alert owner' }}
+              </button>
+            </div>
 
             <p v-if="scanRecorded" class="mt-4 text-xs text-gray-500">
               Scan recorded{{ locationShared ? ' with approximate location' : '' }}.
@@ -251,10 +291,11 @@
                 <p class="font-medium text-gray-900">
                   {{ formatDateTimeShort(scan.scanned_at) }}
                   <span
-                    v-if="scan.intent === 'found'"
-                    class="ml-2 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800"
+                    v-if="scan.intent && scan.intent !== 'scan'"
+                    class="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                    :class="scan.intent === 'found' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'"
                   >
-                    Found report
+                    {{ formatIntent(scan.intent) }}
                   </span>
                 </p>
                 <p class="text-gray-500">
@@ -391,6 +432,10 @@ const lastGeo = ref<{ latitude?: number; longitude?: number; accuracyM?: number 
 const foundSubmitting = ref(false)
 const foundSuccess = ref('')
 const foundError = ref('')
+const careSubmitting = ref(false)
+const careSuccess = ref('')
+const careError = ref('')
+const onWalk = ref(false)
 
 const activeTag = ref<ActiveTag | null>(null)
 const tagUrl = ref('')
@@ -479,6 +524,19 @@ const formatDateTimeShort = (dateStr: string) => {
     hour: 'numeric',
     minute: '2-digit'
   })
+}
+
+const formatIntent = (intent: string) => {
+  const labels: Record<string, string> = {
+    found: 'Found report',
+    check_in: 'Check in',
+    check_out: 'Check out',
+    walk_start: 'Walk started',
+    walk_end: 'Walk ended',
+    walk: 'Walk',
+    test: 'Test'
+  }
+  return labels[intent] || intent
 }
 
 const getAccessToken = async () => {
@@ -656,6 +714,7 @@ const loadPublicScan = async (petId: string) => {
   const result = await $fetch<{
     dog: PublicDog
     scanId: string
+    onWalk?: boolean
   }>('/.netlify/functions/tag-record-scan', {
     method: 'POST',
     body: {
@@ -666,8 +725,40 @@ const loadPublicScan = async (petId: string) => {
 
   publicDog.value = result.dog
   lastScanId.value = result.scanId
+  onWalk.value = !!result.onWalk
   scanRecorded.value = true
   viewMode.value = 'public'
+}
+
+const recordCareAction = async (intent: 'check_in' | 'check_out' | 'walk_start' | 'walk_end') => {
+  if (!publicDog.value) return
+  careSubmitting.value = true
+  careSuccess.value = ''
+  careError.value = ''
+  try {
+    const geo = await getOptionalGeo()
+    const result = await $fetch<{
+      success: boolean
+      message: string
+      onWalk?: boolean
+    }>('/.netlify/functions/tag-care-action', {
+      method: 'POST',
+      body: {
+        petId: publicDog.value.id,
+        intent,
+        ...geo
+      }
+    })
+    careSuccess.value = result.message
+    if (typeof result.onWalk === 'boolean') onWalk.value = result.onWalk
+  } catch (err: any) {
+    console.error(err)
+    careError.value =
+      err?.data?.error || err?.message || 'Could not save that action. Please try again.'
+    if (typeof err?.data?.onWalk === 'boolean') onWalk.value = err.data.onWalk
+  } finally {
+    careSubmitting.value = false
+  }
 }
 
 const reportFound = async () => {
