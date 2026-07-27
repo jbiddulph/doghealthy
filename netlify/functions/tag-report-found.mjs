@@ -12,7 +12,8 @@ const TWILIO_API_KEY_SID = (process.env.TWILIO_API_KEY_SID || '').trim()
 const TWILIO_API_KEY_SECRET = (process.env.TWILIO_API_KEY_SECRET || '').trim()
 // Trial accounts cannot send custom Body text — only predefined template names:
 // https://www.twilio.com/docs/usage/trials/try-out-sms
-// On trial, only To + Body (+ optional StatusCallback) are allowed — do not send From.
+// Trial also requires the From number Twilio assigned for that verified recipient
+// (Console → Messaging → Try SMS → copy From from the sample request).
 // Set TWILIO_USE_TRIAL_TEMPLATE=false after upgrading your Twilio account.
 const TWILIO_USE_TRIAL_TEMPLATE = (process.env.TWILIO_USE_TRIAL_TEMPLATE || 'true').toLowerCase() !== 'false'
 const TWILIO_TRIAL_TEMPLATES = new Set([
@@ -39,6 +40,12 @@ const sanitizeTrialTemplate = (raw) => {
 const TWILIO_TRIAL_TEMPLATE = sanitizeTrialTemplate(
   process.env.TWILIO_TRIAL_TEMPLATE || 'sms_account_alerts'
 )
+// Prefer dedicated trial From; fall back to TWILIO_FROM_NUMBER.
+const TWILIO_TRIAL_FROM_NUMBER = (
+  process.env.TWILIO_TRIAL_FROM_NUMBER ||
+  process.env.TWILIO_FROM_NUMBER ||
+  ''
+).trim()
 const SMS_COOLDOWN_MINUTES = Number(process.env.FOUND_SMS_COOLDOWN_MINUTES || 30)
 
 const json = (statusCode, body) => ({
@@ -95,9 +102,15 @@ const mapsLink = (lat, lng) =>
     : null
 
 async function sendTwilioSms({ to, body }) {
-  // From is required only after upgrade (custom SMS). Trial omits From.
-  if (!TWILIO_USE_TRIAL_TEMPLATE && !TWILIO_FROM_NUMBER) {
-    return { ok: false, error: 'TWILIO_FROM_NUMBER is not configured' }
+  const fromNumber = TWILIO_USE_TRIAL_TEMPLATE ? TWILIO_TRIAL_FROM_NUMBER : TWILIO_FROM_NUMBER
+
+  if (!fromNumber) {
+    return {
+      ok: false,
+      error: TWILIO_USE_TRIAL_TEMPLATE
+        ? 'Set TWILIO_TRIAL_FROM_NUMBER (or TWILIO_FROM_NUMBER) to the trial From shown in Twilio Console → Messaging → Try SMS for your verified recipient.'
+        : 'TWILIO_FROM_NUMBER is not configured'
+    }
   }
 
   // Account SID must be ACxxxx — SKxxxx is an API Key SID, not an Account SID
@@ -133,9 +146,8 @@ async function sendTwilioSms({ to, body }) {
 
   const auth = Buffer.from(`${username}:${password}`).toString('base64')
 
-  // Trial: Body must be an exact predefined template name (not free-form text),
-  // and From must be omitted — Twilio assigns the trial sender.
-  // Live (upgraded): send custom body + From number.
+  // Trial: Body = predefined template name; From = assigned trial number for that recipient.
+  // Live (upgraded): custom body + purchased From number.
   let messageBody = body
   if (TWILIO_USE_TRIAL_TEMPLATE) {
     messageBody = TWILIO_TRIAL_TEMPLATE
@@ -149,14 +161,9 @@ async function sendTwilioSms({ to, body }) {
 
   const params = new URLSearchParams({
     To: to,
+    From: fromNumber,
     Body: messageBody
   })
-
-  // Trial docs: only To / Body / StatusCallback may be set. Sending From with a
-  // purchased number often yields 572006 (invalid template name).
-  if (!TWILIO_USE_TRIAL_TEMPLATE) {
-    params.set('From', TWILIO_FROM_NUMBER)
-  }
 
   const response = await fetch(
     `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
@@ -178,18 +185,18 @@ async function sendTwilioSms({ to, body }) {
       `sidPrefix=${TWILIO_ACCOUNT_SID.slice(0, 2) || 'none'}`,
       `authToken=${TWILIO_AUTH_TOKEN ? 'set' : 'missing'}`,
       `apiKey=${TWILIO_API_KEY_SID ? 'set' : 'missing'}`,
-      `from=${TWILIO_USE_TRIAL_TEMPLATE ? 'omitted(trial)' : TWILIO_FROM_NUMBER ? 'set' : 'missing'}`,
+      `from=${fromNumber ? `${fromNumber.slice(0, 4)}…${fromNumber.slice(-2)}` : 'missing'}`,
       `bodySent=${JSON.stringify(messageBody)}`,
       `trialTemplate=${TWILIO_USE_TRIAL_TEMPLATE ? 'on' : 'off'}`
     ].join(', ')
     let hint = ''
     if (String(data?.code) === '572006' || /template/i.test(detail)) {
       hint =
-        ' Confirm TWILIO_USE_TRIAL_TEMPLATE=true, Body is exactly a template like sms_account_alerts (no quotes), recipient is verified in Twilio Console, and redeploy after env changes. For custom found-dog text, upgrade Twilio and set TWILIO_USE_TRIAL_TEMPLATE=false.'
+        ' Confirm TWILIO_USE_TRIAL_TEMPLATE=true, Body is exactly a template like sms_account_alerts (no quotes), and From is the Try SMS trial number (not a purchased number). For custom found-dog text, upgrade Twilio and set TWILIO_USE_TRIAL_TEMPLATE=false.'
     }
-    if (String(data?.code) === '21603' || /From or MessagingServiceSid/i.test(detail)) {
+    if (String(data?.code) === '572003' || /assigned.*trial|verified messaging recipient/i.test(detail)) {
       hint =
-        ' Trial send omitted From per Twilio docs — if this persists, open Console → Messaging → Try SMS, copy the From from that sample request into TWILIO_FROM_NUMBER, or upgrade the account.'
+        ' Open Twilio Console → Messaging → Try SMS, select the same verified To number as the dog owner, copy the From value from the sample API request into TWILIO_TRIAL_FROM_NUMBER (or TWILIO_FROM_NUMBER), then redeploy. Voice and SMS trial From numbers can differ.'
     }
     return {
       ok: false,
