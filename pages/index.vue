@@ -2,18 +2,12 @@
   <div class="min-h-screen bg-gradient-to-b from-blue-50 to-white">
     <!-- Hero Section -->
     <div class="relative overflow-hidden text-white bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700">
-      <NuxtImg
+      <div
         v-if="heroImage"
-        :src="heroImage"
-        alt=""
-        class="absolute inset-0 h-full w-full object-cover"
-        width="1600"
-        height="900"
-        format="webp"
-        sizes="100vw"
-        loading="eager"
-        fetchpriority="high"
-        densities="1x"
+        class="absolute inset-0 bg-cover bg-center"
+        :style="{ backgroundImage: `url(${heroImage})` }"
+        role="img"
+        aria-label="Happy dog"
       />
       <div v-else class="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-700" />
 
@@ -85,6 +79,65 @@
       </div>
     </div>
 
+    <!-- NFC / QR pet tag features -->
+    <section class="bg-white border-b border-gray-100">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
+        <div class="grid md:grid-cols-2 gap-10 md:gap-14 items-center">
+          <div class="order-2 md:order-1">
+            <p class="text-sm font-semibold uppercase tracking-wide text-blue-600 mb-3">
+              New · NFC &amp; QR pet tags
+            </p>
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Scan the tag. Help the dog. Alert the owner.
+            </h2>
+            <p class="text-lg text-gray-600 mb-8">
+              Encode your dog’s DogHealthy profile on an NFC sticker or QR code. Anyone who taps or scans it can take care actions — and if the dog is lost, the owner can be alerted by SMS.
+            </p>
+            <ul class="space-y-4 mb-8">
+              <li class="flex gap-3">
+                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white text-sm font-bold">1</span>
+                <div>
+                  <p class="font-semibold text-gray-900">Record a dog walk</p>
+                  <p class="text-sm text-gray-600">Start and end a walk with live GPS — the route is saved for the owner to review.</p>
+                </div>
+              </li>
+              <li class="flex gap-3">
+                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white text-sm font-bold">2</span>
+                <div>
+                  <p class="font-semibold text-gray-900">Check in / check out</p>
+                  <p class="text-sm text-gray-600">Sitters and walkers can log when they arrive or leave, with approximate location.</p>
+                </div>
+              </li>
+              <li class="flex gap-3">
+                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-600 text-white text-sm font-bold">3</span>
+                <div>
+                  <p class="font-semibold text-gray-900">Report a lost dog</p>
+                  <p class="text-sm text-gray-600">Finders share their name and UK mobile — the owner gets an SMS alert with contact details and location when available.</p>
+                </div>
+              </li>
+            </ul>
+            <NuxtLink
+              :to="authStore.isAuthenticated ? '/dogs' : '/auth/register'"
+              class="inline-flex items-center justify-center rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 font-semibold transition-colors"
+            >
+              {{ authStore.isAuthenticated ? 'Set up a tag for your dog' : 'Get started free' }}
+            </NuxtLink>
+          </div>
+          <div class="order-1 md:order-2">
+            <img
+              src="/nfc-qr-features.png"
+              alt="DogHealthy NFC collar tag and phone showing care actions: check in, check out, start walk, and alert owner"
+              width="1024"
+              height="1024"
+              class="w-full rounded-2xl shadow-xl object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Features Section -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       <div class="text-center mb-16">
@@ -100,15 +153,14 @@
         <!-- Health Records -->
         <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-blue-500 overflow-hidden">
           <div v-if="featureImages.health" class="w-full h-48 overflow-hidden">
-            <NuxtImg
+            <img
               :src="featureImages.health.url"
               :alt="featureImages.health.description || 'Dog health care'"
-              class="w-full h-full object-cover"
               width="640"
               height="384"
-              format="webp"
-              sizes="(max-width: 768px) 100vw, 33vw"
+              class="w-full h-full object-cover"
               loading="lazy"
+              decoding="async"
             />
           </div>
           <div v-else class="w-full h-48 bg-blue-100 flex items-center justify-center text-6xl">
@@ -145,15 +197,14 @@
         <!-- Vaccinations -->
         <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-purple-500 overflow-hidden">
           <div v-if="featureImages.vaccination" class="w-full h-48 overflow-hidden">
-            <NuxtImg
+            <img
               :src="featureImages.vaccination.url"
               :alt="featureImages.vaccination.description || 'Dog vaccination'"
-              class="w-full h-full object-cover"
               width="640"
               height="384"
-              format="webp"
-              sizes="(max-width: 768px) 100vw, 33vw"
+              class="w-full h-full object-cover"
               loading="lazy"
+              decoding="async"
             />
           </div>
           <div v-else class="w-full h-48 bg-purple-100 flex items-center justify-center text-6xl">
@@ -190,15 +241,14 @@
         <!-- Medications -->
         <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-pink-500 overflow-hidden">
           <div v-if="featureImages.medication" class="w-full h-48 overflow-hidden">
-            <NuxtImg
+            <img
               :src="featureImages.medication.url"
               :alt="featureImages.medication.description || 'Dog medication'"
-              class="w-full h-full object-cover"
               width="640"
               height="384"
-              format="webp"
-              sizes="(max-width: 768px) 100vw, 33vw"
+              class="w-full h-full object-cover"
               loading="lazy"
+              decoding="async"
             />
           </div>
           <div v-else class="w-full h-48 bg-pink-100 flex items-center justify-center text-6xl">
@@ -235,15 +285,14 @@
         <!-- Appointments -->
         <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-green-500 overflow-hidden">
           <div v-if="featureImages.appointment" class="w-full h-48 overflow-hidden">
-            <NuxtImg
+            <img
               :src="featureImages.appointment.url"
               :alt="featureImages.appointment.description || 'Dog at vet appointment'"
-              class="w-full h-full object-cover"
               width="640"
               height="384"
-              format="webp"
-              sizes="(max-width: 768px) 100vw, 33vw"
+              class="w-full h-full object-cover"
               loading="lazy"
+              decoding="async"
             />
           </div>
           <div v-else class="w-full h-48 bg-green-100 flex items-center justify-center text-6xl">
@@ -280,15 +329,14 @@
         <!-- Vet Information -->
         <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-red-500 overflow-hidden">
           <div v-if="featureImages.vet" class="w-full h-48 overflow-hidden">
-            <NuxtImg
+            <img
               :src="featureImages.vet.url"
               :alt="featureImages.vet.description || 'Veterinary clinic'"
-              class="w-full h-full object-cover"
               width="640"
               height="384"
-              format="webp"
-              sizes="(max-width: 768px) 100vw, 33vw"
+              class="w-full h-full object-cover"
               loading="lazy"
+              decoding="async"
             />
           </div>
           <div v-else class="w-full h-48 bg-red-100 flex items-center justify-center text-6xl">
@@ -325,15 +373,14 @@
         <!-- Food Finder -->
         <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-yellow-500 overflow-hidden">
           <div v-if="featureImages.food" class="w-full h-48 overflow-hidden">
-            <NuxtImg
+            <img
               :src="featureImages.food.url"
               :alt="featureImages.food.description || 'Dog food'"
-              class="w-full h-full object-cover"
               width="640"
               height="384"
-              format="webp"
-              sizes="(max-width: 768px) 100vw, 33vw"
+              class="w-full h-full object-cover"
               loading="lazy"
+              decoding="async"
             />
           </div>
           <div v-else class="w-full h-48 bg-yellow-100 flex items-center justify-center text-6xl">
@@ -370,15 +417,14 @@
         <!-- Weight Tracking -->
         <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-indigo-500 overflow-hidden">
           <div v-if="featureImages.weight" class="w-full h-48 overflow-hidden">
-            <NuxtImg
+            <img
               :src="featureImages.weight.url"
               :alt="featureImages.weight.description || 'Dog weight tracking'"
-              class="w-full h-full object-cover"
               width="640"
               height="384"
-              format="webp"
-              sizes="(max-width: 768px) 100vw, 33vw"
+              class="w-full h-full object-cover"
               loading="lazy"
+              decoding="async"
             />
           </div>
           <div v-else class="w-full h-48 bg-indigo-100 flex items-center justify-center text-6xl">

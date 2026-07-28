@@ -15,12 +15,6 @@
           >
             🏥 Vets
           </NuxtLink>
-          <NuxtLink
-            to="/nfc-tags"
-            class="hidden sm:inline-flex bg-white/90 hover:bg-white text-gray-800 px-4 py-2 rounded-lg font-semibold transition-colors"
-          >
-            NFC Tags
-          </NuxtLink>
           <button
             type="button"
             @click="handleAddDogClick"
@@ -42,12 +36,6 @@
             class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold transition-colors"
           >
             🏥 Vets
-          </NuxtLink>
-          <NuxtLink
-            to="/nfc-tags"
-            class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold transition-colors"
-          >
-            NFC Tags
           </NuxtLink>
           <button
             type="button"
@@ -73,15 +61,15 @@
       <!-- Empty State -->
       <div v-else-if="!dogs || dogs.length === 0" class="text-center py-12">
         <div v-if="emptyStateImage" class="mb-6">
-          <NuxtImg
+          <img
             v-if="emptyStateImage"
             :src="emptyStateImage.url"
             :alt="emptyStateImage.description || 'Happy dog'"
-            class="w-64 h-64 mx-auto rounded-full object-cover"
             width="256"
             height="256"
-            format="webp"
+            class="w-64 h-64 mx-auto rounded-full object-cover"
             loading="lazy"
+            decoding="async"
           />
         </div>
         <div v-else class="text-6xl mb-4">🐕</div>

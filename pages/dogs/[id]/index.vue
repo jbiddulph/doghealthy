@@ -446,9 +446,84 @@
           </div>
         </div>
 
+        <!-- Check-ins / check-outs -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Check-ins & check-outs</h2>
+            <button
+              type="button"
+              class="inline-flex items-center rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-3 py-2 text-sm font-semibold"
+              :disabled="checkInsLoading"
+              @click="loadCheckIns(1)"
+            >
+              {{ checkInsLoading ? 'Refreshing…' : 'Refresh' }}
+            </button>
+          </div>
+
+          <div v-if="checkInsLoading && checkIns.length === 0" class="text-gray-600 text-sm">Loading…</div>
+          <div v-else-if="checkIns.length === 0" class="text-gray-600 text-sm">
+            No check-ins or check-outs yet.
+          </div>
+          <ul v-else class="space-y-2">
+            <li
+              v-for="scan in checkIns"
+              :key="scan.id"
+              class="flex flex-wrap justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
+            >
+              <div>
+                <p class="font-semibold text-gray-900">
+                  {{ formatDateTimeShort(scan.scanned_at) }}
+                  <span
+                    class="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                    :class="scan.intent === 'check_in' ? 'bg-blue-100 text-blue-800' : 'bg-slate-200 text-slate-800'"
+                  >
+                    {{ formatIntent(scan.intent || '') }}
+                  </span>
+                </p>
+                <p class="text-gray-500">{{ scan.device?.platform || 'device unknown' }}</p>
+              </div>
+              <div class="text-gray-500 self-center">
+                <span v-if="scan.latitude != null && scan.longitude != null">
+                  {{ Number(scan.latitude).toFixed(4) }}, {{ Number(scan.longitude).toFixed(4) }}
+                </span>
+                <span v-else>No GPS</span>
+              </div>
+            </li>
+          </ul>
+          <div v-if="checkInsTotalPages > 1" class="mt-4 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              class="rounded-lg bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white px-4 py-2 text-sm font-semibold"
+              :disabled="checkInsPage <= 1 || checkInsLoading"
+              @click="loadCheckIns(checkInsPage - 1)"
+            >
+              Previous
+            </button>
+            <span class="text-sm text-gray-600">Page {{ checkInsPage }} of {{ checkInsTotalPages }}</span>
+            <button
+              type="button"
+              class="rounded-lg bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white px-4 py-2 text-sm font-semibold"
+              :disabled="checkInsPage >= checkInsTotalPages || checkInsLoading"
+              @click="loadCheckIns(checkInsPage + 1)"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+
         <!-- Recent scans -->
         <div class="bg-white rounded-lg shadow-md p-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent tag scans</h2>
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Recent tag scans</h2>
+            <button
+              type="button"
+              class="inline-flex items-center rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-3 py-2 text-sm font-semibold"
+              :disabled="scansLoading"
+              @click="loadRecentScans(1)"
+            >
+              {{ scansLoading ? 'Refreshing…' : 'Refresh' }}
+            </button>
+          </div>
 
           <div class="mb-6">
             <ScanLocationMap :token="mapboxToken" :points="scanMapPoints" />
@@ -460,13 +535,18 @@
             so we can SMS you when someone reports finding {{ dog.name }}.
           </div>
 
-          <div v-if="recentScans.length === 0" class="text-gray-600 text-sm">
+          <div v-if="scansLoading && recentScans.length === 0" class="text-gray-600 text-sm">Loading…</div>
+          <div v-else-if="recentScans.length === 0" class="text-gray-600 text-sm">
             No scans yet. After someone opens the tag URL, they will appear here.
           </div>
-          <ul v-else class="divide-y divide-gray-100">
-            <li v-for="scan in recentScans" :key="scan.id" class="py-3 flex flex-wrap justify-between gap-2 text-sm">
+          <ul v-else class="space-y-2">
+            <li
+              v-for="scan in recentScans"
+              :key="scan.id"
+              class="flex flex-wrap justify-between gap-2 rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3 text-sm"
+            >
               <div>
-                <p class="font-medium text-gray-900">
+                <p class="font-semibold text-gray-900">
                   {{ formatDateTimeShort(scan.scanned_at) }}
                   <span
                     v-if="scan.intent && scan.intent !== 'scan'"
@@ -487,7 +567,7 @@
                   <span v-if="scan.finder_phone"> · {{ scan.finder_phone }}</span>
                 </p>
               </div>
-              <div class="text-gray-500">
+              <div class="text-gray-500 self-center">
                 <span v-if="scan.latitude != null && scan.longitude != null">
                   {{ Number(scan.latitude).toFixed(4) }}, {{ Number(scan.longitude).toFixed(4) }}
                 </span>
@@ -495,6 +575,25 @@
               </div>
             </li>
           </ul>
+          <div v-if="scansTotalPages > 1" class="mt-4 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              class="rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-4 py-2 text-sm font-semibold"
+              :disabled="scansPage <= 1 || scansLoading"
+              @click="loadRecentScans(scansPage - 1)"
+            >
+              Previous
+            </button>
+            <span class="text-sm text-gray-600">Page {{ scansPage }} of {{ scansTotalPages }}</span>
+            <button
+              type="button"
+              class="rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-4 py-2 text-sm font-semibold"
+              :disabled="scansPage >= scansTotalPages || scansLoading"
+              @click="loadRecentScans(scansPage + 1)"
+            >
+              Next
+            </button>
+          </div>
         </div>
 
         <!-- Recent walks -->
@@ -503,9 +602,9 @@
             <h2 class="text-xl font-semibold text-gray-900">Recent walks</h2>
             <button
               type="button"
-              class="text-sm font-medium text-blue-600 hover:text-blue-700"
+              class="inline-flex items-center rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white px-3 py-2 text-sm font-semibold"
               :disabled="walksLoading"
-              @click="loadRecentWalks"
+              @click="loadRecentWalks(1)"
             >
               {{ walksLoading ? 'Refreshing…' : 'Refresh' }}
             </button>
@@ -516,14 +615,14 @@
           <div v-else-if="recentWalks.length === 0" class="text-gray-600 text-sm">
             No tracked walks yet. When someone starts and ends a walk from the public tag page, the GPS route appears here.
           </div>
-          <div v-else class="space-y-6">
+          <div v-else class="space-y-4">
             <div
               v-for="walk in recentWalks"
               :key="walk.id"
-              class="border border-gray-100 rounded-xl p-4"
+              class="rounded-lg border border-emerald-100 bg-emerald-50/50 p-4"
             >
               <div class="mb-3 text-sm">
-                <p class="font-medium text-gray-900">
+                <p class="font-semibold text-gray-900">
                   {{ formatDateTimeShort(walk.started_at) }}
                   <span v-if="walk.ended_at"> → {{ formatDateTimeShort(walk.ended_at) }}</span>
                   <span
@@ -547,6 +646,25 @@
                 :coordinates="walkRouteCoords(walk.id)"
               />
             </div>
+          </div>
+          <div v-if="walksTotalPages > 1" class="mt-4 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              class="rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white px-4 py-2 text-sm font-semibold"
+              :disabled="walksPage <= 1 || walksLoading"
+              @click="loadRecentWalks(walksPage - 1)"
+            >
+              Previous
+            </button>
+            <span class="text-sm text-gray-600">Page {{ walksPage }} of {{ walksTotalPages }}</span>
+            <button
+              type="button"
+              class="rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white px-4 py-2 text-sm font-semibold"
+              :disabled="walksPage >= walksTotalPages || walksLoading"
+              @click="loadRecentWalks(walksPage + 1)"
+            >
+              Next
+            </button>
           </div>
         </div>
 
@@ -676,10 +794,26 @@ const qrDataUrl = ref('')
 const tagLoading = ref(false)
 const tagError = ref('')
 const copied = ref(false)
+const PAGE_SIZE = 20
+
 const recentScans = ref<TagScan[]>([])
+const scansPage = ref(1)
+const scansTotal = ref(0)
+const scansLoading = ref(false)
+const scansTotalPages = computed(() => Math.max(1, Math.ceil(scansTotal.value / PAGE_SIZE)))
+
+const checkIns = ref<TagScan[]>([])
+const checkInsPage = ref(1)
+const checkInsTotal = ref(0)
+const checkInsLoading = ref(false)
+const checkInsTotalPages = computed(() => Math.max(1, Math.ceil(checkInsTotal.value / PAGE_SIZE)))
+
 const recentWalks = ref<DogWalk[]>([])
 const walkRoutes = ref<Record<string, { latitude: number; longitude: number }[]>>({})
 const walksLoading = ref(false)
+const walksPage = ref(1)
+const walksTotal = ref(0)
+const walksTotalPages = computed(() => Math.max(1, Math.ceil(walksTotal.value / PAGE_SIZE)))
 const ownerHasPhone = ref(true)
 
 const counts = ref({
@@ -812,7 +946,7 @@ const ensureTag = async () => {
     }
     tagUrl.value = result.tagUrl || `${baseUrl.value}/dogs/${dog.value.id}`
     await renderQr(tagUrl.value)
-    await loadRecentScans()
+    await Promise.all([loadRecentScans(1), loadCheckIns(1), loadRecentWalks(1)])
   } catch (err: any) {
     console.error(err)
     tagError.value = err?.data?.error || err?.message || 'Failed to create tag'
@@ -832,47 +966,115 @@ const copyTagUrl = async () => {
   }
 }
 
-const loadRecentScans = async () => {
+const loadRecentScans = async (page = 1) => {
   if (!activeTag.value) {
     recentScans.value = []
+    scansTotal.value = 0
+    scansPage.value = 1
     return
   }
-  const { data } = await supabase
-    .from('doghealthy_scans')
-    .select('id, scanned_at, ip, latitude, longitude, device, intent, sms_sent_at, finder_name, finder_phone')
-    .eq('tag_id', activeTag.value.id)
-    .order('scanned_at', { ascending: false })
-    .limit(20)
 
-  recentScans.value = (data || []) as TagScan[]
+  scansLoading.value = true
+  scansPage.value = page
+  try {
+    const from = (page - 1) * PAGE_SIZE
+    const to = from + PAGE_SIZE - 1
+    const { data, error, count } = await supabase
+      .from('doghealthy_scans')
+      .select('id, scanned_at, ip, latitude, longitude, device, intent, sms_sent_at, finder_name, finder_phone', {
+        count: 'exact'
+      })
+      .eq('tag_id', activeTag.value.id)
+      .not('intent', 'in', '("check_in","check_out")')
+      .order('scanned_at', { ascending: false })
+      .range(from, to)
+
+    if (error) {
+      console.error('loadRecentScans', error)
+      recentScans.value = []
+      scansTotal.value = 0
+      return
+    }
+
+    recentScans.value = (data || []) as TagScan[]
+    scansTotal.value = count || 0
+  } finally {
+    scansLoading.value = false
+  }
+}
+
+const loadCheckIns = async (page = 1) => {
+  if (!activeTag.value) {
+    checkIns.value = []
+    checkInsTotal.value = 0
+    checkInsPage.value = 1
+    return
+  }
+
+  checkInsLoading.value = true
+  checkInsPage.value = page
+  try {
+    const from = (page - 1) * PAGE_SIZE
+    const to = from + PAGE_SIZE - 1
+    const { data, error, count } = await supabase
+      .from('doghealthy_scans')
+      .select('id, scanned_at, ip, latitude, longitude, device, intent, sms_sent_at, finder_name, finder_phone', {
+        count: 'exact'
+      })
+      .eq('tag_id', activeTag.value.id)
+      .in('intent', ['check_in', 'check_out'])
+      .order('scanned_at', { ascending: false })
+      .range(from, to)
+
+    if (error) {
+      console.error('loadCheckIns', error)
+      checkIns.value = []
+      checkInsTotal.value = 0
+      return
+    }
+
+    checkIns.value = (data || []) as TagScan[]
+    checkInsTotal.value = count || 0
+  } finally {
+    checkInsLoading.value = false
+  }
 }
 
 const walkRouteCoords = (walkId: string) => walkRoutes.value[walkId] || []
 
-const loadRecentWalks = async () => {
+const loadRecentWalks = async (page = 1) => {
   if (!dog.value) {
     recentWalks.value = []
     walkRoutes.value = {}
+    walksTotal.value = 0
+    walksPage.value = 1
     return
   }
 
   walksLoading.value = true
+  walksPage.value = page
   try {
-    const { data, error: walksError } = await supabase
+    const from = (page - 1) * PAGE_SIZE
+    const to = from + PAGE_SIZE - 1
+    const { data, error: walksError, count } = await supabase
       .from('doghealthy_walks')
-      .select('id, started_at, ended_at, status, point_count, distance_m, walker_name, walker_phone')
+      .select('id, started_at, ended_at, status, point_count, distance_m, walker_name, walker_phone', {
+        count: 'exact'
+      })
       .eq('pet_id', dog.value.id)
       .order('started_at', { ascending: false })
-      .limit(10)
+      .range(from, to)
 
     if (walksError) {
       console.error('loadRecentWalks', walksError)
       recentWalks.value = []
       walkRoutes.value = {}
+      walksTotal.value = 0
       return
     }
 
     recentWalks.value = (data || []) as DogWalk[]
+    walksTotal.value = count || 0
     const walkIds = recentWalks.value.map((w) => w.id)
     if (walkIds.length === 0) {
       walkRoutes.value = {}
@@ -929,7 +1131,7 @@ const loadOwnerTag = async (petId: string) => {
     activeTag.value = data
     tagUrl.value = `${baseUrl.value}/dogs/${petId}`
     await renderQr(tagUrl.value)
-    await Promise.all([loadRecentScans(), loadRecentWalks()])
+    await Promise.all([loadRecentScans(1), loadCheckIns(1), loadRecentWalks(1)])
   }
 }
 
