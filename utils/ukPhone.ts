@@ -15,6 +15,11 @@ export function normalizeUkMobile(raw: string | null | undefined): string | null
     phone = `+${phone.slice(2)}`
   }
 
+  // 7XXXXXXXXX (10 digits, missing leading 0) → +447XXXXXXXXX
+  if (/^7\d{9}$/.test(phone)) {
+    phone = `+44${phone}`
+  }
+
   if (phone.startsWith('0') && phone.length === 11) {
     // 07XXXXXXXXX → +447XXXXXXXXX
     phone = `+44${phone.slice(1)}`

@@ -4,7 +4,16 @@
       <div class="flex justify-between items-center h-16">
         <div class="flex items-center">
           <NuxtLink to="/" class="flex items-center gap-2 text-xl font-bold text-gray-900">
-            <img src="/logo.png" alt="DogHealthy logo" class="h-12 w-auto" />
+            <NuxtImg
+              src="/logo-96.png"
+              alt="DogHealthy logo"
+              width="48"
+              height="54"
+              class="h-12 w-auto"
+              format="webp"
+              loading="eager"
+              densities="1x 2x"
+            />
             <span>DogHealthy</span>
           </NuxtLink>
         </div>

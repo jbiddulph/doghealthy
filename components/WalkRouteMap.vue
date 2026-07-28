@@ -10,14 +10,22 @@
       v-else-if="coordinates.length < 2"
       class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-8 text-center text-sm text-gray-600"
     >
-      {{ coordinates.length === 1 ? 'Only one GPS point recorded for this walk.' : 'No walk route points yet.' }}
+      {{
+        coordinates.length === 1
+          ? 'Only one GPS point recorded for this walk — keep walking to build a route.'
+          : 'No GPS route points recorded for this walk yet.'
+      }}
     </div>
-    <div v-else ref="mapEl" class="w-full h-72 rounded-lg overflow-hidden border border-gray-200" />
+    <div
+      v-show="token && coordinates.length >= 2"
+      ref="mapEl"
+      class="w-full h-72 rounded-lg overflow-hidden border border-gray-200"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
@@ -45,6 +53,14 @@ const clearMarkers = () => {
   endMarker?.remove()
   startMarker = null
   endMarker = null
+}
+
+const destroyMap = () => {
+  clearMarkers()
+  if (map?.getLayer(layerId)) map.removeLayer(layerId)
+  if (map?.getSource(sourceId)) map.removeSource(sourceId)
+  map?.remove()
+  map = null
 }
 
 const renderRoute = () => {
@@ -88,10 +104,18 @@ const renderRoute = () => {
   const bounds = new mapboxgl.LngLatBounds()
   for (const c of props.coordinates) bounds.extend([c.longitude, c.latitude])
   map.fitBounds(bounds, { padding: 48, maxZoom: 15 })
+  map.resize()
 }
 
-const initMap = () => {
-  if (!props.token || !mapEl.value || props.coordinates.length < 2) return
+const initMap = async () => {
+  if (!props.token || props.coordinates.length < 2) return
+  await nextTick()
+  if (!mapEl.value) return
+
+  if (map) {
+    renderRoute()
+    return
+  }
 
   map = new mapboxgl.Map({
     accessToken: props.token,
@@ -101,30 +125,34 @@ const initMap = () => {
     zoom: 13
   })
   map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right')
-  map.on('load', renderRoute)
+  map.on('load', () => {
+    renderRoute()
+  })
 }
 
 onMounted(() => {
-  initMap()
+  void initMap()
 })
 
 watch(
-  () => [props.token, props.coordinates.map((c) => `${c.latitude},${c.longitude}`).join('|')].join('::'),
-  () => {
-    if (!map) {
-      initMap()
+  () =>
+    [
+      props.token || '',
+      props.coordinates.length,
+      props.coordinates.map((c) => `${c.latitude.toFixed(5)},${c.longitude.toFixed(5)}`).join('|')
+    ].join('::'),
+  async () => {
+    if (!props.token || props.coordinates.length < 2) {
+      destroyMap()
       return
     }
-    if (map.isStyleLoaded()) renderRoute()
-    else map.once('load', renderRoute)
+    await initMap()
+    if (map?.isStyleLoaded()) renderRoute()
+    else map?.once('load', renderRoute)
   }
 )
 
 onBeforeUnmount(() => {
-  clearMarkers()
-  if (map?.getLayer(layerId)) map.removeLayer(layerId)
-  if (map?.getSource(sourceId)) map.removeSource(sourceId)
-  map?.remove()
-  map = null
+  destroyMap()
 })
 </script>

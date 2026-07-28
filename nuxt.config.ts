@@ -8,26 +8,61 @@ export default defineNuxtConfig({
     preset: 'netlify-static'
   },
   
-  modules: [
-    '@nuxtjs/tailwindcss',
-    '@pinia/nuxt'
-  ],
+  modules: ['@nuxtjs/tailwindcss', '@pinia/nuxt', '@nuxt/image'],
+
+  // Netlify Image CDN in production; IPX for local/dev
+  image: {
+    provider: process.env.NETLIFY === 'true' ? 'netlify' : 'ipx',
+    quality: 75,
+    format: ['webp', 'avif'],
+    domains: [
+      'images.unsplash.com',
+      'isprmebbahzjnrekkvxv.supabase.co'
+    ],
+    screens: {
+      xs: 320,
+      sm: 640,
+      md: 768,
+      lg: 1024,
+      xl: 1280,
+      xxl: 1536
+    }
+  },
   
   app: {
     head: {
       link: [
-        { rel: 'stylesheet', href: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css' },
+        { rel: 'preconnect', href: 'https://images.unsplash.com', crossorigin: 'anonymous' },
+        { rel: 'preconnect', href: 'https://api.unsplash.com', crossorigin: 'anonymous' },
+        { rel: 'preconnect', href: 'https://isprmebbahzjnrekkvxv.supabase.co', crossorigin: 'anonymous' },
+        { rel: 'dns-prefetch', href: 'https://www.googletagmanager.com' },
+        { rel: 'dns-prefetch', href: 'https://pagead2.googlesyndication.com' },
+        { rel: 'dns-prefetch', href: 'https://cdn.jsdelivr.net' },
+        // Load icons without blocking first paint
+        {
+          rel: 'stylesheet',
+          href: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css',
+          media: 'print',
+          onload: "this.media='all'"
+        },
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'alternate icon', href: '/favicon.ico' }
       ],
+      noscript: [
+        {
+          children:
+            '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">'
+        }
+      ],
       script: [
-        { src: 'https://www.googletagmanager.com/gtag/js?id=G-EMYKQNQ3FJ', async: true },
+        { src: 'https://www.googletagmanager.com/gtag/js?id=G-EMYKQNQ3FJ', async: true, defer: true },
         {
           innerHTML: `window.dataLayer = window.dataLayer || [];\nfunction gtag(){dataLayer.push(arguments);}\ngtag('js', new Date());\n\ngtag('config', 'G-EMYKQNQ3FJ');`
         },
         { 
           src: 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1907813559893319', 
-          async: true, 
+          async: true,
+          defer: true,
           crossorigin: 'anonymous' 
         }
       ],

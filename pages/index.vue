@@ -2,19 +2,24 @@
   <div class="min-h-screen bg-gradient-to-b from-blue-50 to-white">
     <!-- Hero Section -->
     <div class="relative overflow-hidden text-white bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700">
-      <!-- Dynamic Background Image (if available) -->
-      <div
+      <NuxtImg
         v-if="heroImage"
-        class="absolute inset-0 bg-cover bg-center"
-        :style="{ backgroundImage: `url(${heroImage})` }"
-      ></div>
-      
-      <!-- Simple Fallback Background -->
-      <div v-else class="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-700"></div>
-      
+        :src="heroImage"
+        alt=""
+        class="absolute inset-0 h-full w-full object-cover"
+        width="1600"
+        height="900"
+        format="webp"
+        sizes="100vw"
+        loading="eager"
+        fetchpriority="high"
+        densities="1x"
+      />
+      <div v-else class="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-700" />
+
       <!-- Overlay for better text readability -->
-      <div class="absolute inset-0 bg-black opacity-20"></div>
-      
+      <div class="absolute inset-0 bg-black/40" />
+
       <!-- Photo credit (only show if Unsplash image is loaded) -->
       <div v-if="heroImage && photoCredit" class="absolute bottom-2 right-2 text-xs text-white/70 z-10">
         Photo by <a :href="photoCredit.authorUrl + '?utm_source=doghealthy&utm_medium=referral'" target="_blank" rel="noopener noreferrer" class="underline hover:text-white">{{ photoCredit.author }}</a> on <a href="https://unsplash.com?utm_source=doghealthy&utm_medium=referral" target="_blank" rel="noopener noreferrer" class="underline hover:text-white">Unsplash</a>
@@ -95,7 +100,16 @@
         <!-- Health Records -->
         <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-blue-500 overflow-hidden">
           <div v-if="featureImages.health" class="w-full h-48 overflow-hidden">
-            <img :src="featureImages.health.url" :alt="featureImages.health.description || 'Dog health care'" class="w-full h-full object-cover" />
+            <NuxtImg
+              :src="featureImages.health.url"
+              :alt="featureImages.health.description || 'Dog health care'"
+              class="w-full h-full object-cover"
+              width="640"
+              height="384"
+              format="webp"
+              sizes="(max-width: 768px) 100vw, 33vw"
+              loading="lazy"
+            />
           </div>
           <div v-else class="w-full h-48 bg-blue-100 flex items-center justify-center text-6xl">
             📋
@@ -131,7 +145,16 @@
         <!-- Vaccinations -->
         <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-purple-500 overflow-hidden">
           <div v-if="featureImages.vaccination" class="w-full h-48 overflow-hidden">
-            <img :src="featureImages.vaccination.url" :alt="featureImages.vaccination.description || 'Dog vaccination'" class="w-full h-full object-cover" />
+            <NuxtImg
+              :src="featureImages.vaccination.url"
+              :alt="featureImages.vaccination.description || 'Dog vaccination'"
+              class="w-full h-full object-cover"
+              width="640"
+              height="384"
+              format="webp"
+              sizes="(max-width: 768px) 100vw, 33vw"
+              loading="lazy"
+            />
           </div>
           <div v-else class="w-full h-48 bg-purple-100 flex items-center justify-center text-6xl">
             💉
@@ -167,7 +190,16 @@
         <!-- Medications -->
         <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-pink-500 overflow-hidden">
           <div v-if="featureImages.medication" class="w-full h-48 overflow-hidden">
-            <img :src="featureImages.medication.url" :alt="featureImages.medication.description || 'Dog medication'" class="w-full h-full object-cover" />
+            <NuxtImg
+              :src="featureImages.medication.url"
+              :alt="featureImages.medication.description || 'Dog medication'"
+              class="w-full h-full object-cover"
+              width="640"
+              height="384"
+              format="webp"
+              sizes="(max-width: 768px) 100vw, 33vw"
+              loading="lazy"
+            />
           </div>
           <div v-else class="w-full h-48 bg-pink-100 flex items-center justify-center text-6xl">
             💊
@@ -203,7 +235,16 @@
         <!-- Appointments -->
         <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-green-500 overflow-hidden">
           <div v-if="featureImages.appointment" class="w-full h-48 overflow-hidden">
-            <img :src="featureImages.appointment.url" :alt="featureImages.appointment.description || 'Dog at vet appointment'" class="w-full h-full object-cover" />
+            <NuxtImg
+              :src="featureImages.appointment.url"
+              :alt="featureImages.appointment.description || 'Dog at vet appointment'"
+              class="w-full h-full object-cover"
+              width="640"
+              height="384"
+              format="webp"
+              sizes="(max-width: 768px) 100vw, 33vw"
+              loading="lazy"
+            />
           </div>
           <div v-else class="w-full h-48 bg-green-100 flex items-center justify-center text-6xl">
             📅
@@ -239,7 +280,16 @@
         <!-- Vet Information -->
         <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-red-500 overflow-hidden">
           <div v-if="featureImages.vet" class="w-full h-48 overflow-hidden">
-            <img :src="featureImages.vet.url" :alt="featureImages.vet.description || 'Veterinary clinic'" class="w-full h-full object-cover" />
+            <NuxtImg
+              :src="featureImages.vet.url"
+              :alt="featureImages.vet.description || 'Veterinary clinic'"
+              class="w-full h-full object-cover"
+              width="640"
+              height="384"
+              format="webp"
+              sizes="(max-width: 768px) 100vw, 33vw"
+              loading="lazy"
+            />
           </div>
           <div v-else class="w-full h-48 bg-red-100 flex items-center justify-center text-6xl">
             🏥
@@ -275,7 +325,16 @@
         <!-- Food Finder -->
         <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-yellow-500 overflow-hidden">
           <div v-if="featureImages.food" class="w-full h-48 overflow-hidden">
-            <img :src="featureImages.food.url" :alt="featureImages.food.description || 'Dog food'" class="w-full h-full object-cover" />
+            <NuxtImg
+              :src="featureImages.food.url"
+              :alt="featureImages.food.description || 'Dog food'"
+              class="w-full h-full object-cover"
+              width="640"
+              height="384"
+              format="webp"
+              sizes="(max-width: 768px) 100vw, 33vw"
+              loading="lazy"
+            />
           </div>
           <div v-else class="w-full h-48 bg-yellow-100 flex items-center justify-center text-6xl">
             🍖
@@ -311,7 +370,16 @@
         <!-- Weight Tracking -->
         <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-t-4 border-indigo-500 overflow-hidden">
           <div v-if="featureImages.weight" class="w-full h-48 overflow-hidden">
-            <img :src="featureImages.weight.url" :alt="featureImages.weight.description || 'Dog weight tracking'" class="w-full h-full object-cover" />
+            <NuxtImg
+              :src="featureImages.weight.url"
+              :alt="featureImages.weight.description || 'Dog weight tracking'"
+              class="w-full h-full object-cover"
+              width="640"
+              height="384"
+              format="webp"
+              sizes="(max-width: 768px) 100vw, 33vw"
+              loading="lazy"
+            />
           </div>
           <div v-else class="w-full h-48 bg-indigo-100 flex items-center justify-center text-6xl">
             ⚖️
@@ -519,9 +587,13 @@ const photoCredit = ref<{ author: string; authorUrl: string } | null>(null)
 const featureImages = ref<Record<string, { url: string; description?: string; author?: string; authorUrl?: string }>>({})
 
 onMounted(async () => {
-  // Load hero image
+  // Hero first (LCP), then feature images in parallel
   try {
-    const hero = await fetchImageWithFallback('happy dog', { orientation: 'landscape', width: 1920, height: 1080 })
+    const hero = await fetchImageWithFallback('happy dog', {
+      orientation: 'landscape',
+      width: 1600,
+      height: 900
+    })
     if (hero) {
       heroImage.value = hero.url
       photoCredit.value = {
@@ -529,11 +601,10 @@ onMounted(async () => {
         authorUrl: hero.authorUrl
       }
     }
-  } catch (error) {
+  } catch {
     console.log('Hero image not available')
   }
 
-  // Load feature images
   const featureQueries = {
     health: 'dog health checkup veterinary',
     vaccination: 'dog vaccination veterinary care',
@@ -544,19 +615,30 @@ onMounted(async () => {
     weight: 'dog exercise healthy weight'
   }
 
-  for (const [key, query] of Object.entries(featureQueries)) {
-    try {
-      const image = await fetchImageWithFallback(query, { orientation: 'landscape', width: 800, height: 600 })
-      if (image) {
-        featureImages.value[key] = {
-          url: image.url,
-          description: image.description,
-          author: image.author,
-          authorUrl: image.authorUrl
-        }
+  const entries = Object.entries(featureQueries)
+  const results = await Promise.all(
+    entries.map(async ([key, query]) => {
+      try {
+        const image = await fetchImageWithFallback(query, {
+          orientation: 'landscape',
+          width: 640,
+          height: 384
+        })
+        return [key, image] as const
+      } catch {
+        return [key, null] as const
       }
-    } catch (error) {
-      // Silently fail for feature images
+    })
+  )
+
+  for (const [key, image] of results) {
+    if (image) {
+      featureImages.value[key] = {
+        url: image.url,
+        description: image.description || undefined,
+        author: image.author,
+        authorUrl: image.authorUrl
+      }
     }
   }
 })

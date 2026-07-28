@@ -73,7 +73,16 @@
       <!-- Empty State -->
       <div v-else-if="!dogs || dogs.length === 0" class="text-center py-12">
         <div v-if="emptyStateImage" class="mb-6">
-          <img :src="emptyStateImage.url" :alt="emptyStateImage.description || 'Happy dog'" class="w-64 h-64 mx-auto rounded-full object-cover" />
+          <NuxtImg
+            v-if="emptyStateImage"
+            :src="emptyStateImage.url"
+            :alt="emptyStateImage.description || 'Happy dog'"
+            class="w-64 h-64 mx-auto rounded-full object-cover"
+            width="256"
+            height="256"
+            format="webp"
+            loading="lazy"
+          />
         </div>
         <div v-else class="text-6xl mb-4">🐕</div>
         <h2 class="text-2xl font-semibold text-gray-900 mb-2">No dogs yet</h2>
@@ -96,11 +105,16 @@
           class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
         >
           <div class="aspect-square bg-gray-200 relative">
-            <img
+            <NuxtImg
               v-if="dog.photoUrl"
               :src="dog.photoUrl"
               :alt="dog.name"
               class="w-full h-full object-cover"
+              width="400"
+              height="320"
+              format="webp"
+              sizes="(max-width: 768px) 100vw, 33vw"
+              loading="lazy"
             />
             <div v-else class="flex items-center justify-center h-full text-6xl">
               🐕

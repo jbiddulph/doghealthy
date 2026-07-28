@@ -1,19 +1,65 @@
+export type UnsplashImage = {
+  url: string
+  thumb: string
+  small: string
+  author: string
+  authorUrl: string
+  description: string | null
+}
+
+/** Build a sized Unsplash CDN URL (webp-friendly) without waiting on Nuxt Image. */
+export const unsplashSizedUrl = (
+  url: string,
+  width: number,
+  height?: number,
+  quality = 75
+) => {
+  try {
+    const u = new URL(url)
+    u.searchParams.set('auto', 'format')
+    u.searchParams.set('fit', 'crop')
+    u.searchParams.set('w', String(width))
+    if (height) u.searchParams.set('h', String(height))
+    u.searchParams.set('q', String(quality))
+    u.searchParams.set('fm', 'webp')
+    return u.toString()
+  } catch {
+    return url
+  }
+}
+
+const mapPhoto = (photo: any, width?: number, height?: number): UnsplashImage => {
+  const regular = photo.urls?.regular || photo.urls?.full || ''
+  return {
+    url: width ? unsplashSizedUrl(regular, width, height) : unsplashSizedUrl(regular, 1200, 800),
+    thumb: photo.urls?.thumb || unsplashSizedUrl(regular, 200, 200),
+    small: photo.urls?.small || unsplashSizedUrl(regular, 400, 300),
+    author: photo.user?.name || 'Unsplash',
+    authorUrl: photo.user?.links?.html || 'https://unsplash.com',
+    description: photo.description || photo.alt_description || null
+  }
+}
+
 export const useUnsplash = () => {
   const config = useRuntimeConfig()
   const accessKey = config.public.unsplashAccessKey
 
-  const fetchRandomImage = async (query: string, options: {
-    orientation?: 'landscape' | 'portrait' | 'squarish'
-    width?: number
-    height?: number
-    count?: number
-  } = {}) => {
+  const fetchRandomImage = async (
+    query: string,
+    options: {
+      orientation?: 'landscape' | 'portrait' | 'squarish'
+      width?: number
+      height?: number
+      count?: number
+    } = {}
+  ): Promise<UnsplashImage | UnsplashImage[] | null> => {
     if (!accessKey) {
-      console.warn('Unsplash access key not configured. Check that UNSPLASH_ACCESS_KEY is set in your environment variables.')
+      console.warn(
+        'Unsplash access key not configured. Check that UNSPLASH_ACCESS_KEY is set in your environment variables.'
+      )
       return null
     }
 
-    // Log if we're making too many requests (for debugging)
     if (typeof window !== 'undefined') {
       const requestCount = parseInt(sessionStorage.getItem('unsplash_request_count') || '0')
       if (requestCount > 40) {
@@ -26,8 +72,6 @@ export const useUnsplash = () => {
       const params = new URLSearchParams({
         query,
         orientation: options.orientation || 'landscape',
-        ...(options.width && { w: options.width.toString() }),
-        ...(options.height && { h: options.height.toString() }),
         ...(options.count && { count: options.count.toString() })
       })
 
@@ -35,7 +79,7 @@ export const useUnsplash = () => {
         `https://api.unsplash.com/photos/random?${params.toString()}`,
         {
           headers: {
-            'Authorization': `Client-ID ${accessKey}`,
+            Authorization: `Client-ID ${accessKey}`,
             'Accept-Version': 'v1'
           }
         }
@@ -44,61 +88,32 @@ export const useUnsplash = () => {
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error')
         console.error(`Unsplash API error (${response.status}):`, errorText)
-        
-        if (response.status === 403) {
-          console.warn('Unsplash API returned 403 Forbidden. This could mean:')
-          console.warn('1. Rate limit exceeded (50 requests/hour for demo apps)')
-          console.warn('2. Invalid or expired API key')
-          console.warn('3. API key not properly configured in production')
-        }
-        
         throw new Error(`Unsplash API error: ${response.status}`)
       }
 
       const data = await response.json()
-      
-      // Handle both single photo and array of photos
+
       if (Array.isArray(data)) {
-        return data.map((photo: any) => ({
-          url: photo.urls.regular,
-          thumb: photo.urls.thumb,
-          small: photo.urls.small,
-          author: photo.user.name,
-          authorUrl: photo.user.links.html,
-          description: photo.description || photo.alt_description
-        }))
-      } else {
-        return {
-          url: data.urls.regular,
-          thumb: data.urls.thumb,
-          small: data.urls.small,
-          author: data.user.name,
-          authorUrl: data.user.links.html,
-          description: data.description || data.alt_description
-        }
+        return data.map((photo: any) => mapPhoto(photo, options.width, options.height))
       }
+      return mapPhoto(data, options.width, options.height)
     } catch (error) {
       console.error('Error fetching Unsplash image:', error)
       return null
     }
   }
 
-  const fetchImageWithFallback = async (query: string, options: {
-    orientation?: 'landscape' | 'portrait' | 'squarish'
-    width?: number
-    height?: number
-  } = {}) => {
+  const fetchImageWithFallback = async (
+    query: string,
+    options: {
+      orientation?: 'landscape' | 'portrait' | 'squarish'
+      width?: number
+      height?: number
+    } = {}
+  ): Promise<UnsplashImage | null> => {
     const result = await fetchRandomImage(query, options)
-    if (result && !Array.isArray(result)) {
-      // Test if image loads
-      return new Promise((resolve) => {
-        const img = new Image()
-        img.onload = () => resolve(result)
-        img.onerror = () => resolve(null)
-        img.src = result.url
-      })
-    }
-    return result
+    if (result && !Array.isArray(result)) return result
+    return null
   }
 
   return {
@@ -106,4 +121,3 @@ export const useUnsplash = () => {
     fetchImageWithFallback
   }
 }
-

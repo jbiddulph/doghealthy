@@ -30,11 +30,16 @@
       <div v-else-if="viewMode === 'public' && publicDog" class="max-w-3xl mx-auto">
         <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
           <div class="h-56 bg-gray-100">
-            <img
+            <NuxtImg
               v-if="publicDog.photo_url"
               :src="publicDog.photo_url"
               :alt="publicDog.name"
               class="w-full h-full object-cover"
+              width="800"
+              height="448"
+              format="webp"
+              sizes="(max-width: 768px) 100vw, 768px"
+              loading="eager"
             />
             <div v-else class="w-full h-full flex items-center justify-center text-7xl">🐕</div>
           </div>
@@ -146,31 +151,48 @@
         <div
           v-if="showFoundModal"
           class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
-          @click.self="showFoundModal = false"
+          @click.self="!foundSubmitting && (showFoundModal = false)"
         >
-          <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+          <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" @click.stop>
             <h2 class="text-xl font-bold text-gray-900 mb-1">Alert the owner</h2>
             <p class="text-sm text-gray-600 mb-4">
               Please leave your name and UK mobile so they can contact you. DogHealthy is UK-only.
             </p>
+            <div
+              v-if="foundModalError"
+              class="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+            >
+              {{ foundModalError }}
+            </div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Your name</label>
             <input
               v-model="finderForm.name"
               type="text"
               maxlength="80"
+              autocomplete="name"
               class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3"
               placeholder="Full name"
+              :disabled="foundSubmitting"
             />
             <label class="block text-sm font-medium text-gray-700 mb-1">UK mobile</label>
             <input
               v-model="finderForm.phone"
               type="tel"
+              inputmode="tel"
+              autocomplete="tel"
               class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-1"
               placeholder="07XXX XXXXXX"
+              :disabled="foundSubmitting"
+              @keyup.enter="submitFoundReport"
             />
             <p class="text-xs text-gray-500 mb-4">{{ ukMobileHint(finderForm.phone) }}</p>
             <div class="flex gap-3 justify-end">
-              <button type="button" class="px-4 py-2 text-sm font-medium text-gray-700" @click="showFoundModal = false">
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium text-gray-700"
+                :disabled="foundSubmitting"
+                @click="showFoundModal = false"
+              >
                 Cancel
               </button>
               <button
@@ -189,31 +211,48 @@
         <div
           v-if="showWalkModal"
           class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
-          @click.self="showWalkModal = false"
+          @click.self="!walkStarting && (showWalkModal = false)"
         >
-          <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+          <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" @click.stop>
             <h2 class="text-xl font-bold text-gray-900 mb-1">Start walk</h2>
             <p class="text-sm text-gray-600 mb-4">
               Enter the walker’s name and UK mobile. We’ll record GPS about every 10 metres until you tap End walk.
             </p>
+            <div
+              v-if="walkModalError"
+              class="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+            >
+              {{ walkModalError }}
+            </div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Walker’s name</label>
             <input
               v-model="walkerForm.name"
               type="text"
               maxlength="80"
+              autocomplete="name"
               class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3"
               placeholder="Full name"
+              :disabled="walkStarting"
             />
             <label class="block text-sm font-medium text-gray-700 mb-1">UK mobile</label>
             <input
               v-model="walkerForm.phone"
               type="tel"
+              inputmode="tel"
+              autocomplete="tel"
               class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-1"
               placeholder="07XXX XXXXXX"
+              :disabled="walkStarting"
+              @keyup.enter="startWalk"
             />
             <p class="text-xs text-gray-500 mb-4">{{ ukMobileHint(walkerForm.phone) }}</p>
             <div class="flex gap-3 justify-end">
-              <button type="button" class="px-4 py-2 text-sm font-medium text-gray-700" @click="showWalkModal = false">
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium text-gray-700"
+                :disabled="walkStarting"
+                @click="showWalkModal = false"
+              >
                 Cancel
               </button>
               <button
@@ -234,11 +273,16 @@
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
           <div class="md:flex">
             <div class="md:w-1/3">
-              <img
+              <NuxtImg
                 v-if="dog.photo_url"
                 :src="dog.photo_url"
                 :alt="dog.name"
                 class="w-full h-64 md:h-full object-cover"
+                width="480"
+                height="480"
+                format="webp"
+                sizes="(max-width: 768px) 100vw, 33vw"
+                loading="eager"
               />
               <div
                 v-else
@@ -418,9 +462,22 @@
 
         <!-- Recent walks -->
         <div class="bg-white rounded-lg shadow-md p-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent walks</h2>
-          <div v-if="recentWalks.length === 0" class="text-gray-600 text-sm">
-            No tracked walks yet. When someone starts a walk from the public tag page, the route appears here.
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Recent walks</h2>
+            <button
+              type="button"
+              class="text-sm font-medium text-blue-600 hover:text-blue-700"
+              :disabled="walksLoading"
+              @click="loadRecentWalks"
+            >
+              {{ walksLoading ? 'Refreshing…' : 'Refresh' }}
+            </button>
+          </div>
+          <div v-if="walksLoading && recentWalks.length === 0" class="text-gray-600 text-sm">
+            Loading walks…
+          </div>
+          <div v-else-if="recentWalks.length === 0" class="text-gray-600 text-sm">
+            No tracked walks yet. When someone starts and ends a walk from the public tag page, the GPS route appears here.
           </div>
           <div v-else class="space-y-6">
             <div
@@ -428,34 +485,29 @@
               :key="walk.id"
               class="border border-gray-100 rounded-xl p-4"
             >
-              <div class="flex flex-wrap justify-between gap-2 mb-3 text-sm">
-                <div>
-                  <p class="font-medium text-gray-900">
-                    {{ formatDateTimeShort(walk.started_at) }}
-                    <span v-if="walk.ended_at"> → {{ formatDateTimeShort(walk.ended_at) }}</span>
-                  </p>
-                  <p class="text-gray-600">
-                    Walker: {{ walk.walker_name || 'Unknown' }}
-                    <span v-if="walk.walker_phone"> · {{ walk.walker_phone }}</span>
-                  </p>
-                  <p class="text-gray-500">
-                    {{ walk.point_count || 0 }} points
-                    <span v-if="walk.distance_m"> · ~{{ Math.round(Number(walk.distance_m)) }} m</span>
-                    · {{ walk.status }}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  class="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                  @click="toggleWalkRoute(walk.id)"
-                >
-                  {{ selectedWalkId === walk.id ? 'Hide route' : 'Show route' }}
-                </button>
+              <div class="mb-3 text-sm">
+                <p class="font-medium text-gray-900">
+                  {{ formatDateTimeShort(walk.started_at) }}
+                  <span v-if="walk.ended_at"> → {{ formatDateTimeShort(walk.ended_at) }}</span>
+                  <span
+                    class="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                    :class="walk.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
+                  >
+                    {{ walk.status }}
+                  </span>
+                </p>
+                <p class="text-gray-600">
+                  Walker: {{ walk.walker_name || 'Unknown' }}
+                  <span v-if="walk.walker_phone"> · {{ walk.walker_phone }}</span>
+                </p>
+                <p class="text-gray-500">
+                  {{ walkRouteCoords(walk.id).length || walk.point_count || 0 }} GPS points
+                  <span v-if="walk.distance_m"> · ~{{ Math.round(Number(walk.distance_m)) }} m</span>
+                </p>
               </div>
               <WalkRouteMap
-                v-if="selectedWalkId === walk.id"
                 :token="mapboxToken"
-                :coordinates="selectedWalkCoords"
+                :coordinates="walkRouteCoords(walk.id)"
               />
             </div>
           </div>
@@ -597,6 +649,7 @@ const lastGeo = ref<{ latitude?: number; longitude?: number; accuracyM?: number 
 const foundSubmitting = ref(false)
 const foundSuccess = ref('')
 const foundError = ref('')
+const foundModalError = ref('')
 const showFoundModal = ref(false)
 const finderForm = reactive({ name: '', phone: '' })
 
@@ -605,6 +658,7 @@ const careSuccess = ref('')
 const careError = ref('')
 const onWalk = ref(false)
 const showWalkModal = ref(false)
+const walkModalError = ref('')
 const walkStarting = ref(false)
 const walkTracking = ref(false)
 const walkId = ref<string | null>(null)
@@ -625,8 +679,8 @@ const tagError = ref('')
 const copied = ref(false)
 const recentScans = ref<TagScan[]>([])
 const recentWalks = ref<DogWalk[]>([])
-const selectedWalkId = ref<string | null>(null)
-const selectedWalkCoords = ref<{ latitude: number; longitude: number }[]>([])
+const walkRoutes = ref<Record<string, { latitude: number; longitude: number }[]>>({})
+const walksLoading = ref(false)
 const ownerHasPhone = ref(true)
 
 const counts = ref({
@@ -794,38 +848,64 @@ const loadRecentScans = async () => {
   recentScans.value = (data || []) as TagScan[]
 }
 
+const walkRouteCoords = (walkId: string) => walkRoutes.value[walkId] || []
+
 const loadRecentWalks = async () => {
   if (!dog.value) {
     recentWalks.value = []
+    walkRoutes.value = {}
     return
   }
-  const { data } = await supabase
-    .from('doghealthy_walks')
-    .select('id, started_at, ended_at, status, point_count, distance_m, walker_name, walker_phone')
-    .eq('pet_id', dog.value.id)
-    .order('started_at', { ascending: false })
-    .limit(10)
 
-  recentWalks.value = (data || []) as DogWalk[]
-}
+  walksLoading.value = true
+  try {
+    const { data, error: walksError } = await supabase
+      .from('doghealthy_walks')
+      .select('id, started_at, ended_at, status, point_count, distance_m, walker_name, walker_phone')
+      .eq('pet_id', dog.value.id)
+      .order('started_at', { ascending: false })
+      .limit(10)
 
-const toggleWalkRoute = async (id: string) => {
-  if (selectedWalkId.value === id) {
-    selectedWalkId.value = null
-    selectedWalkCoords.value = []
-    return
+    if (walksError) {
+      console.error('loadRecentWalks', walksError)
+      recentWalks.value = []
+      walkRoutes.value = {}
+      return
+    }
+
+    recentWalks.value = (data || []) as DogWalk[]
+    const walkIds = recentWalks.value.map((w) => w.id)
+    if (walkIds.length === 0) {
+      walkRoutes.value = {}
+      return
+    }
+
+    const { data: points, error: pointsError } = await supabase
+      .from('doghealthy_walk_points')
+      .select('walk_id, latitude, longitude, sequence')
+      .in('walk_id', walkIds)
+      .order('sequence', { ascending: true })
+
+    if (pointsError) {
+      console.error('loadRecentWalk points', pointsError)
+      walkRoutes.value = {}
+      return
+    }
+
+    const routes: Record<string, { latitude: number; longitude: number }[]> = {}
+    for (const id of walkIds) routes[id] = []
+    for (const p of points || []) {
+      const id = String(p.walk_id)
+      if (!routes[id]) routes[id] = []
+      routes[id].push({
+        latitude: Number(p.latitude),
+        longitude: Number(p.longitude)
+      })
+    }
+    walkRoutes.value = routes
+  } finally {
+    walksLoading.value = false
   }
-  selectedWalkId.value = id
-  const { data } = await supabase
-    .from('doghealthy_walk_points')
-    .select('latitude, longitude')
-    .eq('walk_id', id)
-    .order('sequence', { ascending: true })
-
-  selectedWalkCoords.value = (data || []).map((p) => ({
-    latitude: Number(p.latitude),
-    longitude: Number(p.longitude)
-  }))
 }
 
 const loadOwnerPhoneHint = async () => {
@@ -1093,11 +1173,13 @@ const recordCareAction = async (intent: 'check_in' | 'check_out') => {
 
 const openFoundModal = () => {
   foundError.value = ''
+  foundModalError.value = ''
   showFoundModal.value = true
 }
 
 const openWalkModal = () => {
   careError.value = ''
+  walkModalError.value = ''
   showWalkModal.value = true
 }
 
@@ -1105,12 +1187,15 @@ const submitFoundReport = async () => {
   if (!publicDog.value) return
   const name = finderForm.name.trim()
   const phone = normalizeUkMobile(finderForm.phone)
+  foundModalError.value = ''
+
   if (name.length < 2) {
-    foundError.value = 'Please enter your name'
+    foundModalError.value = 'Please enter your name'
     return
   }
   if (!phone) {
-    foundError.value = 'Please enter a valid UK mobile (07… / +44…)'
+    foundModalError.value =
+      'Please enter a valid UK mobile like 07XXX XXXXXX (saved as +44…). Landlines are not accepted.'
     return
   }
 
@@ -1118,7 +1203,13 @@ const submitFoundReport = async () => {
   foundSuccess.value = ''
   foundError.value = ''
   try {
-    const geo = await getOptionalGeo()
+    // Don't block the alert on slow/denied GPS
+    const geo = await Promise.race([
+      getOptionalGeo(),
+      new Promise<{ latitude?: number; longitude?: number; accuracyM?: number }>((resolve) =>
+        setTimeout(() => resolve({}), 2500)
+      )
+    ])
     const result = await $fetch<{
       success: boolean
       message: string
@@ -1143,7 +1234,7 @@ const submitFoundReport = async () => {
     }
   } catch (err: any) {
     console.error(err)
-    foundError.value =
+    foundModalError.value =
       err?.data?.error || err?.message || 'Could not notify the owner. Please try again.'
   } finally {
     foundSubmitting.value = false
@@ -1154,12 +1245,15 @@ const startWalk = async () => {
   if (!publicDog.value) return
   const name = walkerForm.name.trim()
   const phone = normalizeUkMobile(walkerForm.phone)
+  walkModalError.value = ''
+
   if (name.length < 2) {
-    careError.value = 'Please enter the walker’s name'
+    walkModalError.value = 'Please enter the walker’s name'
     return
   }
   if (!phone) {
-    careError.value = 'Please enter a valid UK mobile (07… / +44…)'
+    walkModalError.value =
+      'Please enter a valid UK mobile like 07XXX XXXXXX (saved as +44…). Landlines are not accepted.'
     return
   }
 
@@ -1203,7 +1297,7 @@ const startWalk = async () => {
     startWalkWatch()
   } catch (err: any) {
     console.error(err)
-    careError.value =
+    walkModalError.value =
       err?.data?.error || err?.message || 'Could not start walk. Please try again.'
     if (typeof err?.data?.onWalk === 'boolean') onWalk.value = err.data.onWalk
   } finally {
