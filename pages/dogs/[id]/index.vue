@@ -30,16 +30,15 @@
       <div v-else-if="viewMode === 'public' && publicDog" class="max-w-3xl mx-auto">
         <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
           <div class="h-56 bg-gray-100">
-            <NuxtImg
+            <img
               v-if="publicDog.photo_url"
               :src="publicDog.photo_url"
               :alt="publicDog.name"
-              class="w-full h-full object-cover"
               width="800"
               height="448"
-              format="webp"
-              sizes="(max-width: 768px) 100vw, 768px"
+              class="w-full h-full object-cover"
               loading="eager"
+              decoding="async"
             />
             <div v-else class="w-full h-full flex items-center justify-center text-7xl">🐕</div>
           </div>
@@ -273,16 +272,15 @@
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
           <div class="md:flex">
             <div class="md:w-1/3">
-              <NuxtImg
+              <img
                 v-if="dog.photo_url"
                 :src="dog.photo_url"
                 :alt="dog.name"
-                class="w-full h-64 md:h-full object-cover"
                 width="480"
                 height="480"
-                format="webp"
-                sizes="(max-width: 768px) 100vw, 33vw"
+                class="w-full h-64 md:h-full object-cover"
                 loading="eager"
+                decoding="async"
               />
               <div
                 v-else
@@ -345,6 +343,45 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Care shortcuts -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <NuxtLink
+            :to="`/dogs/${dog.id}/health-records`"
+            class="inline-flex flex-col items-center justify-center gap-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 py-4 text-center shadow-sm transition-colors"
+          >
+            <i class="bi bi-clipboard2-pulse text-2xl" aria-hidden="true" />
+            <span class="font-semibold text-sm leading-tight">Health records</span>
+            <span class="text-xs text-blue-100">{{ counts.healthRecords }} records</span>
+          </NuxtLink>
+
+          <NuxtLink
+            :to="`/dogs/${dog.id}/vaccinations`"
+            class="inline-flex flex-col items-center justify-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-4 text-center shadow-sm transition-colors"
+          >
+            <i class="bi bi-syringe text-2xl" aria-hidden="true" />
+            <span class="font-semibold text-sm leading-tight">Vaccinations</span>
+            <span class="text-xs text-emerald-100">{{ counts.vaccinationsUpcoming }} active</span>
+          </NuxtLink>
+
+          <NuxtLink
+            :to="`/dogs/${dog.id}/medications`"
+            class="inline-flex flex-col items-center justify-center gap-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white px-4 py-4 text-center shadow-sm transition-colors"
+          >
+            <i class="bi bi-capsule text-2xl" aria-hidden="true" />
+            <span class="font-semibold text-sm leading-tight">Medications</span>
+            <span class="text-xs text-violet-100">{{ counts.medicationsActive }} active</span>
+          </NuxtLink>
+
+          <NuxtLink
+            :to="`/dogs/${dog.id}/appointments`"
+            class="inline-flex flex-col items-center justify-center gap-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white px-4 py-4 text-center shadow-sm transition-colors"
+          >
+            <i class="bi bi-calendar2-event text-2xl" aria-hidden="true" />
+            <span class="font-semibold text-sm leading-tight">Appointments</span>
+            <span class="text-xs text-amber-100">{{ counts.appointmentsUpcoming }} upcoming</span>
+          </NuxtLink>
         </div>
 
         <!-- QR / NFC tag panel -->
@@ -511,44 +548,6 @@
               />
             </div>
           </div>
-        </div>
-
-        <div class="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
-          <NuxtLink
-            :to="`/dogs/${dog.id}/health-records`"
-            class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center"
-          >
-            <div class="text-4xl mb-2"><i class="bi bi-clipboard2-pulse"></i></div>
-            <h3 class="font-semibold text-gray-900">{{ dog.name }}'s Health Records</h3>
-            <p class="text-sm text-gray-600 mt-1">View medical history ({{ counts.healthRecords }})</p>
-          </NuxtLink>
-
-          <NuxtLink
-            :to="`/dogs/${dog.id}/vaccinations`"
-            class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center"
-          >
-            <div class="text-4xl mb-2"><i class="bi bi-syringe"></i></div>
-            <h3 class="font-semibold text-gray-900">{{ dog.name }}'s Vaccinations</h3>
-            <p class="text-sm text-gray-600 mt-1">Active {{ counts.vaccinationsUpcoming }} · Inactive {{ counts.vaccinationsPast }}</p>
-          </NuxtLink>
-
-          <NuxtLink
-            :to="`/dogs/${dog.id}/medications`"
-            class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center"
-          >
-            <div class="text-4xl mb-2"><i class="bi bi-capsule"></i></div>
-            <h3 class="font-semibold text-gray-900">{{ dog.name }}'s Medications</h3>
-            <p class="text-sm text-gray-600 mt-1">Active {{ counts.medicationsActive }} · Inactive {{ counts.medicationsInactive }}</p>
-          </NuxtLink>
-
-          <NuxtLink
-            :to="`/dogs/${dog.id}/appointments`"
-            class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center"
-          >
-            <div class="text-4xl mb-2"><i class="bi bi-calendar2-event"></i></div>
-            <h3 class="font-semibold text-gray-900">{{ dog.name }}'s Appointments</h3>
-            <p class="text-sm text-gray-600 mt-1">Upcoming {{ counts.appointmentsUpcoming }} · Past {{ counts.appointmentsPast }}</p>
-          </NuxtLink>
         </div>
 
         <div class="bg-white rounded-lg shadow-md p-6">

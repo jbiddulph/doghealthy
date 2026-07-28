@@ -105,16 +105,15 @@
           class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
         >
           <div class="aspect-square bg-gray-200 relative">
-            <NuxtImg
+            <img
               v-if="dog.photoUrl"
               :src="dog.photoUrl"
               :alt="dog.name"
-              class="w-full h-full object-cover"
               width="400"
               height="320"
-              format="webp"
-              sizes="(max-width: 768px) 100vw, 33vw"
+              class="w-full h-full object-cover"
               loading="lazy"
+              decoding="async"
             />
             <div v-else class="flex items-center justify-center h-full text-6xl">
               🐕
