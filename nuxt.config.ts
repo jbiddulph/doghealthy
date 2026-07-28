@@ -16,7 +16,9 @@ export default defineNuxtConfig({
   app: {
     head: {
       link: [
-        { rel: 'stylesheet', href: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css' }
+        { rel: 'stylesheet', href: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css' },
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'alternate icon', href: '/favicon.ico' }
       ],
       script: [
         { src: 'https://www.googletagmanager.com/gtag/js?id=G-EMYKQNQ3FJ', async: true },
@@ -34,7 +36,8 @@ export default defineNuxtConfig({
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'robots', content: 'index, follow' },
         { name: 'author', content: 'DogHealthy' },
-        { name: 'theme-color', content: '#2563eb' }
+        { name: 'theme-color', content: '#2563eb' },
+        { name: 'description', content: 'DogHealthy is a UK-only dog health tracker — records, vaccinations, NFC tags, and found-pet alerts for dogs in the United Kingdom.' }
       ]
     }
   },

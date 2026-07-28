@@ -212,7 +212,7 @@ async function sendTwilioSms({ to, body }) {
 
 /**
  * Report a found dog: record scan intent=found and SMS the owner (Twilio).
- * Body: { petId, scanId?, latitude?, longitude?, accuracyM?, finderNote? }
+ * Body: { petId, scanId?, latitude?, longitude?, accuracyM?, finderNote?, finderName?, finderPhone? }
  */
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return json(204, {})
@@ -272,6 +272,20 @@ export async function handler(event) {
       typeof body.accuracyM === 'number' && Number.isFinite(body.accuracyM) ? body.accuracyM : null
     const finderNote =
       typeof body.finderNote === 'string' ? body.finderNote.trim().slice(0, 500) : null
+    const finderName =
+      typeof body.finderName === 'string' ? body.finderName.trim().slice(0, 80) : null
+    const finderPhoneRaw =
+      typeof body.finderPhone === 'string' ? body.finderPhone.trim() : ''
+    const finderPhone = normalizeUkPhone(finderPhoneRaw)
+
+    if (!finderName || finderName.length < 2) {
+      return json(400, { error: 'Please enter your name so the owner can contact you' })
+    }
+    if (!finderPhone) {
+      return json(400, {
+        error: 'Please enter a valid UK mobile (07… / +44…). DogHealthy is UK-only.'
+      })
+    }
 
     let scanId = body.scanId || null
     if (scanId) {
@@ -280,6 +294,8 @@ export async function handler(event) {
         .update({
           intent: 'found',
           finder_note: finderNote,
+          finder_name: finderName,
+          finder_phone: finderPhone,
           latitude: latitude ?? undefined,
           longitude: longitude ?? undefined,
           accuracy_m: accuracyM ?? undefined
@@ -293,6 +309,8 @@ export async function handler(event) {
           tag_id: tag.id,
           intent: 'found',
           finder_note: finderNote,
+          finder_name: finderName,
+          finder_phone: finderPhone,
           ip,
           latitude,
           longitude,
@@ -354,7 +372,7 @@ export async function handler(event) {
       } else {
         const loc = mapsLink(latitude, longitude)
         const message = [
-          `DogHealthy: someone reported finding ${dog.name}.`,
+          `DogHealthy: ${finderName} (${finderPhone}) reported finding ${dog.name}.`,
           loc ? `Approx location: ${loc}` : 'Location was not shared.',
           `View: ${PUBLIC_BASE_URL}/dogs/${petId}`
         ].join(' ')

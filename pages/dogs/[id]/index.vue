@@ -65,7 +65,7 @@
             </div>
 
             <div class="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900 mb-6">
-              If you have found this dog, alert the owner below. Walkers and sitters can check in/out or log a walk — these are saved with location, but do not send SMS.
+              DogHealthy is a <strong>UK-only</strong> service. If you have found this dog, alert the owner below with your name and UK mobile. Walkers can check in/out or start a tracked walk (name + number required; GPS updates about every 10 metres).
             </div>
 
             <div v-if="foundSuccess" class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
@@ -87,7 +87,7 @@
                 <button
                   type="button"
                   class="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold px-4 py-3 rounded-lg"
-                  :disabled="careSubmitting"
+                  :disabled="careSubmitting || walkTracking"
                   @click="recordCareAction('check_in')"
                 >
                   Check in
@@ -95,7 +95,7 @@
                 <button
                   type="button"
                   class="bg-slate-700 hover:bg-slate-800 disabled:opacity-60 text-white font-semibold px-4 py-3 rounded-lg"
-                  :disabled="careSubmitting"
+                  :disabled="careSubmitting || walkTracking"
                   @click="recordCareAction('check_out')"
                 >
                   Check out
@@ -104,13 +104,24 @@
                   type="button"
                   class="sm:col-span-2 font-semibold px-4 py-3 rounded-lg disabled:opacity-60 text-white"
                   :class="onWalk ? 'bg-orange-600 hover:bg-orange-700' : 'bg-emerald-600 hover:bg-emerald-700'"
-                  :disabled="careSubmitting"
-                  @click="recordCareAction(onWalk ? 'walk_end' : 'walk_start')"
+                  :disabled="careSubmitting || walkStarting"
+                  @click="onWalk ? endWalk() : openWalkModal()"
                 >
-                  {{ careSubmitting ? 'Saving…' : onWalk ? 'End walk' : 'Start walk' }}
+                  {{ walkStarting || careSubmitting ? 'Saving…' : onWalk ? 'End walk' : 'Start walk' }}
                 </button>
               </div>
-              <p v-if="onWalk" class="text-sm text-emerald-700">Walk in progress for {{ publicDog.name }}.</p>
+              <p v-if="onWalk" class="text-sm text-emerald-700">
+                Walk in progress for {{ publicDog.name }}
+                <span v-if="walkPointCount"> · {{ walkPointCount }} points</span>
+                <span v-if="walkDistanceM"> · ~{{ walkDistanceM }} m</span>
+                <span v-if="activeWalkerName"> · walker: {{ activeWalkerName }}</span>.
+                Keep this page open to record the route.
+              </p>
+            </div>
+
+            <div v-if="completedWalkRoute.length >= 2" class="mb-6">
+              <p class="text-sm font-semibold text-gray-800 mb-2">Walk route just completed</p>
+              <WalkRouteMap :token="mapboxToken" :coordinates="completedWalkRoute" />
             </div>
 
             <div class="border-t border-gray-100 pt-6">
@@ -119,15 +130,101 @@
                 type="button"
                 class="w-full sm:w-auto bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-lg"
                 :disabled="foundSubmitting"
-                @click="reportFound"
+                @click="openFoundModal"
               >
-                {{ foundSubmitting ? 'Notifying owner…' : 'I found this dog — alert owner' }}
+                I found this dog — alert owner
               </button>
             </div>
 
             <p v-if="scanRecorded" class="mt-4 text-xs text-gray-500">
               Scan recorded{{ locationShared ? ' with approximate location' : '' }}.
             </p>
+          </div>
+        </div>
+
+        <!-- Found contact modal -->
+        <div
+          v-if="showFoundModal"
+          class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
+          @click.self="showFoundModal = false"
+        >
+          <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h2 class="text-xl font-bold text-gray-900 mb-1">Alert the owner</h2>
+            <p class="text-sm text-gray-600 mb-4">
+              Please leave your name and UK mobile so they can contact you. DogHealthy is UK-only.
+            </p>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Your name</label>
+            <input
+              v-model="finderForm.name"
+              type="text"
+              maxlength="80"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3"
+              placeholder="Full name"
+            />
+            <label class="block text-sm font-medium text-gray-700 mb-1">UK mobile</label>
+            <input
+              v-model="finderForm.phone"
+              type="tel"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-1"
+              placeholder="07XXX XXXXXX"
+            />
+            <p class="text-xs text-gray-500 mb-4">{{ ukMobileHint(finderForm.phone) }}</p>
+            <div class="flex gap-3 justify-end">
+              <button type="button" class="px-4 py-2 text-sm font-medium text-gray-700" @click="showFoundModal = false">
+                Cancel
+              </button>
+              <button
+                type="button"
+                class="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold px-4 py-2 rounded-lg text-sm"
+                :disabled="foundSubmitting"
+                @click="submitFoundReport"
+              >
+                {{ foundSubmitting ? 'Sending…' : 'Send alert' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Walk contact modal -->
+        <div
+          v-if="showWalkModal"
+          class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
+          @click.self="showWalkModal = false"
+        >
+          <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h2 class="text-xl font-bold text-gray-900 mb-1">Start walk</h2>
+            <p class="text-sm text-gray-600 mb-4">
+              Enter the walker’s name and UK mobile. We’ll record GPS about every 10 metres until you tap End walk.
+            </p>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Walker’s name</label>
+            <input
+              v-model="walkerForm.name"
+              type="text"
+              maxlength="80"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3"
+              placeholder="Full name"
+            />
+            <label class="block text-sm font-medium text-gray-700 mb-1">UK mobile</label>
+            <input
+              v-model="walkerForm.phone"
+              type="tel"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-1"
+              placeholder="07XXX XXXXXX"
+            />
+            <p class="text-xs text-gray-500 mb-4">{{ ukMobileHint(walkerForm.phone) }}</p>
+            <div class="flex gap-3 justify-end">
+              <button type="button" class="px-4 py-2 text-sm font-medium text-gray-700" @click="showWalkModal = false">
+                Cancel
+              </button>
+              <button
+                type="button"
+                class="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold px-4 py-2 rounded-lg text-sm"
+                :disabled="walkStarting"
+                @click="startWalk"
+              >
+                {{ walkStarting ? 'Starting…' : 'Start tracking' }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -303,6 +400,11 @@
                   <span v-if="scan.ip"> · {{ scan.ip }}</span>
                   <span v-if="scan.sms_sent_at" class="text-green-700"> · SMS sent</span>
                 </p>
+                <p v-if="scan.finder_name || scan.finder_phone" class="text-gray-700 mt-1">
+                  Contact:
+                  <span v-if="scan.finder_name">{{ scan.finder_name }}</span>
+                  <span v-if="scan.finder_phone"> · {{ scan.finder_phone }}</span>
+                </p>
               </div>
               <div class="text-gray-500">
                 <span v-if="scan.latitude != null && scan.longitude != null">
@@ -312,6 +414,51 @@
               </div>
             </li>
           </ul>
+        </div>
+
+        <!-- Recent walks -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent walks</h2>
+          <div v-if="recentWalks.length === 0" class="text-gray-600 text-sm">
+            No tracked walks yet. When someone starts a walk from the public tag page, the route appears here.
+          </div>
+          <div v-else class="space-y-6">
+            <div
+              v-for="walk in recentWalks"
+              :key="walk.id"
+              class="border border-gray-100 rounded-xl p-4"
+            >
+              <div class="flex flex-wrap justify-between gap-2 mb-3 text-sm">
+                <div>
+                  <p class="font-medium text-gray-900">
+                    {{ formatDateTimeShort(walk.started_at) }}
+                    <span v-if="walk.ended_at"> → {{ formatDateTimeShort(walk.ended_at) }}</span>
+                  </p>
+                  <p class="text-gray-600">
+                    Walker: {{ walk.walker_name || 'Unknown' }}
+                    <span v-if="walk.walker_phone"> · {{ walk.walker_phone }}</span>
+                  </p>
+                  <p class="text-gray-500">
+                    {{ walk.point_count || 0 }} points
+                    <span v-if="walk.distance_m"> · ~{{ Math.round(Number(walk.distance_m)) }} m</span>
+                    · {{ walk.status }}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  class="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  @click="toggleWalkRoute(walk.id)"
+                >
+                  {{ selectedWalkId === walk.id ? 'Hide route' : 'Show route' }}
+                </button>
+              </div>
+              <WalkRouteMap
+                v-if="selectedWalkId === walk.id"
+                :token="mapboxToken"
+                :coordinates="selectedWalkCoords"
+              />
+            </div>
+          </div>
         </div>
 
         <div class="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -366,7 +513,9 @@
 <script setup lang="ts">
 import AdUnit from '~/components/ads/AdUnit.vue'
 import ScanLocationMap from '~/components/ScanLocationMap.vue'
+import WalkRouteMap from '~/components/WalkRouteMap.vue'
 import QRCode from 'qrcode'
+import { normalizeUkMobile, ukMobileHint } from '~/utils/ukPhone'
 
 const route = useRoute()
 const supabase = useSupabase()
@@ -416,8 +565,24 @@ interface TagScan {
   longitude: number | null
   intent?: string | null
   sms_sent_at?: string | null
+  finder_name?: string | null
+  finder_phone?: string | null
   device: { platform?: string; isMobile?: boolean } | null
 }
+
+interface DogWalk {
+  id: string
+  started_at: string
+  ended_at: string | null
+  status: string
+  point_count: number | null
+  distance_m: number | null
+  walker_name: string | null
+  walker_phone: string | null
+}
+
+const WALK_STORAGE_PREFIX = 'dh_walk_'
+const WALK_MIN_METERS = 10
 
 const dog = ref<Dog | null>(null)
 const publicDog = ref<PublicDog | null>(null)
@@ -432,10 +597,25 @@ const lastGeo = ref<{ latitude?: number; longitude?: number; accuracyM?: number 
 const foundSubmitting = ref(false)
 const foundSuccess = ref('')
 const foundError = ref('')
+const showFoundModal = ref(false)
+const finderForm = reactive({ name: '', phone: '' })
+
 const careSubmitting = ref(false)
 const careSuccess = ref('')
 const careError = ref('')
 const onWalk = ref(false)
+const showWalkModal = ref(false)
+const walkStarting = ref(false)
+const walkTracking = ref(false)
+const walkId = ref<string | null>(null)
+const walkClientToken = ref<string | null>(null)
+const walkPointCount = ref(0)
+const walkDistanceM = ref(0)
+const activeWalkerName = ref('')
+const walkerForm = reactive({ name: '', phone: '' })
+const completedWalkRoute = ref<{ latitude: number; longitude: number }[]>([])
+let watchId: number | null = null
+let lastWalkPoint: { latitude: number; longitude: number } | null = null
 
 const activeTag = ref<ActiveTag | null>(null)
 const tagUrl = ref('')
@@ -444,6 +624,9 @@ const tagLoading = ref(false)
 const tagError = ref('')
 const copied = ref(false)
 const recentScans = ref<TagScan[]>([])
+const recentWalks = ref<DogWalk[]>([])
+const selectedWalkId = ref<string | null>(null)
+const selectedWalkCoords = ref<{ latitude: number; longitude: number }[]>([])
 const ownerHasPhone = ref(true)
 
 const counts = ref({
@@ -603,12 +786,46 @@ const loadRecentScans = async () => {
   }
   const { data } = await supabase
     .from('doghealthy_scans')
-    .select('id, scanned_at, ip, latitude, longitude, device, intent, sms_sent_at')
+    .select('id, scanned_at, ip, latitude, longitude, device, intent, sms_sent_at, finder_name, finder_phone')
     .eq('tag_id', activeTag.value.id)
     .order('scanned_at', { ascending: false })
     .limit(20)
 
   recentScans.value = (data || []) as TagScan[]
+}
+
+const loadRecentWalks = async () => {
+  if (!dog.value) {
+    recentWalks.value = []
+    return
+  }
+  const { data } = await supabase
+    .from('doghealthy_walks')
+    .select('id, started_at, ended_at, status, point_count, distance_m, walker_name, walker_phone')
+    .eq('pet_id', dog.value.id)
+    .order('started_at', { ascending: false })
+    .limit(10)
+
+  recentWalks.value = (data || []) as DogWalk[]
+}
+
+const toggleWalkRoute = async (id: string) => {
+  if (selectedWalkId.value === id) {
+    selectedWalkId.value = null
+    selectedWalkCoords.value = []
+    return
+  }
+  selectedWalkId.value = id
+  const { data } = await supabase
+    .from('doghealthy_walk_points')
+    .select('latitude, longitude')
+    .eq('walk_id', id)
+    .order('sequence', { ascending: true })
+
+  selectedWalkCoords.value = (data || []).map((p) => ({
+    latitude: Number(p.latitude),
+    longitude: Number(p.longitude)
+  }))
 }
 
 const loadOwnerPhoneHint = async () => {
@@ -633,7 +850,7 @@ const loadOwnerTag = async (petId: string) => {
     activeTag.value = data
     tagUrl.value = `${baseUrl.value}/dogs/${petId}`
     await renderQr(tagUrl.value)
-    await loadRecentScans()
+    await Promise.all([loadRecentScans(), loadRecentWalks()])
   }
 }
 
@@ -703,9 +920,121 @@ const getOptionalGeo = (): Promise<{ latitude?: number; longitude?: number; accu
         })
       },
       () => resolve({}),
-      { enableHighAccuracy: false, timeout: 4000, maximumAge: 60000 }
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 15000 }
     )
   })
+}
+
+const distanceMeters = (
+  a: { latitude: number; longitude: number },
+  b: { latitude: number; longitude: number }
+) => {
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const R = 6371000
+  const dLat = toRad(b.latitude - a.latitude)
+  const dLon = toRad(b.longitude - a.longitude)
+  const lat1 = toRad(a.latitude)
+  const lat2 = toRad(b.latitude)
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(h))
+}
+
+const walkStorageKey = (petId: string) => `${WALK_STORAGE_PREFIX}${petId}`
+
+const saveWalkSession = (petId: string) => {
+  if (!walkId.value || !walkClientToken.value) return
+  sessionStorage.setItem(
+    walkStorageKey(petId),
+    JSON.stringify({
+      walkId: walkId.value,
+      clientToken: walkClientToken.value,
+      walkerName: activeWalkerName.value
+    })
+  )
+}
+
+const clearWalkSession = (petId: string) => {
+  sessionStorage.removeItem(walkStorageKey(petId))
+}
+
+const stopWalkWatch = () => {
+  if (watchId != null && navigator.geolocation) {
+    navigator.geolocation.clearWatch(watchId)
+  }
+  watchId = null
+  walkTracking.value = false
+}
+
+const postWalkPoint = async (geo: { latitude: number; longitude: number; accuracyM?: number }) => {
+  if (!publicDog.value || !walkId.value || !walkClientToken.value) return
+  try {
+    const result = await $fetch<{
+      pointCount?: number
+      distanceM?: number
+      skipped?: boolean
+    }>('/.netlify/functions/tag-walk', {
+      method: 'POST',
+      body: {
+        action: 'point',
+        petId: publicDog.value.id,
+        walkId: walkId.value,
+        clientToken: walkClientToken.value,
+        ...geo
+      }
+    })
+    if (typeof result.pointCount === 'number') walkPointCount.value = result.pointCount
+    if (typeof result.distanceM === 'number') walkDistanceM.value = result.distanceM
+    if (!result.skipped) lastWalkPoint = { latitude: geo.latitude, longitude: geo.longitude }
+  } catch (err) {
+    console.error('walk point failed', err)
+  }
+}
+
+const startWalkWatch = () => {
+  if (!navigator.geolocation) return
+  stopWalkWatch()
+  walkTracking.value = true
+  watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const geo = {
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        accuracyM: pos.coords.accuracy
+      }
+      locationShared.value = true
+      if (
+        lastWalkPoint &&
+        distanceMeters(lastWalkPoint, geo) < WALK_MIN_METERS
+      ) {
+        return
+      }
+      void postWalkPoint(geo)
+    },
+    () => {},
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+  )
+}
+
+const restoreWalkSession = (petId: string) => {
+  try {
+    const raw = sessionStorage.getItem(walkStorageKey(petId))
+    if (!raw) return
+    const parsed = JSON.parse(raw) as {
+      walkId?: string
+      clientToken?: string
+      walkerName?: string
+    }
+    if (!parsed.walkId || !parsed.clientToken) return
+    walkId.value = parsed.walkId
+    walkClientToken.value = parsed.clientToken
+    activeWalkerName.value = parsed.walkerName || ''
+    onWalk.value = true
+    startWalkWatch()
+  } catch {
+    clearWalkSession(petId)
+  }
 }
 
 const loadPublicScan = async (petId: string) => {
@@ -728,9 +1057,10 @@ const loadPublicScan = async (petId: string) => {
   onWalk.value = !!result.onWalk
   scanRecorded.value = true
   viewMode.value = 'public'
+  restoreWalkSession(petId)
 }
 
-const recordCareAction = async (intent: 'check_in' | 'check_out' | 'walk_start' | 'walk_end') => {
+const recordCareAction = async (intent: 'check_in' | 'check_out') => {
   if (!publicDog.value) return
   careSubmitting.value = true
   careSuccess.value = ''
@@ -761,13 +1091,33 @@ const recordCareAction = async (intent: 'check_in' | 'check_out' | 'walk_start' 
   }
 }
 
-const reportFound = async () => {
+const openFoundModal = () => {
+  foundError.value = ''
+  showFoundModal.value = true
+}
+
+const openWalkModal = () => {
+  careError.value = ''
+  showWalkModal.value = true
+}
+
+const submitFoundReport = async () => {
   if (!publicDog.value) return
+  const name = finderForm.name.trim()
+  const phone = normalizeUkMobile(finderForm.phone)
+  if (name.length < 2) {
+    foundError.value = 'Please enter your name'
+    return
+  }
+  if (!phone) {
+    foundError.value = 'Please enter a valid UK mobile (07… / +44…)'
+    return
+  }
+
   foundSubmitting.value = true
   foundSuccess.value = ''
   foundError.value = ''
   try {
-    // Refresh GPS when reporting found (more accurate than initial passive scan)
     const geo = await getOptionalGeo()
     const result = await $fetch<{
       success: boolean
@@ -778,10 +1128,13 @@ const reportFound = async () => {
       body: {
         petId: publicDog.value.id,
         scanId: lastScanId.value,
+        finderName: name,
+        finderPhone: phone,
         ...geo
       }
     })
 
+    showFoundModal.value = false
     foundSuccess.value = result.message
     if (result.sms?.skipped && result.sms.reason) {
       foundSuccess.value += ` (${result.sms.reason})`
@@ -794,6 +1147,114 @@ const reportFound = async () => {
       err?.data?.error || err?.message || 'Could not notify the owner. Please try again.'
   } finally {
     foundSubmitting.value = false
+  }
+}
+
+const startWalk = async () => {
+  if (!publicDog.value) return
+  const name = walkerForm.name.trim()
+  const phone = normalizeUkMobile(walkerForm.phone)
+  if (name.length < 2) {
+    careError.value = 'Please enter the walker’s name'
+    return
+  }
+  if (!phone) {
+    careError.value = 'Please enter a valid UK mobile (07… / +44…)'
+    return
+  }
+
+  walkStarting.value = true
+  careSuccess.value = ''
+  careError.value = ''
+  completedWalkRoute.value = []
+  try {
+    const geo = await getOptionalGeo()
+    if (geo.latitude == null || geo.longitude == null) {
+      throw new Error('Location permission is required to start a walk')
+    }
+    const result = await $fetch<{
+      walkId: string
+      clientToken: string
+      message: string
+      pointCount?: number
+      distanceM?: number
+      walkerName?: string
+    }>('/.netlify/functions/tag-walk', {
+      method: 'POST',
+      body: {
+        action: 'start',
+        petId: publicDog.value.id,
+        walkerName: name,
+        walkerPhone: phone,
+        ...geo
+      }
+    })
+
+    walkId.value = result.walkId
+    walkClientToken.value = result.clientToken
+    onWalk.value = true
+    walkPointCount.value = result.pointCount || 1
+    walkDistanceM.value = result.distanceM || 0
+    activeWalkerName.value = result.walkerName || name
+    lastWalkPoint = { latitude: geo.latitude, longitude: geo.longitude }
+    saveWalkSession(publicDog.value.id)
+    showWalkModal.value = false
+    careSuccess.value = result.message
+    startWalkWatch()
+  } catch (err: any) {
+    console.error(err)
+    careError.value =
+      err?.data?.error || err?.message || 'Could not start walk. Please try again.'
+    if (typeof err?.data?.onWalk === 'boolean') onWalk.value = err.data.onWalk
+  } finally {
+    walkStarting.value = false
+  }
+}
+
+const endWalk = async () => {
+  if (!publicDog.value || !walkId.value || !walkClientToken.value) {
+    // Fallback if session lost but scan says on walk
+    careError.value =
+      'No active walk session on this device. If a walk was started here, keep the same browser tab open.'
+    return
+  }
+
+  careSubmitting.value = true
+  careSuccess.value = ''
+  careError.value = ''
+  stopWalkWatch()
+  try {
+    const geo = await getOptionalGeo()
+    const result = await $fetch<{
+      message: string
+      points?: { latitude: number; longitude: number }[]
+      walk?: { point_count?: number; distance_m?: number }
+    }>('/.netlify/functions/tag-walk', {
+      method: 'POST',
+      body: {
+        action: 'end',
+        petId: publicDog.value.id,
+        walkId: walkId.value,
+        clientToken: walkClientToken.value,
+        ...geo
+      }
+    })
+
+    onWalk.value = false
+    completedWalkRoute.value = result.points || []
+    careSuccess.value = result.message
+    clearWalkSession(publicDog.value.id)
+    walkId.value = null
+    walkClientToken.value = null
+    activeWalkerName.value = ''
+    lastWalkPoint = null
+  } catch (err: any) {
+    console.error(err)
+    careError.value =
+      err?.data?.error || err?.message || 'Could not end walk. Please try again.'
+    if (onWalk.value) startWalkWatch()
+  } finally {
+    careSubmitting.value = false
   }
 }
 
@@ -821,7 +1282,6 @@ const bootstrap = async () => {
       }
     }
 
-    // Guest or non-owner: try public scan path
     try {
       await loadPublicScan(dogId)
     } catch (publicErr: any) {
@@ -842,6 +1302,10 @@ const bootstrap = async () => {
 }
 
 onMounted(bootstrap)
+
+onBeforeUnmount(() => {
+  stopWalkWatch()
+})
 
 useHead(() => ({
   title: dog.value?.name

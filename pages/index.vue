@@ -26,8 +26,11 @@
             <span class="block">Everything Your Dog Needs</span>
             <span class="block text-gray-100">All in One Place</span>
           </h1>
+          <p class="inline-flex items-center rounded-full bg-white/15 border border-white/30 px-4 py-1.5 text-sm font-semibold text-white mb-6">
+            🇬🇧 UK-only service
+          </p>
           <p class="text-xl md:text-2xl text-gray-100 mb-8 max-w-3xl mx-auto">
-            Track health records, manage vaccinations, find the perfect food, and keep all your dog's information organized
+            Track health records, manage vaccinations, find the perfect food, and keep all your dog's information organised — built for dog owners in the United Kingdom.
           </p>
           
           <div class="flex flex-col sm:flex-row justify-center gap-4 mb-12">
@@ -560,19 +563,19 @@ onMounted(async () => {
 
 // SEO Meta tags and structured data
 useHead({
-  title: 'DogHealthy - Complete Health Tracking & Food Finder for Your Dog',
+  title: 'DogHealthy - UK Dog Health Tracking & Food Finder',
   meta: [
-    { name: 'description', content: 'Free dog health tracker with medical records, vaccinations, medications, appointments, and intelligent food finder. Everything your dog needs in one place.' },
-    { name: 'keywords', content: 'dog health tracker, dog medical records, dog vaccinations, dog food finder, pet health management, dog care app' },
-    { property: 'og:title', content: 'DogHealthy - Complete Health Tracking & Food Finder for Your Dog' },
-    { property: 'og:description', content: 'Free dog health tracker with medical records, vaccinations, medications, appointments, and intelligent food finder.' },
+    { name: 'description', content: 'UK-only dog health tracker with medical records, vaccinations, medications, NFC pet tags, found-dog alerts, and food finder. Built for dog owners in the United Kingdom.' },
+    { name: 'keywords', content: 'UK dog health tracker, dog medical records, dog vaccinations, dog food finder, pet health management, NFC dog tag UK' },
+    { property: 'og:title', content: 'DogHealthy - UK Dog Health Tracking & Food Finder' },
+    { property: 'og:description', content: 'UK-only dog health tracker with medical records, vaccinations, NFC tags, and found-pet alerts.' },
     { property: 'og:type', content: 'website' },
-    { property: 'og:url', content: 'https://doghealthy.netlify.app' },
-    { property: 'og:image', content: 'https://doghealthy.netlify.app/dog_silhouette_friendly_pose_4MtxY.svg' },
+    { property: 'og:url', content: 'https://doghealthy.co.uk' },
+    { property: 'og:image', content: 'https://doghealthy.co.uk/dog_silhouette_friendly_pose_4MtxY.svg' },
     { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:title', content: 'DogHealthy - Complete Health Tracking & Food Finder' },
-    { name: 'twitter:description', content: 'Free dog health tracker with medical records, vaccinations, medications, appointments, and intelligent food finder.' },
-    { name: 'twitter:image', content: 'https://doghealthy.netlify.app/dog_silhouette_friendly_pose_4MtxY.svg' }
+    { name: 'twitter:title', content: 'DogHealthy - UK Dog Health Tracking & Food Finder' },
+    { name: 'twitter:description', content: 'UK-only dog health tracker with medical records, vaccinations, NFC tags, and found-pet alerts.' },
+    { name: 'twitter:image', content: 'https://doghealthy.co.uk/dog_silhouette_friendly_pose_4MtxY.svg' }
   ],
   script: [
     {
@@ -581,10 +584,11 @@ useHead({
         "@context": "https://schema.org",
         "@type": "WebApplication",
         "name": "DogHealthy",
-        "description": "Complete health tracking and food finder for your dog. Track medical records, vaccinations, medications, appointments, and find the perfect food.",
-        "url": "https://doghealthy.netlify.app",
+        "description": "UK-only dog health tracking and food finder. Track medical records, vaccinations, medications, appointments, NFC tags, and found-pet alerts.",
+        "url": "https://doghealthy.co.uk",
         "applicationCategory": "HealthApplication",
         "operatingSystem": "Web",
+        "areaServed": "GB",
         "offers": {
           "@type": "Offer",
           "price": "0",

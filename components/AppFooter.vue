@@ -6,7 +6,10 @@
         <div>
           <h3 class="text-lg font-semibold mb-4">DogHealthy</h3>
           <p class="text-gray-400 text-sm">
-            Your complete solution for managing your dog's health, vaccinations, medications, and appointments all in one place.
+            Your complete UK-only solution for managing your dog's health, vaccinations, medications, NFC tags, and found-pet alerts.
+          </p>
+          <p class="text-gray-500 text-xs mt-3">
+            United Kingdom only · UK mobile numbers (+44)
           </p>
         </div>
 
