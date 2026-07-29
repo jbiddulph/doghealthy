@@ -360,7 +360,9 @@
             :to="`/dogs/${dog.id}/vaccinations`"
             class="inline-flex flex-col items-center justify-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-4 text-center shadow-sm transition-colors"
           >
-            <i class="bi bi-syringe text-2xl" aria-hidden="true" />
+            <svg class="h-7 w-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M20.71 3.29a1 1 0 0 0-1.42 0l-1.12 1.12-1.47-1.47a1 1 0 1 0-1.41 1.41l1.47 1.47-8.6 8.6a3 3 0 0 0-.72 1.25l-.9 3.15a1 1 0 0 0 1.23 1.23l3.15-.9a3 3 0 0 0 1.25-.72l8.6-8.6 1.47 1.47a1 1 0 0 0 1.41-1.41l-1.47-1.47 1.12-1.12a1 1 0 0 0 0-1.41zM9.54 17.46l-1.17.33.33-1.17a1 1 0 0 1 .24-.42l.6-.6 1.02 1.02-.6.6a1 1 0 0 1-.42.24zm2.55-1.13-1.02-1.02 6.17-6.17 1.02 1.02-6.17 6.17z"/>
+            </svg>
             <span class="font-semibold text-sm leading-tight">Vaccinations</span>
             <span class="text-xs text-emerald-100">{{ counts.vaccinationsUpcoming }} active</span>
           </NuxtLink>
@@ -482,11 +484,13 @@
                 </p>
                 <p class="text-gray-500">{{ scan.device?.platform || 'device unknown' }}</p>
               </div>
-              <div class="text-gray-500 self-center">
-                <span v-if="scan.latitude != null && scan.longitude != null">
-                  {{ Number(scan.latitude).toFixed(4) }}, {{ Number(scan.longitude).toFixed(4) }}
-                </span>
-                <span v-else>No GPS</span>
+              <div class="self-center">
+                <CoordMapHover
+                  :latitude="scan.latitude"
+                  :longitude="scan.longitude"
+                  :token="mapboxToken"
+                  :color="scan.intent === 'check_in' ? '#2563eb' : '#334155'"
+                />
               </div>
             </li>
           </ul>
@@ -683,6 +687,7 @@
 import AdUnit from '~/components/ads/AdUnit.vue'
 import ScanLocationMap from '~/components/ScanLocationMap.vue'
 import WalkRouteMap from '~/components/WalkRouteMap.vue'
+import CoordMapHover from '~/components/CoordMapHover.vue'
 import QRCode from 'qrcode'
 import { normalizeUkMobile, ukMobileHint } from '~/utils/ukPhone'
 
@@ -690,6 +695,14 @@ const route = useRoute()
 const supabase = useSupabase()
 const authStore = useAuthStore()
 const config = useRuntimeConfig()
+const router = useRouter()
+const {
+  ensureSubscribed,
+  markSubscribed,
+  consumePendingAction,
+  peekPendingAction,
+  checkSubscription
+} = usePlanLimits()
 
 interface Dog {
   id: string
@@ -922,22 +935,80 @@ const renderQr = async (url: string) => {
   })
 }
 
-const ensureTag = async () => {
+const ensureTag = async (options?: { skipSubscriptionCheck?: boolean }) => {
   if (!dog.value) return
   tagLoading.value = true
   tagError.value = ''
   try {
+    // New tags require a DogHealthy Stripe subscription; refreshing an existing tag does not.
+    if (!options?.skipSubscriptionCheck && !activeTag.value) {
+      const allowed = await ensureSubscribed({
+        reason: 'nfc-tag',
+        next: `/dogs/${dog.value.id}?createTag=1`,
+        pending: {
+          action: 'createTag',
+          petId: dog.value.id,
+          createdAt: Date.now()
+        }
+      })
+      if (!allowed) return
+    }
+
     const accessToken = await getAccessToken()
     if (!accessToken) throw new Error('Please log in again to manage tags')
 
-    const result = await $fetch<{
-      tag: ActiveTag & { petId: string }
-      tagUrl: string
-    }>('/.netlify/functions/tag-ensure', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}` },
-      body: { petId: dog.value.id }
-    })
+    const runEnsure = () =>
+      $fetch<{
+        tag: ActiveTag & { petId: string }
+        tagUrl: string
+      }>('/.netlify/functions/tag-ensure', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: { petId: dog.value!.id }
+      })
+
+    let result
+    try {
+      result = await runEnsure()
+    } catch (firstErr: any) {
+      const code = firstErr?.data?.code || firstErr?.statusCode
+      const needsSub =
+        code === 'subscription_required' ||
+        firstErr?.statusCode === 402 ||
+        firstErr?.data?.statusCode === 402
+
+      // Webhook can lag a few seconds after Stripe checkout success
+      if (needsSub && options?.skipSubscriptionCheck) {
+        tagError.value = 'Confirming your subscription…'
+        for (let attempt = 0; attempt < 6; attempt++) {
+          await new Promise((r) => setTimeout(r, 1500))
+          const ready = await checkSubscription()
+          if (!ready) continue
+          try {
+            result = await runEnsure()
+            tagError.value = ''
+            break
+          } catch {
+            // keep retrying
+          }
+        }
+        if (!result) throw firstErr
+      } else if (needsSub) {
+        const allowed = await ensureSubscribed({
+          reason: 'nfc-tag',
+          next: `/dogs/${dog.value.id}?createTag=1`,
+          pending: {
+            action: 'createTag',
+            petId: dog.value.id,
+            createdAt: Date.now()
+          }
+        })
+        if (!allowed) return
+        throw firstErr
+      } else {
+        throw firstErr
+      }
+    }
 
     activeTag.value = {
       id: result.tag.id,
@@ -949,7 +1020,11 @@ const ensureTag = async () => {
     await Promise.all([loadRecentScans(1), loadCheckIns(1), loadRecentWalks(1)])
   } catch (err: any) {
     console.error(err)
-    tagError.value = err?.data?.error || err?.message || 'Failed to create tag'
+    if (err?.data?.code === 'subscription_required' || err?.statusCode === 402) {
+      tagError.value = 'A DogHealthy subscription is required to create NFC / QR tags.'
+    } else {
+      tagError.value = err?.data?.error || err?.message || 'Failed to create tag'
+    }
   } finally {
     tagLoading.value = false
   }
@@ -1573,6 +1648,26 @@ const bootstrap = async () => {
         dog.value = data
         viewMode.value = 'owner'
         await Promise.all([fetchCountsAndActivity(), loadOwnerTag(dogId), loadOwnerPhoneHint()])
+
+        const pending = peekPendingAction()
+        const resumeCreateTag =
+          route.query.createTag === '1' ||
+          route.query.subscription === 'success' ||
+          (pending?.action === 'createTag' && pending.petId === dogId)
+
+        if (resumeCreateTag) {
+          if (pending?.action === 'createTag' && pending.petId === dogId) {
+            consumePendingAction()
+          }
+          if (route.query.subscription === 'success' || route.query.createTag === '1') {
+            markSubscribed()
+          }
+          await ensureTag({ skipSubscriptionCheck: true })
+          const q = { ...route.query } as Record<string, any>
+          delete q.createTag
+          delete q.subscription
+          await router.replace({ path: route.path, query: q })
+        }
         return
       }
     }

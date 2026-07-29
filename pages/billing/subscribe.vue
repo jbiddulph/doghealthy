@@ -3,10 +3,10 @@
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div class="mb-8">
         <NuxtLink
-          to="/dogs"
+          :to="backPath"
           class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
         >
-          <span class="mr-1">←</span> Back to My Dogs
+          <span class="mr-1">←</span> {{ backLabel }}
         </NuxtLink>
       </div>
 
@@ -49,6 +49,7 @@
               <li>✓ Unlimited dogs</li>
               <li>✓ Unlimited health records & vaccinations</li>
               <li>✓ Unlimited medications, appointments & vets</li>
+              <li>✓ NFC / QR tags for lost-dog alerts</li>
             </ul>
             <button
               type="button"
@@ -86,7 +87,7 @@
         </div>
 
         <p class="text-xs text-gray-500">
-          Payments are securely processed by Stripe Payment Links. After paying, return to DogHealthy and continue where you left off.
+          Payments are securely processed by Stripe Payment Links. After paying, you’ll return to DogHealthy and continue where you left off.
         </p>
       </div>
     </div>
@@ -106,7 +107,13 @@ type PlanType = 'monthly' | 'yearly'
 const router = useRouter()
 const route = useRoute()
 const config = useRuntimeConfig()
-const { freeLimit, markSubscribed, resourceLabel } = usePlanLimits()
+const {
+  freeLimit,
+  markSubscribed,
+  resourceLabel,
+  peekPendingAction,
+  consumePendingAction
+} = usePlanLimits()
 
 const paymentLinks = computed<Record<PlanType, string>>(() => ({
   monthly: String(config.public.stripePaymentLinkMonthly || '').trim(),
@@ -119,17 +126,49 @@ const linksConfigured = computed(() => {
   return Boolean(monthly && yearly && !monthly.includes('YOUR_') && !yearly.includes('YOUR_'))
 })
 
+const nextPath = computed(() => {
+  const next = route.query.next
+  return typeof next === 'string' && next.startsWith('/') ? next : ''
+})
+
+const backPath = computed(() => nextPath.value || '/dogs')
+const backLabel = computed(() => (nextPath.value ? 'Back' : 'Back to My Dogs'))
+
 const reasonMessage = computed(() => {
   const reason = route.query.reason as string | undefined
   if (!reason) return ''
+  if (reason === 'nfc-tag') {
+    return 'NFC / QR tags are included with a DogHealthy subscription. Choose a plan below, then we’ll create your tag and QR code.'
+  }
   const label = resourceLabel(reason as any)
   return `You've reached the free limit of ${freeLimit} ${label}. Subscribe to add more.`
 })
 
-onMounted(() => {
+const resumeAfterSubscribe = async () => {
+  markSubscribed()
+
+  const pending = peekPendingAction()
+  if (pending?.action === 'createTag' && pending.petId) {
+    consumePendingAction()
+    await router.replace(`/dogs/${pending.petId}?createTag=1&subscription=success`)
+    return
+  }
+
+  if (nextPath.value) {
+    const join = nextPath.value.includes('?') ? '&' : '?'
+    const target = nextPath.value.includes('subscription=')
+      ? nextPath.value
+      : `${nextPath.value}${join}subscription=success`
+    await router.replace(target)
+    return
+  }
+
+  await router.replace('/dogs')
+}
+
+onMounted(async () => {
   if (route.query.subscription === 'success') {
-    markSubscribed()
-    router.replace('/dogs')
+    await resumeAfterSubscribe()
   }
 })
 
@@ -145,8 +184,7 @@ const startSubscription = async (plan: PlanType) => {
       )
     }
 
-    // Optimistically mark subscribed so returning users aren't blocked
-    markSubscribed()
+    // Do not mark subscribed until Stripe returns with ?subscription=success
     window.location.href = url
   } catch (err: any) {
     console.error('Error starting subscription:', err)

@@ -85,6 +85,29 @@ export async function handler(event) {
       return json(500, { error: 'Failed to look up tag' })
     }
 
+    // Creating a new tag requires an active Stripe subscription
+    if (!existing) {
+      const { data: profile } = await admin
+        .from('doghealthy_users')
+        .select('subscription_status, subscription_current_period_end')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      const status = String(profile?.subscription_status || '').toLowerCase()
+      const periodEnd = profile?.subscription_current_period_end
+        ? new Date(profile.subscription_current_period_end)
+        : null
+      const periodOk = !periodEnd || periodEnd.getTime() > Date.now() - 24 * 60 * 60 * 1000
+      const subscribed = (status === 'active' || status === 'trialing') && periodOk
+
+      if (!subscribed) {
+        return json(402, {
+          error: 'A DogHealthy subscription is required to create NFC / QR tags.',
+          code: 'subscription_required'
+        })
+      }
+    }
+
     let tag = existing
     if (!tag) {
       const now = new Date().toISOString()
