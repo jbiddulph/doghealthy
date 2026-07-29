@@ -260,6 +260,7 @@ const fetchListings = async () => {
 }
 
 const deleteListing = async (listingId: string) => {
+  if (!authStore.userId) return
   if (!confirm('Are you sure you want to delete this listing? This action cannot be undone.')) {
     return
   }
@@ -269,13 +270,14 @@ const deleteListing = async (listingId: string) => {
       .from('doghealthy_listings')
       .delete()
       .eq('id', listingId)
+      .eq('user_id', authStore.userId)
 
     if (error) throw error
-    
-    await fetchListings()
-  } catch (error) {
+
+    listings.value = listings.value.filter((l) => l.id !== listingId)
+  } catch (error: any) {
     console.error('Error deleting listing:', error)
-    alert('Error deleting listing. Please try again.')
+    alert(error?.message || 'Error deleting listing. Please try again.')
   }
 }
 

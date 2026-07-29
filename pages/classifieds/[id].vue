@@ -106,9 +106,33 @@
               </div>
             </div>
 
-            <!-- Owner -->
-            <div v-if="isOwner" class="text-center text-sm text-secondary py-3 bg-muted rounded-lg mb-4">
-              This is your listing
+            <!-- Owner: manage listing -->
+            <div v-if="isOwner" class="space-y-3 mb-4">
+              <p class="text-center text-sm text-secondary py-2 bg-muted rounded-lg">
+                This is your listing
+              </p>
+              <NuxtLink
+                :to="`/classifieds/${listing.id}/edit`"
+                class="block w-full text-center bg-secondary hover:bg-dark text-white py-3 px-4 rounded-lg font-semibold transition-colors"
+              >
+                <i class="bi bi-pencil mr-2"></i>
+                Edit listing
+              </NuxtLink>
+              <button
+                type="button"
+                :disabled="deleting"
+                class="w-full bg-red-100 hover:bg-red-200 text-red-700 py-3 px-4 rounded-lg font-semibold transition-colors disabled:opacity-60"
+                @click="deleteListing"
+              >
+                <i class="bi bi-trash mr-2"></i>
+                {{ deleting ? 'Deleting…' : 'Delete listing' }}
+              </button>
+              <NuxtLink
+                to="/classifieds/my-listings"
+                class="block w-full text-center text-sm text-primary hover:underline"
+              >
+                Manage all my listings
+              </NuxtLink>
             </div>
 
             <!-- Logged-in buyer: in-app chat -->
@@ -304,6 +328,7 @@ usePageSeo(() => {
 const listing = ref<any>(null)
 const loading = ref(true)
 const showChat = ref(false)
+const deleting = ref(false)
 
 const guestForm = reactive({
   name: '',
@@ -337,19 +362,30 @@ const formatDate = (dateString: string) => {
 const fetchListing = async () => {
   try {
     loading.value = true
+    const id = route.params.id as string
 
-    const { data, error } = await supabase
-      .from('doghealthy_listings')
-      .select('*')
-      .eq('id', route.params.id)
-      .eq('status', 'active')
-      .single()
+    // Active listings are public; owners can also open their own non-active listings
+    let query = supabase.from('doghealthy_listings').select('*').eq('id', id)
 
+    if (authStore.userId) {
+      // Prefer owner's row even if not active
+      const { data: owned } = await supabase
+        .from('doghealthy_listings')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', authStore.userId)
+        .maybeSingle()
+
+      if (owned) {
+        listing.value = owned
+        return
+      }
+    }
+
+    const { data, error } = await query.eq('status', 'active').maybeSingle()
     if (error) throw error
-
     listing.value = data
 
-    // Increment view count (skip owner)
     if (data && data.user_id !== authStore.userId) {
       await supabase
         .from('doghealthy_listings')
@@ -358,8 +394,31 @@ const fetchListing = async () => {
     }
   } catch (error) {
     console.error('Error fetching listing:', error)
+    listing.value = null
   } finally {
     loading.value = false
+  }
+}
+
+const deleteListing = async () => {
+  if (!listing.value || !isOwner.value || !authStore.userId) return
+  if (!confirm('Delete this listing permanently? This cannot be undone.')) return
+
+  deleting.value = true
+  try {
+    const { error } = await supabase
+      .from('doghealthy_listings')
+      .delete()
+      .eq('id', listing.value.id)
+      .eq('user_id', authStore.userId)
+
+    if (error) throw error
+    await navigateTo('/classifieds/my-listings')
+  } catch (err: any) {
+    console.error('Error deleting listing:', err)
+    alert(err?.message || 'Could not delete listing. Please try again.')
+  } finally {
+    deleting.value = false
   }
 }
 

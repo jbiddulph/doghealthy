@@ -18,9 +18,16 @@
           <h1 class="text-4xl font-bold text-dark mb-2">Dog Classifieds</h1>
           <p class="text-secondary text-lg">Find your perfect companion from trusted breeders. Browse listings from responsible breeders and find your new best friend.</p>
         </div>
-        <div v-if="authStore.isAuthenticated">
-          <NuxtLink 
-            to="/classifieds/new" 
+        <div v-if="authStore.isAuthenticated" class="flex flex-wrap gap-2">
+          <NuxtLink
+            to="/classifieds/my-listings"
+            class="bg-secondary hover:bg-dark text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+          >
+            <i class="bi bi-folder2-open"></i>
+            My Listings
+          </NuxtLink>
+          <NuxtLink
+            to="/classifieds/new"
             class="bg-primary hover:bg-accent text-dark px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
           >
             <i class="bi bi-plus-lg"></i>
@@ -28,8 +35,8 @@
           </NuxtLink>
         </div>
         <div v-else-if="!authStore.loading">
-          <NuxtLink 
-            to="/auth/login" 
+          <NuxtLink
+            to="/auth/login"
             class="bg-secondary hover:bg-dark text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
           >
             <i class="bi bi-person-plus"></i>

@@ -420,14 +420,15 @@ const handleSubmit = async () => {
       .from('doghealthy_listings')
       .update(updateData)
       .eq('id', route.params.id)
+      .eq('user_id', authStore.userId)
 
     if (error) throw error
 
     // Redirect to the listing
     router.push(`/classifieds/${route.params.id}`)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating listing:', error)
-    alert('Error updating listing. Please try again.')
+    alert(error?.message || 'Error updating listing. Please try again.')
   } finally {
     saving.value = false
   }
