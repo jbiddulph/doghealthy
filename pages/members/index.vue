@@ -242,17 +242,13 @@ interface Pagination {
 }
 
 // SEO Meta tags
-useHead({
-  title: 'Community Members - Discover Dog Owners | DogHealthy',
-  meta: [
-    { 
-      name: 'description', 
-      content: 'Browse our community of dog owners and their furry friends. Connect with fellow dog lovers and discover their dogs.' 
-    },
-    { property: 'og:title', content: 'Community Members - Discover Dog Owners | DogHealthy' },
-    { property: 'og:description', content: 'Browse our community of dog owners and their furry friends.' },
-    { property: 'og:type', content: 'website' }
-  ]
+usePageSeo({
+  title: 'DogHealthy Community — Meet UK Dog Owners',
+  description:
+    'Explore the DogHealthy community of UK dog owners. See member profiles, discover breeds, and get inspired by how others care for their dogs’ health and wellbeing.',
+  keywords:
+    'dog owner community UK, DogHealthy members, dog lovers UK, pet owner profiles, dog breeds community',
+  path: '/members'
 })
 
 const route = useRoute()

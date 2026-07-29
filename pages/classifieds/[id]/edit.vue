@@ -267,6 +267,12 @@ definePageMeta({
   middleware: 'auth'
 })
 
+usePageSeo({
+  title: 'Edit Dog Listing',
+  description: 'Edit your DogHealthy classifieds listing.',
+  index: false
+})
+
 const supabase = useSupabase()
 const authStore = useAuthStore()
 const router = useRouter()

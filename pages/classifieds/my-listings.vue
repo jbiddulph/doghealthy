@@ -179,6 +179,13 @@ definePageMeta({
   middleware: 'auth'
 })
 
+usePageSeo({
+  title: 'My Classified Listings',
+  description: 'Manage your DogHealthy dog classifieds listings in the UK.',
+  path: '/classifieds/my-listings',
+  index: false
+})
+
 const supabase = useSupabase()
 const authStore = useAuthStore()
 

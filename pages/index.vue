@@ -690,55 +690,44 @@ onMounted(async () => {
 })
 
 // SEO Meta tags and structured data
-useHead({
-  title: 'DogHealthy - UK Dog Health Tracking & Food Finder',
-  meta: [
-    { name: 'description', content: 'UK-only dog health tracker with medical records, vaccinations, medications, NFC pet tags, found-dog alerts, and food finder. Built for dog owners in the United Kingdom.' },
-    { name: 'keywords', content: 'UK dog health tracker, dog medical records, dog vaccinations, dog food finder, pet health management, NFC dog tag UK' },
-    { property: 'og:title', content: 'DogHealthy - UK Dog Health Tracking & Food Finder' },
-    { property: 'og:description', content: 'UK-only dog health tracker with medical records, vaccinations, NFC tags, and found-pet alerts.' },
-    { property: 'og:type', content: 'website' },
-    { property: 'og:url', content: 'https://doghealthy.co.uk' },
-    { property: 'og:image', content: 'https://doghealthy.co.uk/dog_silhouette_friendly_pose_4MtxY.svg' },
-    { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:title', content: 'DogHealthy - UK Dog Health Tracking & Food Finder' },
-    { name: 'twitter:description', content: 'UK-only dog health tracker with medical records, vaccinations, NFC tags, and found-pet alerts.' },
-    { name: 'twitter:image', content: 'https://doghealthy.co.uk/dog_silhouette_friendly_pose_4MtxY.svg' }
-  ],
-  script: [
-    {
-      type: 'application/ld+json',
-      children: JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "DogHealthy",
-        "description": "UK-only dog health tracking and food finder. Track medical records, vaccinations, medications, appointments, NFC tags, and found-pet alerts.",
-        "url": "https://doghealthy.co.uk",
-        "applicationCategory": "HealthApplication",
-        "operatingSystem": "Web",
-        "areaServed": "GB",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "GBP"
-        },
-        "featureList": [
-          "Dog Health Records",
-          "Vaccination Tracking", 
-          "Medication Management",
-          "Appointment Scheduling",
-          "Dog Food Finder",
-          "Weight Tracking",
-          "Vet Contact Management"
-        ],
-        "provider": {
-          "@type": "Organization",
-          "name": "DogHealthy",
-          "url": "https://doghealthy.netlify.app"
-        }
-      })
+usePageSeo({
+  title: 'DogHealthy — UK Dog Health Tracker, NFC Tags & Food Finder',
+  description:
+    'DogHealthy helps UK dog owners track medical records, vaccinations, medications and appointments, order NFC / QR pet tags with found-dog SMS alerts, and find the right dog food — built for the United Kingdom.',
+  keywords:
+    'DogHealthy, UK dog health tracker, dog medical records UK, dog vaccinations, dog medications, NFC dog tag UK, QR pet tag, found dog SMS alert, dog food finder UK, puppy health tracker',
+  path: '/',
+  jsonLd: {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'DogHealthy',
+    description:
+      'UK dog health tracking, NFC / QR pet tags with found-pet alerts, and dog food finder for owners in the United Kingdom.',
+    url: 'https://doghealthy.co.uk',
+    applicationCategory: 'HealthApplication',
+    operatingSystem: 'Web',
+    areaServed: 'GB',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'GBP'
+    },
+    featureList: [
+      'Dog health records',
+      'Vaccination tracking',
+      'Medication management',
+      'Appointment scheduling',
+      'NFC and QR pet tags',
+      'Found-dog SMS alerts',
+      'Dog food finder',
+      'Vet contact management'
+    ],
+    provider: {
+      '@type': 'Organization',
+      name: 'DogHealthy',
+      url: 'https://doghealthy.co.uk'
     }
-  ]
+  }
 })
 </script>
 

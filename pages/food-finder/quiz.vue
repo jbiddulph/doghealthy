@@ -642,22 +642,13 @@ onMounted(() => {
 })
 
 // SEO Meta tags
-useHead({
-  title: 'Dog Food Quiz - Find Your Perfect Match | DogHealthy',
-  meta: [
-    { 
-      name: 'description', 
-      content: 'Take our quick quiz to find the best dog food for your pet based on breed, age, dietary needs, and budget. Get personalized recommendations in minutes.' 
-    },
-    { name: 'keywords', content: 'dog food quiz, dog food recommendation, personalized dog food, dog nutrition quiz, best dog food finder' },
-    { property: 'og:title', content: 'Dog Food Quiz - Find Your Perfect Match | DogHealthy' },
-    { property: 'og:description', content: 'Take our quick quiz to find the best dog food for your pet based on breed, age, dietary needs, and budget.' },
-    { property: 'og:type', content: 'website' },
-    { property: 'og:url', content: 'https://doghealthy.netlify.app/food-finder/quiz' },
-    { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:title', content: 'Dog Food Quiz - Find Your Perfect Match' },
-    { name: 'twitter:description', content: 'Take our quick quiz to find the best dog food for your pet based on breed, age, dietary needs, and budget.' }
-  ]
+usePageSeo({
+  title: 'Dog Food Quiz — Personalised Recommendations',
+  description:
+    'Take the DogHealthy UK dog food quiz. Answer a few questions about breed, age, allergies and budget to get personalised dog food recommendations in minutes.',
+  keywords:
+    'dog food quiz UK, personalised dog food, dog nutrition quiz, best dog food recommendation, DogHealthy quiz, puppy food quiz',
+  path: '/food-finder/quiz'
 })
 </script>
 

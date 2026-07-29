@@ -78,19 +78,13 @@ const error = ref('')
 const authStore = useAuthStore()
 const router = useRouter()
 
-// SEO Meta tags
-useHead({
-  title: 'Login - DogHealthy',
-  meta: [
-    { 
-      name: 'description', 
-      content: 'Login to your DogHealthy account to manage your dog profiles, track health records, and access personalized recommendations.' 
-    },
-    { name: 'robots', content: 'noindex, nofollow' }, // Don't index login pages
-    { property: 'og:title', content: 'Login - DogHealthy' },
-    { property: 'og:description', content: 'Login to your DogHealthy account to manage your dog profiles and health records.' },
-    { property: 'og:type', content: 'website' }
-  ]
+usePageSeo({
+  title: 'Log in to DogHealthy',
+  description:
+    'Sign in to your DogHealthy account to manage UK dog health records, vaccinations, medications, NFC tags and found-pet alerts.',
+  keywords: 'DogHealthy login, dog health app sign in UK',
+  path: '/auth/login',
+  index: false
 })
 
 const handleLogin = async () => {

@@ -22,6 +22,14 @@
 
 <script setup lang="ts">
 const lastUpdated = new Date().toLocaleDateString('en-GB')
+
+usePageSeo({
+  title: 'Terms of Service',
+  description:
+    'DogHealthy terms of service for UK dog owners. Understand acceptable use, veterinary disclaimers, and your responsibilities when using our health tracker and NFC tags.',
+  keywords: 'DogHealthy terms of service, dog health app terms UK, pet tracker terms',
+  path: '/terms'
+})
 </script>
 
 

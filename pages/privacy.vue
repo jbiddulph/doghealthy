@@ -27,6 +27,14 @@
 
 <script setup lang="ts">
 const lastUpdated = new Date().toLocaleDateString('en-GB')
+
+usePageSeo({
+  title: 'Privacy Policy',
+  description:
+    'Read how DogHealthy collects and uses account and dog health data for UK users. Learn about retention, deletion and how to contact us about privacy.',
+  keywords: 'DogHealthy privacy policy, dog health app privacy UK, pet data protection, GDPR dog app',
+  path: '/privacy'
+})
 </script>
 
 

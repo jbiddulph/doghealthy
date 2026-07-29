@@ -267,6 +267,12 @@ const router = useRouter()
 const supabase = useSupabase()
 const authStore = useAuthStore()
 
+usePageSeo({
+  title: 'Edit Dog Profile',
+  description: 'Update your dog’s profile on DogHealthy — breed, weight, microchip and notes for UK pet health tracking.',
+  index: false
+})
+
 interface Dog {
   id: string
   user_id: string

@@ -226,6 +226,13 @@ definePageMeta({
   middleware: 'auth'
 })
 
+usePageSeo({
+  title: 'Notifications & Reminders',
+  description: 'Manage DogHealthy vaccination, medication and appointment reminders for your UK dogs.',
+  path: '/notifications',
+  index: false
+})
+
 const supabase = useSupabase()
 const authStore = useAuthStore()
 const { 

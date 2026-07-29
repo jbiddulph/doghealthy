@@ -99,6 +99,16 @@ definePageMeta({
   middleware: 'auth'
 })
 
+usePageSeo({
+  title: 'Subscribe to DogHealthy — Monthly or Yearly Plans',
+  description:
+    'Upgrade to DogHealthy Subscriber for unlimited dogs and health records, plus NFC / QR pet tags with found-dog SMS alerts. Choose monthly (£6.50) or yearly (£70) UK plans.',
+  keywords:
+    'DogHealthy subscription, dog health app pricing UK, NFC dog tag subscription, unlimited dog records, DogHealthy monthly yearly',
+  path: '/billing/subscribe',
+  index: false
+})
+
 const loading = ref(false)
 const error = ref('')
 

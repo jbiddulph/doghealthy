@@ -413,6 +413,14 @@ const authStore = useAuthStore()
 const dogId = route.params.id as string
 const dogName = ref('')
 
+usePageSeo(() => ({
+  title: dogName.value ? `Appointments — ${dogName.value}` : 'Dog Appointments',
+  description: dogName.value
+    ? `Schedule and track vet appointments for ${dogName.value} with DogHealthy.`
+    : 'Schedule and track dog vet appointments with DogHealthy.',
+  index: false
+}))
+
 interface Appointment {
   id: string
   dog_id: string

@@ -435,13 +435,12 @@ const submitOrder = async () => {
 
 onMounted(loadPage)
 
-useHead({
-  title: 'Order NFC Dog Tags | DogHealthy',
-  meta: [
-    {
-      name: 'description',
-      content: 'Order NFC dog tags linked to your DogHealthy pet profiles. Multi-dog orders supported.'
-    }
-  ]
+usePageSeo({
+  title: 'NFC & QR Dog Tags — Found-Pet Alerts for UK Owners',
+  description:
+    'Order DogHealthy NFC and QR dog tags linked to your pet’s profile. When someone finds your dog in the UK, they can scan the tag to alert you — with GPS, check-in and walk tools.',
+  keywords:
+    'NFC dog tag UK, QR pet tag, dog ID tag, found dog alert, lost dog NFC tag, DogHealthy tag, pet microchip alternative QR, smart dog tag UK',
+  path: '/nfc-tags'
 })
 </script>

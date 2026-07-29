@@ -134,6 +134,15 @@ definePageMeta({
   layout: false
 })
 
+usePageSeo({
+  title: 'Create a DogHealthy Account',
+  description:
+    'Register for DogHealthy — the UK dog health tracker for medical records, vaccinations, NFC / QR tags and found-dog alerts. Free to start.',
+  keywords: 'DogHealthy sign up, create dog health account UK, register pet tracker',
+  path: '/auth/register',
+  index: false
+})
+
 const fullName = ref('')
 const email = ref('')
 const phoneLocal = ref('')

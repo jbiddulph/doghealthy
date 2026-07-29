@@ -1,2 +1,13 @@
 User-Agent: *
-Disallow:
+Allow: /
+Disallow: /auth/
+Disallow: /dogs/
+Disallow: /profile
+Disallow: /notifications
+Disallow: /vets
+Disallow: /billing/
+Disallow: /classifieds/new
+Disallow: /classifieds/my-listings
+Disallow: /p/
+
+Sitemap: https://doghealthy.co.uk/sitemap.xml

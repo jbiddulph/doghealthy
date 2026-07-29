@@ -495,22 +495,13 @@ onMounted(() => {
 })
 
 // SEO Meta tags
-useHead({
-  title: 'Dog Food Finder - Compare & Find the Best Dog Food | DogHealthy',
-  meta: [
-    { 
-      name: 'description', 
-      content: 'Find and compare the best dog food for your pet. Filter by breed size, food type, price, and special dietary needs. Expert recommendations and affiliate-backed reviews.' 
-    },
-    { name: 'keywords', content: 'dog food finder, best dog food, dog food comparison, dog nutrition, puppy food, senior dog food, grain free dog food, hypoallergenic dog food' },
-    { property: 'og:title', content: 'Dog Food Finder - Compare & Find the Best Dog Food | DogHealthy' },
-    { property: 'og:description', content: 'Find and compare the best dog food for your pet. Filter by breed size, food type, price, and special dietary needs.' },
-    { property: 'og:type', content: 'website' },
-    { property: 'og:url', content: 'https://doghealthy.netlify.app/food-finder' },
-    { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:title', content: 'Dog Food Finder - Compare & Find the Best Dog Food' },
-    { name: 'twitter:description', content: 'Find and compare the best dog food for your pet. Filter by breed size, food type, price, and special dietary needs.' }
-  ]
+usePageSeo({
+  title: 'Dog Food Finder — Compare UK Dog Food Brands',
+  description:
+    'Compare dog food in the UK by breed size, life stage, diet type and budget. DogHealthy’s food finder helps you choose nutritious options for puppies, adults and senior dogs.',
+  keywords:
+    'dog food finder UK, best dog food UK, dog food comparison, puppy food, senior dog food, grain free dog food, hypoallergenic dog food, DogHealthy food finder',
+  path: '/food-finder'
 })
 </script>
 

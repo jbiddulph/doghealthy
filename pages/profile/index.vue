@@ -209,7 +209,10 @@ const saveProfile = async () => {
 
 onMounted(loadProfile)
 
-useHead({
-  title: 'Your profile | DogHealthy'
+usePageSeo({
+  title: 'Your Profile',
+  description: 'Update your DogHealthy account profile, contact number and preferences for UK found-dog alerts.',
+  path: '/profile',
+  index: false
 })
 </script>

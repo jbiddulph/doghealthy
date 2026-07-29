@@ -29,6 +29,15 @@
 </template>
 
 <script setup lang="ts">
+usePageSeo({
+  title: 'Contact DogHealthy — Help & Support',
+  description:
+    'Contact the DogHealthy team for support with your UK dog health account, NFC / QR tags, subscriptions, food finder questions, or general feedback.',
+  keywords:
+    'contact DogHealthy, DogHealthy support, dog health app help UK, NFC tag support, dog food finder help',
+  path: '/contact'
+})
+
 const form = ref({ name: '', email: '', message: '' })
 const submitting = ref(false)
 const success = ref(false)

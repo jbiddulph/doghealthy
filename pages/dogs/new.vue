@@ -355,6 +355,13 @@
 </template>
 
 <script setup lang="ts">
+usePageSeo({
+  title: 'Add a New Dog',
+  description: 'Add a dog to your DogHealthy account and start tracking health records, vaccinations and NFC tags in the UK.',
+  path: '/dogs/new',
+  index: false
+})
+
 const supabase = useSupabase()
 const router = useRouter()
 const authStore = useAuthStore()

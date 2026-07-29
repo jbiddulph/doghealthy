@@ -1697,14 +1697,33 @@ onBeforeUnmount(() => {
   stopWalkWatch()
 })
 
-useHead(() => ({
-  title: dog.value?.name
-    ? `${dog.value.name} | DogHealthy`
-    : publicDog.value?.name
-      ? `${publicDog.value.name} | DogHealthy`
-      : 'Pet Profile | DogHealthy',
-  meta: viewMode.value === 'public'
-    ? [{ name: 'robots', content: 'noindex' }]
-    : []
-}))
+usePageSeo(() => {
+  const name = dog.value?.name || publicDog.value?.name
+  const isPublic = viewMode.value === 'public'
+  const breed = dog.value?.breed || publicDog.value?.breed
+
+  if (name) {
+    return {
+      title: isPublic
+        ? `${name} — DogHealthy Pet Tag Profile`
+        : `${name} — Dog Health Profile`,
+      description: isPublic
+        ? `${name}${breed ? ` (${breed})` : ''} has a DogHealthy NFC / QR tag. If you have found this dog in the UK, use the page tools to alert the owner, check in, or start a walk.`
+        : `Manage ${name}’s health on DogHealthy — records, vaccinations, medications, appointments, NFC / QR tag and found-dog alerts for UK owners.`,
+      keywords: isPublic
+        ? `${name}, found dog UK, NFC dog tag, DogHealthy pet profile, lost dog alert`
+        : `${name}, dog health profile, DogHealthy, vaccinations, medications`,
+      path: route.path,
+      index: false
+    }
+  }
+
+  return {
+    title: 'Pet Profile',
+    description:
+      'DogHealthy pet profile for UK dog owners — health tracking and NFC / QR found-pet tools.',
+    path: route.path,
+    index: false
+  }
+})
 </script>

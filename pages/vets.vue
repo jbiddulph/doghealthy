@@ -185,18 +185,12 @@ const supabase = useSupabase()
 const authStore = useAuthStore()
 
 // SEO Meta tags
-useHead({
-  title: 'Veterinarians - Manage Vet Contacts | DogHealthy',
-  meta: [
-    { 
-      name: 'description', 
-      content: 'Manage your veterinarian contacts and clinic information. Keep all your vet details organized for quick access when needed.' 
-    },
-    { name: 'robots', content: 'noindex, nofollow' }, // Don't index personal pages
-    { property: 'og:title', content: 'Veterinarians - Manage Vet Contacts | DogHealthy' },
-    { property: 'og:description', content: 'Manage your veterinarian contacts and clinic information. Keep all your vet details organized.' },
-    { property: 'og:type', content: 'website' }
-  ]
+usePageSeo({
+  title: 'Veterinarians — Vet Contacts',
+  description:
+    'Store and manage your UK veterinary clinic contacts in DogHealthy for quicker appointments and organised pet care.',
+  path: '/vets',
+  index: false
 })
 
 interface Vet {

@@ -31,6 +31,9 @@ export default defineNuxtConfig({
   
   app: {
     head: {
+      htmlAttrs: { lang: 'en-GB' },
+      title: 'DogHealthy — UK Dog Health Tracker, NFC Tags & Food Finder',
+      titleTemplate: '%s',
       link: [
         { rel: 'preconnect', href: 'https://images.unsplash.com', crossorigin: 'anonymous' },
         { rel: 'preconnect', href: 'https://api.unsplash.com', crossorigin: 'anonymous' },
@@ -55,15 +58,11 @@ export default defineNuxtConfig({
         }
       ],
       script: [
-        { src: 'https://www.googletagmanager.com/gtag/js?id=G-EMYKQNQ3FJ', async: true, defer: true },
         {
-          innerHTML: `window.dataLayer = window.dataLayer || [];\nfunction gtag(){dataLayer.push(arguments);}\ngtag('js', new Date());\n\ngtag('config', 'G-EMYKQNQ3FJ');`
-        },
-        { 
-          src: 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1907813559893319', 
+          src: 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1907813559893319',
           async: true,
           defer: true,
-          crossorigin: 'anonymous' 
+          crossorigin: 'anonymous'
         }
       ],
       meta: [
@@ -71,8 +70,32 @@ export default defineNuxtConfig({
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'robots', content: 'index, follow' },
         { name: 'author', content: 'DogHealthy' },
-        { name: 'theme-color', content: '#2563eb' },
-        { name: 'description', content: 'DogHealthy is a UK-only dog health tracker — records, vaccinations, NFC tags, and found-pet alerts for dogs in the United Kingdom.' }
+        { name: 'theme-color', content: '#f97316' },
+        {
+          name: 'description',
+          content:
+            'DogHealthy is the UK dog health app for medical records, vaccinations, medications, NFC / QR pet tags, found-dog SMS alerts, and a dog food finder — built for owners in the United Kingdom.'
+        },
+        {
+          name: 'keywords',
+          content:
+            'DogHealthy, UK dog health tracker, dog medical records, dog vaccinations UK, NFC dog tag, QR pet tag, found dog alert, dog food finder, puppy health, pet health UK'
+        },
+        { property: 'og:site_name', content: 'DogHealthy' },
+        { property: 'og:locale', content: 'en_GB' },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: 'https://doghealthy.co.uk' },
+        {
+          property: 'og:title',
+          content: 'DogHealthy — UK Dog Health Tracker, NFC Tags & Food Finder'
+        },
+        {
+          property: 'og:description',
+          content:
+            'Track your dog’s health, order NFC / QR tags with found-pet alerts, and find the right food — DogHealthy for UK dog owners.'
+        },
+        { property: 'og:image', content: 'https://doghealthy.co.uk/favicon.svg' },
+        { name: 'twitter:card', content: 'summary_large_image' }
       ]
     }
   },

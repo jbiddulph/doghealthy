@@ -215,19 +215,11 @@ const authStore = useAuthStore()
 const router = useRouter()
 
 // SEO Meta tags
-useHead({
-  title: 'Create Dog Listing - Sell Your Dog | DogHealthy Classifieds',
-  meta: [
-    { 
-      name: 'description', 
-      content: 'Create a professional dog listing to find the perfect home for your dog. Free to list, premium upgrades available. Secure messaging and verified buyers.' 
-    },
-    { name: 'keywords', content: 'create dog listing, sell my dog, dog for sale, puppy listing, dog classifieds, list my dog' },
-    { property: 'og:title', content: 'Create Dog Listing - Sell Your Dog | DogHealthy' },
-    { property: 'og:description', content: 'Create a professional dog listing to find the perfect home for your dog. Free to list, premium upgrades available.' },
-    { property: 'og:type', content: 'website' },
-    { name: 'robots', content: 'noindex, nofollow' } // Don't index create pages
-  ]
+usePageSeo({
+  title: 'Create Dog Listing',
+  description: 'Create a DogHealthy classifieds listing to find a new home for your dog in the UK.',
+  path: '/classifieds/new',
+  index: false
 })
 
 // State

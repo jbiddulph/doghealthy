@@ -5,6 +5,12 @@
 </template>
 
 <script setup lang="ts">
+usePageSeo({
+  title: 'Pet Profile Redirect',
+  description: 'Redirecting to the DogHealthy pet profile.',
+  index: false
+})
+
 const route = useRoute()
 const id = route.params.id as string
 
