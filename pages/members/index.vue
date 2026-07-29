@@ -287,7 +287,7 @@ onMounted(async () => {
 const members = ref<Member[]>([])
 const pagination = ref<Pagination>({
   page: 1,
-  pageSize: 12,
+  pageSize: 20,
   totalCount: 0,
   totalPages: 0,
   hasNextPage: false,
@@ -297,7 +297,7 @@ const loading = ref(true)
 const error = ref('')
 
 const currentPage = computed(() => pagination.value.page)
-const pageSize = computed(() => pagination.value.pageSize)
+const pageSize = 20
 
 const visiblePages = computed(() => {
   const total = pagination.value.totalPages
@@ -305,28 +305,23 @@ const visiblePages = computed(() => {
   const pages: number[] = []
   
   if (total <= 7) {
-    // Show all pages if 7 or fewer
     for (let i = 1; i <= total; i++) {
       pages.push(i)
     }
   } else {
-    // Show first, last, current, and pages around current
     if (current <= 4) {
-      // Near the start
       for (let i = 1; i <= 5; i++) pages.push(i)
-      pages.push(-1) // Ellipsis
+      pages.push(-1)
       pages.push(total)
     } else if (current >= total - 3) {
-      // Near the end
       pages.push(1)
-      pages.push(-1) // Ellipsis
+      pages.push(-1)
       for (let i = total - 4; i <= total; i++) pages.push(i)
     } else {
-      // In the middle
       pages.push(1)
-      pages.push(-1) // Ellipsis
+      pages.push(-1)
       for (let i = current - 1; i <= current + 1; i++) pages.push(i)
-      pages.push(-1) // Ellipsis
+      pages.push(-1)
       pages.push(total)
     }
   }
@@ -339,21 +334,23 @@ const fetchMembers = async (page: number = 1) => {
     loading.value = true
     error.value = ''
     
-    const response = await $fetch('/api/members', {
+    const response = await $fetch<{
+      members: Member[]
+      pagination: Pagination
+    }>('/.netlify/functions/members', {
       query: {
         page,
-        pageSize: pageSize.value
+        pageSize
       }
     })
     
     members.value = response.members
     pagination.value = response.pagination
     
-    // Update URL without navigation
     router.replace({ query: { page: page.toString() } })
   } catch (err: any) {
     console.error('Error fetching members:', err)
-    error.value = err.message || 'Failed to load members'
+    error.value = err?.data?.error || err?.message || 'Failed to load members'
     members.value = []
   } finally {
     loading.value = false

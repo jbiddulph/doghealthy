@@ -41,9 +41,15 @@
           <template v-if="authStore.isAuthenticated">
             <NuxtLink
               to="/inbox"
-              class="text-secondary hover:text-dark font-medium"
+              class="relative text-secondary hover:text-dark font-medium"
             >
               Inbox
+              <span
+                v-if="inboxUnread > 0"
+                class="absolute -top-2 -right-3 inline-flex items-center justify-center min-w-[1.15rem] h-[1.15rem] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold"
+              >
+                {{ inboxUnread > 99 ? '99+' : inboxUnread }}
+              </span>
             </NuxtLink>
             <NuxtLink
               to="/dogs"
@@ -110,7 +116,12 @@
         <NuxtLink @click="mobileOpen=false" to="/classifieds" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">Classifieds</NuxtLink>
         <NuxtLink @click="mobileOpen=false" to="/members" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">Members</NuxtLink>
         <template v-if="authStore.isAuthenticated">
-          <NuxtLink @click="mobileOpen=false" to="/inbox" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">Inbox</NuxtLink>
+          <NuxtLink @click="mobileOpen=false" to="/inbox" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">
+            Inbox
+            <span v-if="inboxUnread > 0" class="ml-2 inline-flex items-center justify-center min-w-[1.15rem] h-[1.15rem] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold">
+              {{ inboxUnread > 99 ? '99+' : inboxUnread }}
+            </span>
+          </NuxtLink>
           <NuxtLink @click="mobileOpen=false" to="/dogs" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">My Dogs</NuxtLink>
           <NuxtLink @click="mobileOpen=false" to="/profile" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">Profile</NuxtLink>
           <div class="px-3 py-2">
@@ -134,17 +145,38 @@
 const authStore = useAuthStore()
 const router = useRouter()
 const mobileOpen = ref(false)
+const { unreadCount: inboxUnread, refreshUnreadCount } = useInboxUnread()
 
-// Initialize auth store if not already initialized
 onMounted(async () => {
   if (!authStore.user && !authStore.loading) {
     await authStore.initialize()
   }
+  if ((authStore as any).loading) {
+    await new Promise<void>((resolve) => {
+      const check = () => {
+        if (!(authStore as any).loading) resolve()
+        else setTimeout(check, 40)
+      }
+      check()
+    })
+  }
+  if (authStore.isAuthenticated) {
+    await refreshUnreadCount()
+  }
 })
+
+watch(
+  () => authStore.isAuthenticated,
+  async (ok) => {
+    if (ok) await refreshUnreadCount()
+    else inboxUnread.value = 0
+  }
+)
 
 const handleLogout = async () => {
   try {
     await authStore.signOut()
+    inboxUnread.value = 0
     router.push('/')
   } catch (error) {
     console.error('Logout error:', error)

@@ -37,3 +37,4 @@
 # Mapbox (scan map): NUXT_PUBLIC_MAPBOX_TOKEN
 # Care actions: tag-care-action.mjs (check in/out, walk start/end — no SMS)
 # Classifieds guest contact: /.netlify/functions/classifieds-contact → doghealthy_messages inbox
+# Community members: /.netlify/functions/members?page=1&pageSize=20
