@@ -59,7 +59,7 @@ import { useSupabase } from '~/composables/useSupabase'
 interface Message {
   id: string
   content: string
-  sender_id: string
+  sender_id: string | null
   recipient_id: string
   created_at: string
   is_read: boolean

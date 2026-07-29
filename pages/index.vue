@@ -623,7 +623,7 @@
 
 <script setup lang="ts">
 const authStore = useAuthStore()
-const { fetchImageWithFallback } = useUnsplash()
+const { fetchImageWithFallback, getCuratedImage } = useUnsplash()
 
 // Fetch hero image from Unsplash
 const heroImage = ref('')
@@ -633,22 +633,13 @@ const photoCredit = ref<{ author: string; authorUrl: string } | null>(null)
 const featureImages = ref<Record<string, { url: string; description?: string; author?: string; authorUrl?: string }>>({})
 
 onMounted(async () => {
-  // Hero first (LCP), then feature images in parallel
-  try {
-    const hero = await fetchImageWithFallback('happy dog', {
-      orientation: 'landscape',
-      width: 1600,
-      height: 900
-    })
-    if (hero) {
-      heroImage.value = hero.url
-      photoCredit.value = {
-        author: hero.author,
-        authorUrl: hero.authorUrl
-      }
-    }
-  } catch {
-    console.log('Hero image not available')
+  // Paint curated CDN images immediately so the hero/features never sit blank
+  // while waiting on Unsplash (API often 403s from the browser / rate limits).
+  const heroFallback = getCuratedImage('happy dog', 1600, 900)
+  heroImage.value = heroFallback.url
+  photoCredit.value = {
+    author: heroFallback.author,
+    authorUrl: heroFallback.authorUrl
   }
 
   const featureQueries = {
@@ -659,6 +650,34 @@ onMounted(async () => {
     vet: 'veterinary clinic dog',
     food: 'dog food bowl nutrition',
     weight: 'dog exercise healthy weight'
+  }
+
+  for (const [key, query] of Object.entries(featureQueries)) {
+    const curated = getCuratedImage(query, 640, 384)
+    featureImages.value[key] = {
+      url: curated.url,
+      description: curated.description || undefined,
+      author: curated.author,
+      authorUrl: curated.authorUrl
+    }
+  }
+
+  // Then try live Unsplash (Netlify proxy → API → curated already applied)
+  try {
+    const hero = await fetchImageWithFallback('happy dog', {
+      orientation: 'landscape',
+      width: 1600,
+      height: 900
+    })
+    if (hero?.url) {
+      heroImage.value = hero.url
+      photoCredit.value = {
+        author: hero.author,
+        authorUrl: hero.authorUrl
+      }
+    }
+  } catch {
+    // keep curated hero
   }
 
   const entries = Object.entries(featureQueries)

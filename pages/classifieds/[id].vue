@@ -18,32 +18,26 @@
 
     <!-- Listing Content -->
     <div v-else class="max-w-6xl mx-auto">
-      <!-- Back Button -->
       <NuxtLink to="/classifieds" class="inline-flex items-center text-secondary hover:text-primary mb-6">
         <i class="bi bi-arrow-left mr-2"></i>
         Back to Classifieds
       </NuxtLink>
 
-      <!-- Featured Badge -->
       <div v-if="listing.is_featured" class="bg-primary text-dark px-4 py-2 text-sm font-semibold text-center mb-6 rounded-lg">
         ⭐ Featured Listing
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Main Content -->
         <div class="lg:col-span-2">
-          <!-- Images -->
           <div class="mb-6">
             <div v-if="listing.images && listing.images.length > 0" class="bg-white rounded-lg shadow-sm border border-muted overflow-hidden">
               <div class="h-96 bg-cover bg-center" :style="{ backgroundImage: `url(${listing.images[0]})` }"></div>
-              <!-- Additional images thumbnails could go here -->
             </div>
             <div v-else class="h-96 bg-muted rounded-lg flex items-center justify-center">
               <div class="text-6xl text-secondary">🐕</div>
             </div>
           </div>
 
-          <!-- Description -->
           <div class="bg-white rounded-lg shadow-sm border border-muted p-6 mb-6">
             <h1 class="text-3xl font-bold text-dark mb-4">{{ listing.title }}</h1>
             <div class="prose text-secondary max-w-none">
@@ -51,7 +45,6 @@
             </div>
           </div>
 
-          <!-- Details -->
           <div class="bg-white rounded-lg shadow-sm border border-muted p-6">
             <h2 class="text-xl font-semibold text-dark mb-4">Details</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -103,7 +96,6 @@
 
         <!-- Sidebar -->
         <div class="lg:col-span-1">
-          <!-- Price & Contact -->
           <div class="bg-white rounded-lg shadow-sm border border-muted p-6 mb-6 sticky top-6">
             <div class="text-center mb-6">
               <div class="text-4xl font-bold text-primary mb-2">
@@ -114,38 +106,128 @@
               </div>
             </div>
 
-            <div class="space-y-4">
-              <button 
-                @click="openChat" 
-                :disabled="isOwner"
-                class="w-full bg-primary hover:bg-accent text-dark py-3 px-4 rounded-lg font-semibold transition-colors disabled:bg-muted disabled:cursor-not-allowed"
+            <!-- Owner -->
+            <div v-if="isOwner" class="text-center text-sm text-secondary py-3 bg-muted rounded-lg mb-4">
+              This is your listing
+            </div>
+
+            <!-- Logged-in buyer: in-app chat -->
+            <div v-else-if="authStore.isAuthenticated" class="space-y-4">
+              <button
+                type="button"
+                class="w-full bg-primary hover:bg-accent text-dark py-3 px-4 rounded-lg font-semibold transition-colors"
+                @click="openChat"
               >
                 <i class="bi bi-chat-dots mr-2"></i>
-                {{ isOwner ? 'Your Listing' : 'Contact Seller' }}
+                Message Seller
               </button>
+              <p class="text-xs text-secondary text-center">
+                Chat stays in your DogHealthy account.
+              </p>
+            </div>
 
-              <button 
-                v-if="!isOwner" 
-                @click="shareListing" 
+            <!-- Guest: message seller inbox -->
+            <div v-else class="space-y-4">
+              <h3 class="text-lg font-semibold text-dark">Contact the seller</h3>
+              <p class="text-sm text-secondary">
+                No account needed — your message goes to their DogHealthy inbox with your contact details so they can reply.
+              </p>
+
+              <form class="space-y-3" @submit.prevent="submitGuestContact">
+                <!-- Honeypot -->
+                <input v-model="guestForm.website" type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
+
+                <div>
+                  <label class="block text-sm font-medium text-dark mb-1">Your name</label>
+                  <input
+                    v-model="guestForm.name"
+                    type="text"
+                    required
+                    maxlength="120"
+                    class="w-full border border-muted rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
+                    placeholder="Jane Smith"
+                  >
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-dark mb-1">Your email</label>
+                  <input
+                    v-model="guestForm.email"
+                    type="email"
+                    required
+                    maxlength="200"
+                    class="w-full border border-muted rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
+                    placeholder="you@example.com"
+                  >
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-dark mb-1">Phone <span class="text-secondary font-normal">(optional)</span></label>
+                  <input
+                    v-model="guestForm.phone"
+                    type="tel"
+                    maxlength="40"
+                    class="w-full border border-muted rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
+                    placeholder="07…"
+                  >
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-dark mb-1">Message</label>
+                  <textarea
+                    v-model="guestForm.message"
+                    required
+                    rows="4"
+                    maxlength="4000"
+                    class="w-full border border-muted rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
+                    placeholder="Ask about the dog, collection, vaccinations…"
+                  />
+                </div>
+
+                <p v-if="guestError" class="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  {{ guestError }}
+                </p>
+                <p v-if="guestSuccess" class="text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                  {{ guestSuccess }}
+                </p>
+
+                <button
+                  type="submit"
+                  :disabled="guestSubmitting"
+                  class="w-full bg-primary hover:bg-accent text-dark py-3 px-4 rounded-lg font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <i class="bi bi-chat-dots mr-2"></i>
+                  {{ guestSubmitting ? 'Sending…' : 'Send message to seller' }}
+                </button>
+              </form>
+
+              <p class="text-xs text-secondary text-center">
+                Prefer in-app chat?
+                <NuxtLink to="/auth/register" class="text-primary underline">Create a free account</NuxtLink>
+                or
+                <NuxtLink to="/auth/login" class="text-primary underline">log in</NuxtLink>.
+              </p>
+            </div>
+
+            <div v-if="!isOwner" class="space-y-3 mt-4">
+              <button
+                type="button"
                 class="w-full bg-secondary hover:bg-dark text-white py-3 px-4 rounded-lg font-semibold transition-colors"
+                @click="shareListing"
               >
                 <i class="bi bi-share mr-2"></i>
                 Share Listing
               </button>
 
-              <button 
-                v-if="!isOwner" 
-                @click="reportListing" 
+              <button
+                type="button"
                 class="w-full bg-red-100 hover:bg-red-200 text-red-600 py-3 px-4 rounded-lg font-semibold transition-colors"
+                @click="reportListing"
               >
                 <i class="bi bi-flag mr-2"></i>
                 Report Listing
               </button>
             </div>
 
-            <!-- Ad Space -->
             <div class="mt-6 pt-6 border-t border-muted">
-              <AdUnit 
+              <AdUnit
                 ad-slot="listing-sidebar"
                 ad-format="rectangle"
               />
@@ -155,9 +237,8 @@
       </div>
     </div>
 
-    <!-- Chat Modal -->
-    <ChatBox 
-      v-if="showChat"
+    <ChatBox
+      v-if="showChat && listing && authStore.userId"
       :listing-id="listing.id"
       :recipient-id="listing.user_id"
       :recipient-name="'Seller'"
@@ -173,16 +254,11 @@ import { useSupabase } from '~/composables/useSupabase'
 import { useAuthStore } from '~/stores/auth'
 import AdUnit from '~/components/ads/AdUnit.vue'
 
-// Define page meta
-definePageMeta({
-  middleware: 'auth'
-})
-
+// Public listing page — guests can view and contact without an account
 const route = useRoute()
 const supabase = useSupabase()
 const authStore = useAuthStore()
 
-// Dynamic SEO Meta tags and structured data
 usePageSeo(() => {
   if (!listing.value) {
     return {
@@ -225,17 +301,25 @@ usePageSeo(() => {
   }
 })
 
-// State
 const listing = ref<any>(null)
 const loading = ref(true)
 const showChat = ref(false)
 
-// Computed
+const guestForm = reactive({
+  name: '',
+  email: '',
+  phone: '',
+  message: '',
+  website: ''
+})
+const guestSubmitting = ref(false)
+const guestError = ref('')
+const guestSuccess = ref('')
+
 const isOwner = computed(() => {
   return listing.value && authStore.userId && listing.value.user_id === authStore.userId
 })
 
-// Methods
 const getAgeText = (ageWeeks: number) => {
   if (ageWeeks < 4) return `${ageWeeks} week${ageWeeks !== 1 ? 's' : ''} old`
   if (ageWeeks < 52) return `${Math.floor(ageWeeks / 4)} month${Math.floor(ageWeeks / 4) !== 1 ? 's' : ''} old`
@@ -250,17 +334,10 @@ const formatDate = (dateString: string) => {
   })
 }
 
-const formatTime = (dateString: string) => {
-  return new Date(dateString).toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
 const fetchListing = async () => {
   try {
     loading.value = true
-    
+
     const { data, error } = await supabase
       .from('doghealthy_listings')
       .select('*')
@@ -269,11 +346,11 @@ const fetchListing = async () => {
       .single()
 
     if (error) throw error
-    
+
     listing.value = data
 
-    // Increment view count (only if not the owner)
-    if (data && authStore.userId && data.user_id !== authStore.userId) {
+    // Increment view count (skip owner)
+    if (data && data.user_id !== authStore.userId) {
       await supabase
         .from('doghealthy_listings')
         .update({ view_count: (data.view_count || 0) + 1 })
@@ -286,10 +363,48 @@ const fetchListing = async () => {
   }
 }
 
-const openChat = async () => {
-  if (isOwner.value) return
-  
+const openChat = () => {
+  if (isOwner.value || !authStore.isAuthenticated) return
   showChat.value = true
+}
+
+const submitGuestContact = async () => {
+  if (!listing.value || isOwner.value) return
+  guestError.value = ''
+  guestSuccess.value = ''
+  guestSubmitting.value = true
+
+  try {
+    const result = await $fetch<{ ok?: boolean; message?: string; error?: string }>(
+      '/.netlify/functions/classifieds-contact',
+      {
+        method: 'POST',
+        body: {
+          listingId: listing.value.id,
+          name: guestForm.name,
+          email: guestForm.email,
+          phone: guestForm.phone,
+          message: guestForm.message,
+          website: guestForm.website
+        }
+      }
+    )
+
+    guestSuccess.value =
+      result.message ||
+      'Your message has been emailed to the seller. They can reply directly to your email.'
+    guestForm.name = ''
+    guestForm.email = ''
+    guestForm.phone = ''
+    guestForm.message = ''
+  } catch (err: any) {
+    guestError.value =
+      err?.data?.error ||
+      err?.message ||
+      'Could not send your message. Please try again.'
+  } finally {
+    guestSubmitting.value = false
+  }
 }
 
 const shareListing = async () => {
@@ -300,22 +415,19 @@ const shareListing = async () => {
         text: listing.value.description,
         url: window.location.href
       })
-    } catch (error) {
-      // User cancelled or error occurred
+    } catch {
+      // cancelled
     }
   } else {
-    // Fallback: copy to clipboard
     await navigator.clipboard.writeText(window.location.href)
     alert('Link copied to clipboard!')
   }
 }
 
 const reportListing = () => {
-  // For now, just show an alert. In a real app, this would open a report form
   alert('Thank you for your concern. We will review this listing.')
 }
 
-// Lifecycle
 onMounted(() => {
   fetchListing()
 })

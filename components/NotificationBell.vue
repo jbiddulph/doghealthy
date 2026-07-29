@@ -236,8 +236,7 @@ const handleNotificationClick = async (notification: Notification) => {
       await navigateTo(`/dogs/${notification.reference_id}/medications`)
       break
     case 'message':
-      // Navigate to classifieds listing
-      await navigateTo(`/classifieds/${notification.reference_id}`)
+      await navigateTo('/inbox')
       break
     case 'upgrade':
       // Navigate to my listings

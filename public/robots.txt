@@ -3,6 +3,7 @@ Allow: /
 Disallow: /auth/
 Disallow: /dogs/
 Disallow: /profile
+Disallow: /inbox
 Disallow: /notifications
 Disallow: /vets
 Disallow: /billing/

@@ -40,6 +40,12 @@
           </NuxtLink>
           <template v-if="authStore.isAuthenticated">
             <NuxtLink
+              to="/inbox"
+              class="text-secondary hover:text-dark font-medium"
+            >
+              Inbox
+            </NuxtLink>
+            <NuxtLink
               to="/dogs"
               class="text-secondary hover:text-dark font-medium"
             >
@@ -104,6 +110,7 @@
         <NuxtLink @click="mobileOpen=false" to="/classifieds" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">Classifieds</NuxtLink>
         <NuxtLink @click="mobileOpen=false" to="/members" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">Members</NuxtLink>
         <template v-if="authStore.isAuthenticated">
+          <NuxtLink @click="mobileOpen=false" to="/inbox" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">Inbox</NuxtLink>
           <NuxtLink @click="mobileOpen=false" to="/dogs" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">My Dogs</NuxtLink>
           <NuxtLink @click="mobileOpen=false" to="/profile" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">Profile</NuxtLink>
           <div class="px-3 py-2">
