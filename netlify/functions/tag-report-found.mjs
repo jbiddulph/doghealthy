@@ -15,7 +15,7 @@ const TWILIO_API_KEY_SECRET = (process.env.TWILIO_API_KEY_SECRET || '').trim()
 // Trial also requires the From number Twilio assigned for that verified recipient
 // (Console → Messaging → Try SMS → copy From from the sample request).
 // Set TWILIO_USE_TRIAL_TEMPLATE=false after upgrading your Twilio account.
-const TWILIO_USE_TRIAL_TEMPLATE = (process.env.TWILIO_USE_TRIAL_TEMPLATE || 'true').toLowerCase() !== 'false'
+const TWILIO_USE_TRIAL_TEMPLATE = (process.env.TWILIO_USE_TRIAL_TEMPLATE || 'false').toLowerCase() === 'true'
 const TWILIO_TRIAL_TEMPLATES = new Set([
   'sms_2fa',
   'sms_appointment_reminders',
@@ -96,10 +96,44 @@ const normalizeUkPhone = (raw) => {
   return phone
 }
 
-const mapsLink = (lat, lng) =>
-  lat != null && lng != null
-    ? `https://www.google.com/maps?q=${lat},${lng}`
-    : null
+const mapsLinks = (lat, lng) => {
+  if (lat == null || lng == null) return null
+  const q = `${lat},${lng}`
+  return {
+    coords: q,
+    google: `https://www.google.com/maps?q=${q}`,
+    apple: `https://maps.apple.com/?ll=${q}&q=${encodeURIComponent('Found dog')}`
+  }
+}
+
+/**
+ * Custom found-dog SMS body (paid Twilio accounts only).
+ */
+const buildFoundSmsBody = ({
+  dogName,
+  finderName,
+  finderPhone,
+  latitude,
+  longitude,
+  petId
+}) => {
+  const maps = mapsLinks(latitude, longitude)
+  const lines = [
+    `DogHealthy: ${dogName} may have been found!`,
+    `Finder: ${finderName} (${finderPhone})`
+  ]
+
+  if (maps) {
+    lines.push(`Location: ${maps.coords}`)
+    lines.push(`Google Maps: ${maps.google}`)
+    lines.push(`Apple Maps: ${maps.apple}`)
+  } else {
+    lines.push('Location was not shared by the finder.')
+  }
+
+  lines.push(`Profile: ${PUBLIC_BASE_URL}/dogs/${petId}`)
+  return lines.join('\n')
+}
 
 async function sendTwilioSms({ to, body }) {
   const fromNumber = TWILIO_USE_TRIAL_TEMPLATE ? TWILIO_TRIAL_FROM_NUMBER : TWILIO_FROM_NUMBER
@@ -370,12 +404,14 @@ export async function handler(event) {
           .update({ sms_error: sms.reason })
           .eq('id', scanId)
       } else {
-        const loc = mapsLink(latitude, longitude)
-        const message = [
-          `DogHealthy: ${finderName} (${finderPhone}) reported finding ${dog.name}.`,
-          loc ? `Approx location: ${loc}` : 'Location was not shared.',
-          `View: ${PUBLIC_BASE_URL}/dogs/${petId}`
-        ].join(' ')
+        const message = buildFoundSmsBody({
+          dogName: dog.name,
+          finderName,
+          finderPhone,
+          latitude,
+          longitude,
+          petId
+        })
 
         const result = await sendTwilioSms({ to, body: message })
         if (result.ok) {
@@ -383,7 +419,7 @@ export async function handler(event) {
             sent: true,
             skipped: false,
             reason: result.trialTemplate
-              ? `Sent via Twilio trial template (${result.trialTemplate}). Upgrade Twilio and set TWILIO_USE_TRIAL_TEMPLATE=false for custom found-dog text.`
+              ? `Sent via Twilio trial template (${result.trialTemplate}). Set TWILIO_USE_TRIAL_TEMPLATE=false for custom found-dog text with map links.`
               : null,
             sid: result.sid,
             trialTemplate: result.trialTemplate || null

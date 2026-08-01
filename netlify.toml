@@ -28,10 +28,11 @@
 # - nfc-list-products.mjs / nfc-create-order.mjs
 # - tag-ensure.mjs / tag-record-scan.mjs / tag-report-found.mjs
 #
-# Found-dog SMS (Twilio):
+# Found-dog SMS (Twilio) — purchased UK number:
 #   TWILIO_ACCOUNT_SID=ACxxxx   (NOT SKxxxx)
 #   TWILIO_AUTH_TOKEN=...
-#   TWILIO_FROM_NUMBER=+44...
+#   TWILIO_FROM_NUMBER=+447888871736
+#   TWILIO_USE_TRIAL_TEMPLATE=false
 # Unsplash — server-side for /.netlify/functions/unsplash-image
 # UNSPLASH_ACCESS_KEY=...
 # Mapbox (scan map): NUXT_PUBLIC_MAPBOX_TOKEN
