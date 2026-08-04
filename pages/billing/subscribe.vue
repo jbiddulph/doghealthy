@@ -86,13 +86,19 @@
           </div>
         </div>
 
-        <p v-if="stripeServerMode" class="text-xs mb-3" :class="stripeServerMode === 'test' ? 'text-green-700' : 'text-red-700'">
-          Stripe server mode: <strong>{{ stripeServerMode }}</strong>
-          <span v-if="stripeServerMode !== 'test'"> — test cards will be declined until Netlify STRIPE_SECRET_KEY is sk_test_… and you redeploy.</span>
+        <p v-if="stripeServerMode" class="text-xs mb-3" :class="stripeServerMode === 'live' ? 'text-green-700' : 'text-amber-700'">
+          Stripe:
+          <strong>{{ stripeServerMode === 'live' ? 'Live payments' : stripeServerMode === 'test' ? 'Test mode' : stripeServerMode }}</strong>
+          <span v-if="stripeServerMode === 'test'"> — sandbox only; set STRIPE_MODE=live and sk_live_… keys for production.</span>
         </p>
         <p class="text-xs text-gray-500">
-          Payments are securely processed by Stripe Checkout. In test mode use card
-          <code class="text-[11px]">4242 4242 4242 4242</code>, any future expiry, any CVC.
+          Payments are securely processed by Stripe Checkout.
+          <span v-if="stripeServerMode === 'test'">
+            Test card <code class="text-[11px]">4242 4242 4242 4242</code>, any future expiry, any CVC.
+          </span>
+          <span v-else>
+            You’ll be charged the plan amount after completing checkout. Cancel anytime from Stripe’s customer portal or support.
+          </span>
         </p>
       </div>
     </div>
@@ -264,7 +270,7 @@ const startSubscription = async (plan: PlanType) => {
       throw new Error('Please sign in again to subscribe.')
     }
 
-    // Prefer Checkout Sessions (works with sandbox test cards).
+    // Prefer Checkout Sessions.
     try {
       const result = await $fetch<{ url: string; mode?: string }>(
         '/.netlify/functions/create-subscription-checkout',
@@ -278,11 +284,6 @@ const startSubscription = async (plan: PlanType) => {
         }
       )
       if (result?.mode) stripeServerMode.value = result.mode
-      if (result?.mode === 'live') {
-        throw new Error(
-          'Checkout would run in LIVE mode (server still has sk_live_…). Set Netlify STRIPE_SECRET_KEY to sk_test_… and redeploy. Publishable key alone does not control this.'
-        )
-      }
       if (result?.url) {
         saveCheckoutContext({
           next: nextPath.value || readCheckoutContext().next || '',

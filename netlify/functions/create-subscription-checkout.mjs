@@ -59,7 +59,8 @@ function resolveReturnBaseUrl(event) {
  * Create a Stripe Checkout Session (subscription) for DogHealthy.
  * Body: { plan: 'monthly' | 'yearly', next?: string }
  *
- * If STRIPE_MODE=test, refuses sk_live_ keys (prevents "test card in live mode" declines).
+ * STRIPE_MODE=live requires sk_live_…; STRIPE_MODE=test requires sk_test_….
+ * If STRIPE_MODE is unset, the key prefix decides the mode.
  */
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return json(204, {})
@@ -74,17 +75,25 @@ export async function handler(event) {
     if (!STRIPE_SECRET_KEY || STRIPE_SECRET_KEY.includes('REPLACE_ME')) {
       return json(503, {
         error:
-          'STRIPE_SECRET_KEY is not set to a real key. Add sk_test_… in Netlify Environment variables and redeploy.'
+          'STRIPE_SECRET_KEY is not set. Add sk_live_… (production) or sk_test_… (sandbox) in Netlify Environment variables and redeploy.'
       })
     }
 
     const keyMode = stripeKeyMode(STRIPE_SECRET_KEY)
     const forcedMode = String(process.env.STRIPE_MODE || '').trim().toLowerCase()
 
+    if (forcedMode === 'live' && keyMode !== 'live') {
+      return json(503, {
+        error:
+          'STRIPE_MODE=live but STRIPE_SECRET_KEY is not a LIVE key. Set STRIPE_SECRET_KEY to sk_live_… from https://dashboard.stripe.com/apikeys (Test mode OFF) and redeploy.',
+        mode: keyMode
+      })
+    }
+
     if (forcedMode === 'test' && keyMode !== 'test') {
       return json(503, {
         error:
-          'STRIPE_MODE=test but STRIPE_SECRET_KEY is still a LIVE key (sk_live_…). In Netlify → Environment variables, set STRIPE_SECRET_KEY to sk_test_… from https://dashboard.stripe.com/test/apikeys (Test mode ON), save, then trigger a clear-cache redeploy. Changing only the publishable key is not enough.',
+          'STRIPE_MODE=test but STRIPE_SECRET_KEY is not a TEST key. Set STRIPE_SECRET_KEY to sk_test_… or set STRIPE_MODE=live for production.',
         mode: keyMode
       })
     }

@@ -1,7 +1,6 @@
 /**
  * GET /.netlify/functions/stripe-mode
  * Returns whether the server STRIPE_SECRET_KEY is test or live (no secrets exposed).
- * Use this to verify Netlify env after changing keys.
  */
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') {
@@ -31,6 +30,9 @@ export async function handler(event) {
   else if (secret.startsWith('sk_live_')) mode = 'live'
   else if (secret) mode = 'unknown'
 
+  const okForLive = mode === 'live' && (forcedMode === 'live' || !forcedMode)
+  const okForTestCards = mode === 'test' && (forcedMode === 'test' || !forcedMode)
+
   return {
     statusCode: 200,
     headers: {
@@ -41,13 +43,14 @@ export async function handler(event) {
     body: JSON.stringify({
       mode,
       stripeModeEnv: forcedMode,
-      okForTestCards: mode === 'test',
+      okForLive,
+      okForTestCards,
       hint:
-        mode === 'test'
-          ? 'Server is in TEST mode — use card 4242 4242 4242 4242.'
-          : mode === 'live'
-            ? 'Server still has sk_live_… — update STRIPE_SECRET_KEY to sk_test_… in Netlify and redeploy.'
-            : 'Set STRIPE_SECRET_KEY to sk_test_… in Netlify Environment variables, then redeploy.'
+        mode === 'live'
+          ? 'Server is in LIVE mode — real cards will be charged.'
+          : mode === 'test'
+            ? 'Server is in TEST mode — use card 4242 4242 4242 4242.'
+            : 'Set STRIPE_SECRET_KEY (sk_live_… or sk_test_…) and STRIPE_MODE on Netlify, then redeploy.'
     })
   }
 }
