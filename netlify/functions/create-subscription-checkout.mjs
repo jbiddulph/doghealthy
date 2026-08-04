@@ -2,7 +2,13 @@ import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
-const PUBLIC_BASE_URL = (process.env.NUXT_PUBLIC_BASE_URL || 'https://doghealthy.co.uk').replace(/\/$/, '')
+const DEFAULT_BASE_URL = (process.env.NUXT_PUBLIC_BASE_URL || 'https://doghealthy.co.uk').replace(/\/$/, '')
+
+const ALLOWED_RETURN_HOSTS = new Set([
+  'doghealthy.co.uk',
+  'www.doghealthy.co.uk',
+  'doghealthy.netlify.app'
+])
 
 const json = (statusCode, body) => ({
   statusCode,
@@ -16,7 +22,6 @@ const json = (statusCode, body) => ({
 })
 
 function resolveStripeSecret() {
-  // Read at request time (not module load) so Netlify env updates apply.
   return String(process.env.STRIPE_SECRET_KEY || '').trim()
 }
 
@@ -24,6 +29,30 @@ function stripeKeyMode(secret) {
   if (secret.startsWith('sk_test_')) return 'test'
   if (secret.startsWith('sk_live_')) return 'live'
   return 'unknown'
+}
+
+/**
+ * Prefer the browser Origin/Referer so Stripe returns users to the same host
+ * they started on (doghealthy.co.uk vs netlify.app). Auth cookies do not
+ * transfer across those hosts.
+ */
+function resolveReturnBaseUrl(event) {
+  const headers = event.headers || {}
+  const origin = headers.origin || headers.Origin || ''
+  const referer = headers.referer || headers.Referer || ''
+
+  for (const candidate of [origin, referer]) {
+    if (!candidate) continue
+    try {
+      const url = new URL(candidate)
+      if (ALLOWED_RETURN_HOSTS.has(url.hostname)) {
+        return `${url.protocol}//${url.host}`
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return DEFAULT_BASE_URL
 }
 
 /**
@@ -92,12 +121,13 @@ export async function handler(event) {
     const isMonthly = plan === 'monthly'
     const unitAmount = isMonthly ? 650 : 7000
     const interval = isMonthly ? 'month' : 'year'
+    const baseUrl = resolveReturnBaseUrl(event)
 
     // Do not URL-encode {CHECKOUT_SESSION_ID} — Stripe replaces that literal token.
     const successUrl =
-      `${PUBLIC_BASE_URL}/billing/subscribe?subscription=success&session_id={CHECKOUT_SESSION_ID}` +
+      `${baseUrl}/billing/subscribe?subscription=success&session_id={CHECKOUT_SESSION_ID}` +
       (next ? `&next=${encodeURIComponent(next)}` : '')
-    const cancelUrl = `${PUBLIC_BASE_URL}/billing/subscribe?subscription=cancelled${
+    const cancelUrl = `${baseUrl}/billing/subscribe?subscription=cancelled${
       next ? `&next=${encodeURIComponent(next)}` : ''
     }`
 
@@ -111,6 +141,8 @@ export async function handler(event) {
     params.set('subscription_data[metadata][user_id]', user.id)
     params.set('subscription_data[metadata][subscription_type]', plan)
     params.append('payment_method_types[0]', 'card')
+    // PayPal is available in Checkout when enabled on the Stripe account; card is always included.
+    params.append('payment_method_types[1]', 'paypal')
     params.set('line_items[0][quantity]', '1')
     params.set('line_items[0][price_data][currency]', 'gbp')
     params.set('line_items[0][price_data][unit_amount]', String(unitAmount))
@@ -138,6 +170,38 @@ export async function handler(event) {
 
     const session = await response.json().catch(() => ({}))
     if (!response.ok) {
+      // Retry without PayPal if the account does not support it yet
+      if (String(session?.error?.message || '').toLowerCase().includes('paypal')) {
+        params.delete('payment_method_types[1]')
+        const retry = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: params.toString()
+        })
+        const retrySession = await retry.json().catch(() => ({}))
+        if (!retry.ok) {
+          console.error('Stripe checkout create error:', retrySession)
+          return json(502, {
+            error: retrySession?.error?.message || 'Failed to create Stripe Checkout session',
+            mode: keyMode
+          })
+        }
+        const sessionMode = String(retrySession.id || '').startsWith('cs_test_')
+          ? 'test'
+          : String(retrySession.id || '').startsWith('cs_live_')
+            ? 'live'
+            : keyMode
+        return json(200, {
+          url: retrySession.url,
+          sessionId: retrySession.id,
+          mode: sessionMode,
+          returnBase: baseUrl
+        })
+      }
+
       console.error('Stripe checkout create error:', session)
       return json(502, {
         error: session?.error?.message || 'Failed to create Stripe Checkout session',
@@ -145,7 +209,6 @@ export async function handler(event) {
       })
     }
 
-    // cs_test_… vs cs_live_… is the definitive Stripe mode for this session
     const sessionMode = String(session.id || '').startsWith('cs_test_')
       ? 'test'
       : String(session.id || '').startsWith('cs_live_')
@@ -155,7 +218,8 @@ export async function handler(event) {
     return json(200, {
       url: session.url,
       sessionId: session.id,
-      mode: sessionMode
+      mode: sessionMode,
+      returnBase: baseUrl
     })
   } catch (error) {
     console.error('create-subscription-checkout error:', error)

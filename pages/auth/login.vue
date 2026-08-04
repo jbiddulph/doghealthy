@@ -93,7 +93,13 @@ const handleLogin = async () => {
   
   try {
     await authStore.signIn(email.value, password.value)
-    router.push('/dogs')
+    const route = useRoute()
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+    if (redirect.startsWith('/') && !redirect.startsWith('//')) {
+      await router.push(redirect)
+    } else {
+      await router.push('/dogs')
+    }
   } catch (err: any) {
     error.value = err.message || 'Failed to login. Please check your credentials.'
   } finally {

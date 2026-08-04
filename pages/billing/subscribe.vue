@@ -165,22 +165,27 @@ const resumeAfterSubscribe = async () => {
   markSubscribed()
 
   const pending = peekPendingAction()
+  let target = '/dogs'
   if (pending?.action === 'createTag' && pending.petId) {
     consumePendingAction()
-    await router.replace(`/dogs/${pending.petId}?createTag=1&subscription=success`)
-    return
-  }
-
-  if (nextPath.value) {
+    target = `/dogs/${pending.petId}?createTag=1&subscription=success`
+  } else if (nextPath.value) {
     const join = nextPath.value.includes('?') ? '&' : '?'
-    const target = nextPath.value.includes('subscription=')
+    target = nextPath.value.includes('subscription=')
       ? nextPath.value
       : `${nextPath.value}${join}subscription=success`
-    await router.replace(target)
+  }
+
+  const accessToken = await getAccessToken()
+  if (!accessToken) {
+    await router.replace({
+      path: '/auth/login',
+      query: { redirect: target }
+    })
     return
   }
 
-  await router.replace('/dogs')
+  await router.replace(target)
 }
 
 const confirmCheckoutSession = async (sessionId: string) => {
@@ -188,13 +193,13 @@ const confirmCheckoutSession = async (sessionId: string) => {
   error.value = ''
   try {
     const accessToken = await getAccessToken()
-    if (!accessToken) {
-      throw new Error('Please sign in again to confirm your subscription.')
-    }
+    const headers: Record<string, string> = {}
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`
 
+    // Works without auth: activates the Stripe session's metadata.user_id
     await $fetch('/.netlify/functions/confirm-subscription', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers,
       body: { sessionId }
     })
 
