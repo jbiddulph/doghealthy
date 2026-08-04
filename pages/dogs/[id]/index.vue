@@ -699,6 +699,7 @@ const router = useRouter()
 const {
   ensureSubscribed,
   markSubscribed,
+  clearSubscribedFlag,
   consumePendingAction,
   peekPendingAction,
   checkSubscription
@@ -994,7 +995,9 @@ const ensureTag = async (options?: { skipSubscriptionCheck?: boolean }) => {
         }
         if (!result) throw firstErr
       } else if (needsSub) {
-        const allowed = await ensureSubscribed({
+        // Server says no sub — clear any stale local flag and go to upgrade
+        clearSubscribedFlag()
+        await ensureSubscribed({
           reason: 'nfc-tag',
           next: `/dogs/${dog.value.id}?createTag=1`,
           pending: {
@@ -1003,8 +1006,7 @@ const ensureTag = async (options?: { skipSubscriptionCheck?: boolean }) => {
             createdAt: Date.now()
           }
         })
-        if (!allowed) return
-        throw firstErr
+        return
       } else {
         throw firstErr
       }
@@ -1021,10 +1023,17 @@ const ensureTag = async (options?: { skipSubscriptionCheck?: boolean }) => {
   } catch (err: any) {
     console.error(err)
     if (err?.data?.code === 'subscription_required' || err?.statusCode === 402) {
-      tagError.value = 'A DogHealthy subscription is required to create NFC / QR tags.'
-    } else {
-      tagError.value = err?.data?.error || err?.message || 'Failed to create tag'
+      clearSubscribedFlag()
+      await ensureSubscribed({
+        reason: 'nfc-tag',
+        next: dog.value ? `/dogs/${dog.value.id}?createTag=1` : undefined,
+        pending: dog.value
+          ? { action: 'createTag', petId: dog.value.id, createdAt: Date.now() }
+          : undefined
+      })
+      return
     }
+    tagError.value = err?.data?.error || err?.message || 'Failed to create tag'
   } finally {
     tagLoading.value = false
   }

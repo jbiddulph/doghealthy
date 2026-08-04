@@ -133,6 +133,9 @@ export const useAuthStore = defineStore('auth', {
       if (error) throw error
       
       this.user = null
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('doghealthy_has_subscription')
+      }
     },
     
     async updateProfile(updates: { fullName?: string; phone?: string; avatarUrl?: string }) {

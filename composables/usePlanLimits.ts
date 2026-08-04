@@ -69,13 +69,14 @@ export const usePlanLimits = () => {
   }
 
   /**
-   * Prefer live DB status from Stripe webhook fields; fall back to local flag.
+   * Prefer live DB status from Stripe webhook fields; fall back to local flag
+   * only when the DB row cannot be read (network/RLS), not when status is empty.
    */
   const checkSubscription = async (): Promise<boolean> => {
     try {
       await waitForAuthIfNeeded()
       const userId = authStore.userId
-      if (!userId) return hasSubscriptionLocal()
+      if (!userId) return false
 
       const { data, error } = await supabase
         .from('doghealthy_users')
@@ -83,8 +84,14 @@ export const usePlanLimits = () => {
         .eq('id', userId)
         .maybeSingle()
 
-      if (error || !data) {
+      if (error) {
+        // Transient read failure — keep optimistic local flag briefly after checkout
         return hasSubscriptionLocal()
+      }
+
+      if (!data) {
+        clearSubscribedFlag()
+        return false
       }
 
       const status = String(data.subscription_status || '').toLowerCase()
@@ -98,14 +105,8 @@ export const usePlanLimits = () => {
         return true
       }
 
-      if (['canceled', 'unpaid', 'incomplete_expired', 'paused'].includes(status)) {
-        clearSubscribedFlag()
-        return false
-      }
-
-      // Keep local flag briefly if webhook hasn't landed yet after checkout
-      if (hasSubscriptionLocal()) return true
-
+      // Explicit inactive / empty status always wins over a leftover localStorage flag
+      // (e.g. previous account on the same browser marked subscribed).
       clearSubscribedFlag()
       return false
     } catch {
