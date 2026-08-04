@@ -39,3 +39,11 @@
 # Care actions: tag-care-action.mjs (check in/out, walk start/end — no SMS)
 # Classifieds guest contact: /.netlify/functions/classifieds-contact → doghealthy_messages inbox
 # Community members: /.netlify/functions/members?page=1&pageSize=20
+# Stripe subscribe (test or live): create-subscription-checkout + confirm-subscription
+#   STRIPE_SECRET_KEY=sk_test_… (sandbox) — publishable key alone is NOT enough
+#   STRIPE_MODE=test  (refuses sk_live_ so test cards work)
+#   Check: GET /.netlify/functions/stripe-mode
+#   Optional: stripe-webhook + STRIPE_WEBHOOK_SECRET
+#   NUXT_PUBLIC_BASE_URL must match the site users return to after Checkout
+#   After changing Stripe env vars: Deploys → Trigger deploy → Clear cache and deploy site
+

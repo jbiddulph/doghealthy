@@ -23,18 +23,18 @@
           Subscribe for unlimited pets and records across your DogHealthy account.
         </p>
 
-        <div v-if="!linksConfigured" class="mb-6 rounded-md bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
-          Stripe Payment Links are not set. Add
-          <code class="text-xs">NUXT_PUBLIC_STRIPE_PAYMENT_LINK_MONTHLY</code> and
-          <code class="text-xs">NUXT_PUBLIC_STRIPE_PAYMENT_LINK_YEARLY</code>
-          in Netlify (and locally), then redeploy.
+        <div
+          v-if="confirming"
+          class="mb-6 rounded-md bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-900"
+        >
+          Confirming your payment…
         </div>
 
         <div v-if="error" class="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {{ error }}
         </div>
 
-        <div v-if="loading" class="mb-6 text-gray-600">
+        <div v-if="loading && !confirming" class="mb-6 text-gray-600">
           Redirecting you to Stripe checkout...
         </div>
 
@@ -54,7 +54,7 @@
             <button
               type="button"
               class="mt-auto w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-              :disabled="loading"
+              :disabled="loading || confirming"
               @click="startSubscription('monthly')"
             >
               Choose Monthly
@@ -78,7 +78,7 @@
             <button
               type="button"
               class="mt-auto w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-              :disabled="loading"
+              :disabled="loading || confirming"
               @click="startSubscription('yearly')"
             >
               Choose Yearly
@@ -86,8 +86,13 @@
           </div>
         </div>
 
+        <p v-if="stripeServerMode" class="text-xs mb-3" :class="stripeServerMode === 'test' ? 'text-green-700' : 'text-red-700'">
+          Stripe server mode: <strong>{{ stripeServerMode }}</strong>
+          <span v-if="stripeServerMode !== 'test'"> — test cards will be declined until Netlify STRIPE_SECRET_KEY is sk_test_… and you redeploy.</span>
+        </p>
         <p class="text-xs text-gray-500">
-          Payments are securely processed by Stripe Payment Links. After paying, you’ll return to DogHealthy and continue where you left off.
+          Payments are securely processed by Stripe Checkout. In test mode use card
+          <code class="text-[11px]">4242 4242 4242 4242</code>, any future expiry, any CVC.
         </p>
       </div>
     </div>
@@ -110,13 +115,16 @@ usePageSeo({
 })
 
 const loading = ref(false)
+const confirming = ref(false)
 const error = ref('')
+const stripeServerMode = ref('')
 
 type PlanType = 'monthly' | 'yearly'
 
 const router = useRouter()
 const route = useRoute()
 const config = useRuntimeConfig()
+const supabase = useSupabase()
 const {
   freeLimit,
   markSubscribed,
@@ -129,12 +137,6 @@ const paymentLinks = computed<Record<PlanType, string>>(() => ({
   monthly: String(config.public.stripePaymentLinkMonthly || '').trim(),
   yearly: String(config.public.stripePaymentLinkYearly || '').trim()
 }))
-
-const linksConfigured = computed(() => {
-  const monthly = paymentLinks.value.monthly
-  const yearly = paymentLinks.value.yearly
-  return Boolean(monthly && yearly && !monthly.includes('YOUR_') && !yearly.includes('YOUR_'))
-})
 
 const nextPath = computed(() => {
   const next = route.query.next
@@ -153,6 +155,11 @@ const reasonMessage = computed(() => {
   const label = resourceLabel(reason as any)
   return `You've reached the free limit of ${freeLimit} ${label}. Subscribe to add more.`
 })
+
+const getAccessToken = async () => {
+  const { data } = await supabase.auth.getSession()
+  return data.session?.access_token || null
+}
 
 const resumeAfterSubscribe = async () => {
   markSubscribed()
@@ -176,7 +183,53 @@ const resumeAfterSubscribe = async () => {
   await router.replace('/dogs')
 }
 
+const confirmCheckoutSession = async (sessionId: string) => {
+  confirming.value = true
+  error.value = ''
+  try {
+    const accessToken = await getAccessToken()
+    if (!accessToken) {
+      throw new Error('Please sign in again to confirm your subscription.')
+    }
+
+    await $fetch('/.netlify/functions/confirm-subscription', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: { sessionId }
+    })
+
+    await resumeAfterSubscribe()
+  } catch (err: any) {
+    console.error('confirm subscription:', err)
+    error.value =
+      err?.data?.error ||
+      err?.message ||
+      'Payment may have succeeded, but we could not activate your subscription. Please refresh or contact support.'
+  } finally {
+    confirming.value = false
+  }
+}
+
 onMounted(async () => {
+  try {
+    const status = await $fetch<{ mode?: string }>('/.netlify/functions/stripe-mode')
+    stripeServerMode.value = status?.mode || ''
+  } catch {
+    stripeServerMode.value = ''
+  }
+
+  if (route.query.subscription === 'cancelled') {
+    error.value = 'Checkout was cancelled. You can choose a plan when you are ready.'
+    return
+  }
+
+  const sessionId = route.query.session_id
+  if (route.query.subscription === 'success' && typeof sessionId === 'string' && sessionId.startsWith('cs_')) {
+    await confirmCheckoutSession(sessionId)
+    return
+  }
+
+  // Payment Link fallback (no session_id) — trust return URL + local flag
   if (route.query.subscription === 'success') {
     await resumeAfterSubscribe()
   }
@@ -187,18 +240,50 @@ const startSubscription = async (plan: PlanType) => {
     loading.value = true
     error.value = ''
 
-    const url = paymentLinks.value[plan]
-    if (!url || url.includes('YOUR_')) {
-      throw new Error(
-        'Stripe Payment Link is not configured yet. Set NUXT_PUBLIC_STRIPE_PAYMENT_LINK_MONTHLY / YEARLY in your environment.'
-      )
+    const accessToken = await getAccessToken()
+    if (!accessToken) {
+      throw new Error('Please sign in again to subscribe.')
     }
 
-    // Do not mark subscribed until Stripe returns with ?subscription=success
-    window.location.href = url
+    // Prefer Checkout Sessions (works with sandbox test cards).
+    try {
+      const result = await $fetch<{ url: string; mode?: string }>(
+        '/.netlify/functions/create-subscription-checkout',
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${accessToken}` },
+          body: {
+            plan,
+            next: nextPath.value || undefined
+          }
+        }
+      )
+      if (result?.mode) stripeServerMode.value = result.mode
+      if (result?.mode === 'live') {
+        throw new Error(
+          'Checkout would run in LIVE mode (server still has sk_live_…). Set Netlify STRIPE_SECRET_KEY to sk_test_… and redeploy. Publishable key alone does not control this.'
+        )
+      }
+      if (result?.url) {
+        window.location.href = result.url
+        return
+      }
+    } catch (checkoutErr: any) {
+      const link = paymentLinks.value[plan]
+      if (link && !link.includes('YOUR_') && link.includes('test')) {
+        window.location.href = link
+        return
+      }
+      throw checkoutErr
+    }
+
+    throw new Error('Could not start Stripe Checkout. Check STRIPE_SECRET_KEY on Netlify.')
   } catch (err: any) {
     console.error('Error starting subscription:', err)
-    error.value = err?.message || 'Unable to start subscription. Please try again.'
+    error.value =
+      err?.data?.error ||
+      err?.message ||
+      'Unable to start subscription. Please try again.'
     loading.value = false
   }
 }

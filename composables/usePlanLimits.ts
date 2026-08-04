@@ -164,16 +164,20 @@ export const usePlanLimits = () => {
   const ensureCanCreate = async (
     resource: PlanLimitResource,
     currentCount: number,
-    options?: { redirectQuery?: Record<string, string> }
+    options?: { redirectQuery?: Record<string, string>; next?: string }
   ) => {
     if (await checkSubscription()) return true
     if (canCreateMore(currentCount)) return true
+
+    const current = typeof window !== 'undefined' ? window.location.pathname + window.location.search : ''
+    const next = options?.next || (current.startsWith('/') ? current : '')
 
     await router.push({
       path: '/billing/subscribe',
       query: {
         reason: resource,
         limit: String(FREE_LIMIT),
+        ...(next ? { next } : {}),
         ...(options?.redirectQuery || {})
       }
     })
