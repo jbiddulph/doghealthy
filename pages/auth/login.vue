@@ -95,8 +95,17 @@ const handleLogin = async () => {
     await authStore.signIn(email.value, password.value)
     const route = useRoute()
     const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
-    if (redirect.startsWith('/') && !redirect.startsWith('//')) {
-      await router.push(redirect)
+    const stored =
+      typeof window !== 'undefined'
+        ? sessionStorage.getItem('doghealthy_post_login_redirect') || ''
+        : ''
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('doghealthy_post_login_redirect')
+    }
+    const target = (redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '') ||
+      (stored.startsWith('/') && !stored.startsWith('//') ? stored : '')
+    if (target) {
+      await router.push(target)
     } else {
       await router.push('/dogs')
     }

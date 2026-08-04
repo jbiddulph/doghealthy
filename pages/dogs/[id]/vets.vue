@@ -516,9 +516,14 @@ const deleteVet = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   fetchDogName()
   fetchVets()
+  const { resumeAddUi } = usePlanLimits()
+  await resumeAddUi(() => {
+    editingVet.value = null
+    showAddModal.value = true
+  })
 })
 </script>
 

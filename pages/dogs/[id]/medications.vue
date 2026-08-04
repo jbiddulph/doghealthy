@@ -654,10 +654,15 @@ const deleteMedication = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   fetchDogName()
   fetchVets()
   fetchMedications()
+  const { resumeAddUi } = usePlanLimits()
+  await resumeAddUi(() => {
+    editingMedication.value = null
+    showAddModal.value = true
+  })
 })
 </script>
 

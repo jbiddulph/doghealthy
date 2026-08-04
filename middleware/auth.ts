@@ -12,12 +12,12 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     })
   }
 
-  // Allow Stripe return to finish confirming payment even if the browser session was dropped
-  // (common after PayPal). The subscribe page activates the account via session_id.
+  // Stripe/PayPal return pages must run without a browser session
   const isStripeReturn =
-    to.path === '/billing/subscribe' &&
-    typeof to.query.session_id === 'string' &&
-    String(to.query.session_id).startsWith('cs_')
+    to.path === '/billing/success' ||
+    (to.path === '/billing/subscribe' &&
+      typeof to.query.session_id === 'string' &&
+      String(to.query.session_id).startsWith('cs_'))
 
   // If not authenticated and trying to access protected route
   if (
@@ -35,8 +35,18 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   // If authenticated and trying to access auth pages, redirect to intended destination
   if (authStore.isAuthenticated && (to.path === '/auth/login' || to.path === '/auth/register')) {
     const redirect = typeof to.query.redirect === 'string' ? to.query.redirect : ''
-    if (redirect.startsWith('/') && !redirect.startsWith('//')) {
-      return navigateTo(redirect)
+    const stored =
+      typeof sessionStorage !== 'undefined'
+        ? sessionStorage.getItem('doghealthy_post_login_redirect') || ''
+        : ''
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('doghealthy_post_login_redirect')
+    }
+    const target =
+      (redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '') ||
+      (stored.startsWith('/') && !stored.startsWith('//') ? stored : '')
+    if (target) {
+      return navigateTo(target)
     }
     return navigateTo('/')
   }

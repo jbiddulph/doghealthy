@@ -1,6 +1,7 @@
 const FREE_LIMIT = 3
 const SUBSCRIPTION_KEY = 'doghealthy_has_subscription'
 const PENDING_ACTION_KEY = 'doghealthy_pending_action'
+const CHECKOUT_CTX_KEY = 'doghealthy_checkout_ctx'
 
 export type PlanLimitResource =
   | 'dogs'
@@ -17,10 +18,32 @@ export type PendingAction = {
   createdAt: number
 }
 
+export type CheckoutContext = {
+  next?: string
+  pending?: PendingAction | null
+  reason?: string
+  savedAt?: number
+}
+
 const ACTIVE_STATUSES = new Set(['active', 'trialing'])
+
+/** Merge query params into a path string like `/dogs/x/vaccinations?add=1`. */
+export const withQueryParams = (path: string, params: Record<string, string>) => {
+  const qIndex = path.indexOf('?')
+  const pathname = qIndex >= 0 ? path.slice(0, qIndex) : path
+  const search = qIndex >= 0 ? path.slice(qIndex + 1) : ''
+  const sp = new URLSearchParams(search)
+  for (const [key, value] of Object.entries(params)) {
+    if (value === '') sp.delete(key)
+    else sp.set(key, value)
+  }
+  const q = sp.toString()
+  return q ? `${pathname}?${q}` : pathname
+}
 
 export const usePlanLimits = () => {
   const router = useRouter()
+  const route = useRoute()
   const supabase = useSupabase()
   const authStore = useAuthStore()
 
@@ -68,6 +91,46 @@ export const usePlanLimits = () => {
     return action
   }
 
+  const saveCheckoutContext = (ctx: CheckoutContext) => {
+    if (typeof window === 'undefined') return
+    sessionStorage.setItem(
+      CHECKOUT_CTX_KEY,
+      JSON.stringify({ ...ctx, savedAt: Date.now() })
+    )
+  }
+
+  const readCheckoutContext = (): CheckoutContext => {
+    if (typeof window === 'undefined') return {}
+    try {
+      const raw = sessionStorage.getItem(CHECKOUT_CTX_KEY)
+      return raw ? (JSON.parse(raw) as CheckoutContext) : {}
+    } catch {
+      return {}
+    }
+  }
+
+  const clearCheckoutContext = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem(CHECKOUT_CTX_KEY)
+    }
+  }
+
+  /**
+   * After Stripe return: open the add modal (or similar) and strip resume query params.
+   */
+  const resumeAddUi = async (open: () => void) => {
+    if (route.query.add !== '1' && route.query.subscription !== 'success') {
+      return false
+    }
+    markSubscribed()
+    open()
+    const q = { ...route.query } as Record<string, any>
+    delete q.add
+    delete q.subscription
+    await router.replace({ path: route.path, query: q })
+    return true
+  }
+
   /**
    * Prefer live DB status from Stripe webhook fields; fall back to local flag
    * only when the DB row cannot be read (network/RLS), not when status is empty.
@@ -85,7 +148,6 @@ export const usePlanLimits = () => {
         .maybeSingle()
 
       if (error) {
-        // Transient read failure — keep optimistic local flag briefly after checkout
         return hasSubscriptionLocal()
       }
 
@@ -105,8 +167,6 @@ export const usePlanLimits = () => {
         return true
       }
 
-      // Explicit inactive / empty status always wins over a leftover localStorage flag
-      // (e.g. previous account on the same browser marked subscribed).
       clearSubscribedFlag()
       return false
     } catch {
@@ -128,10 +188,6 @@ export const usePlanLimits = () => {
 
   const freeLimit = FREE_LIMIT
 
-  /**
-   * Basic accounts can create up to FREE_LIMIT items.
-   * Trying to create the (FREE_LIMIT + 1)th item requires a subscription.
-   */
   const canCreateMore = (currentCount: number) => {
     if (hasSubscriptionLocal()) return true
     return currentCount < FREE_LIMIT
@@ -158,6 +214,22 @@ export const usePlanLimits = () => {
     }
   }
 
+  /** Build the URL to return to after successful payment. */
+  const buildResumeNext = (resource: PlanLimitResource | string, next: string) => {
+    if (!next) return ''
+    if (resource === 'nfc-tag' || next.includes('createTag=')) {
+      return withQueryParams(next, { createTag: '1' })
+    }
+    if (next.startsWith('/dogs/new') || next === '/dogs/new') {
+      return next
+    }
+    if (resource === 'dogs' && (next === '/dogs' || next.startsWith('/dogs?'))) {
+      return '/dogs/new'
+    }
+    // Record / vet list pages — reopen the add modal after return
+    return withQueryParams(next, { add: '1' })
+  }
+
   /**
    * If the user is at/over the free limit and not subscribed,
    * redirect to billing and return false. Otherwise return true.
@@ -170,8 +242,12 @@ export const usePlanLimits = () => {
     if (await checkSubscription()) return true
     if (canCreateMore(currentCount)) return true
 
-    const current = typeof window !== 'undefined' ? window.location.pathname + window.location.search : ''
-    const next = options?.next || (current.startsWith('/') ? current : '')
+    const current =
+      typeof window !== 'undefined' ? window.location.pathname + window.location.search : ''
+    const rawNext = options?.next || (current.startsWith('/') ? current : '')
+    const next = buildResumeNext(resource, rawNext)
+
+    saveCheckoutContext({ next, reason: resource, pending: null })
 
     await router.push({
       path: '/billing/subscribe',
@@ -197,11 +273,18 @@ export const usePlanLimits = () => {
 
     if (options.pending) setPendingAction(options.pending)
 
+    const next = buildResumeNext(options.reason, options.next || '')
+    saveCheckoutContext({
+      next,
+      reason: String(options.reason),
+      pending: options.pending || null
+    })
+
     await router.push({
       path: '/billing/subscribe',
       query: {
         reason: options.reason,
-        ...(options.next ? { next: options.next } : {})
+        ...(next ? { next } : {})
       }
     })
     return false
@@ -219,6 +302,10 @@ export const usePlanLimits = () => {
     setPendingAction,
     peekPendingAction,
     consumePendingAction,
+    saveCheckoutContext,
+    readCheckoutContext,
+    clearCheckoutContext,
+    resumeAddUi,
     resourceLabel
   }
 }

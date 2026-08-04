@@ -521,10 +521,15 @@ const deleteRecord = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   fetchDogName()
   fetchVets()
   fetchRecords()
+  const { resumeAddUi } = usePlanLimits()
+  await resumeAddUi(() => {
+    editingRecord.value = null
+    showAddModal.value = true
+  })
 })
 </script>
 

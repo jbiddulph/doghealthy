@@ -364,6 +364,7 @@ usePageSeo({
 
 const supabase = useSupabase()
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const form = ref({
@@ -544,6 +545,14 @@ const handleSubmit = async () => {
 onMounted(() => {
   if (!authStore.isAuthenticated) {
     router.push('/auth/login')
+    return
+  }
+  if (route.query.subscription === 'success') {
+    const { markSubscribed } = usePlanLimits()
+    markSubscribed()
+    const q = { ...route.query } as Record<string, any>
+    delete q.subscription
+    router.replace({ path: route.path, query: q })
   }
 })
 </script>

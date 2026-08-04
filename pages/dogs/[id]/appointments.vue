@@ -668,10 +668,15 @@ const deleteAppointment = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   fetchDogName()
   fetchVets()
   fetchAppointments()
+  const { resumeAddUi } = usePlanLimits()
+  await resumeAddUi(() => {
+    editingAppointment.value = null
+    showAddModal.value = true
+  })
 })
 </script>
 

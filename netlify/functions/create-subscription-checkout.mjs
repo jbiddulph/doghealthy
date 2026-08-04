@@ -123,9 +123,9 @@ export async function handler(event) {
     const interval = isMonthly ? 'month' : 'year'
     const baseUrl = resolveReturnBaseUrl(event)
 
-    // Do not URL-encode {CHECKOUT_SESSION_ID} — Stripe replaces that literal token.
+    // Dedicated success page has NO auth middleware — confirm runs before any login redirect.
     const successUrl =
-      `${baseUrl}/billing/subscribe?subscription=success&session_id={CHECKOUT_SESSION_ID}` +
+      `${baseUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}` +
       (next ? `&next=${encodeURIComponent(next)}` : '')
     const cancelUrl = `${baseUrl}/billing/subscribe?subscription=cancelled${
       next ? `&next=${encodeURIComponent(next)}` : ''

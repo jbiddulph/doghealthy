@@ -272,7 +272,7 @@ const handleAddDogClick = async () => {
 
     // Free accounts can add up to 3 dogs; 4th requires subscription
     const { ensureCanCreate } = usePlanLimits()
-    const allowed = await ensureCanCreate('dogs', dogs.value.length)
+    const allowed = await ensureCanCreate('dogs', dogs.value.length, { next: '/dogs/new' })
     if (!allowed) return
 
     router.push('/dogs/new')

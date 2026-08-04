@@ -359,8 +359,13 @@ const deleteVet = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   fetchVets()
+  const { resumeAddUi } = usePlanLimits()
+  await resumeAddUi(() => {
+    editingVet.value = null
+    showAddModal.value = true
+  })
 })
 </script>
 

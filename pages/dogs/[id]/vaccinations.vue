@@ -545,10 +545,15 @@ const deleteVaccination = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   fetchDogName()
   fetchVets()
   fetchVaccinations()
+  const { resumeAddUi } = usePlanLimits()
+  await resumeAddUi(() => {
+    editingVaccination.value = null
+    showAddModal.value = true
+  })
 })
 </script>
 

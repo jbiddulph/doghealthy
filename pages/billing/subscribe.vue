@@ -130,7 +130,10 @@ const {
   markSubscribed,
   resourceLabel,
   peekPendingAction,
-  consumePendingAction
+  consumePendingAction,
+  saveCheckoutContext,
+  readCheckoutContext,
+  clearCheckoutContext
 } = usePlanLimits()
 
 const paymentLinks = computed<Record<PlanType, string>>(() => ({
@@ -164,20 +167,31 @@ const getAccessToken = async () => {
 const resumeAfterSubscribe = async () => {
   markSubscribed()
 
-  const pending = peekPendingAction()
+  const ctx = readCheckoutContext()
+  const pending = peekPendingAction() || ctx.pending || null
   let target = '/dogs'
   if (pending?.action === 'createTag' && pending.petId) {
     consumePendingAction()
     target = `/dogs/${pending.petId}?createTag=1&subscription=success`
-  } else if (nextPath.value) {
-    const join = nextPath.value.includes('?') ? '&' : '?'
-    target = nextPath.value.includes('subscription=')
-      ? nextPath.value
-      : `${nextPath.value}${join}subscription=success`
+  } else {
+    const next = nextPath.value || ctx.next || ''
+    if (next) {
+      if (next.includes('createTag=')) {
+        target = withQueryParams(next, { subscription: 'success', createTag: '1' })
+      } else if (next.includes('/dogs/new')) {
+        target = withQueryParams(next, { subscription: 'success' })
+      } else {
+        target = withQueryParams(next, { add: '1', subscription: 'success' })
+      }
+    }
   }
+  clearCheckoutContext()
 
   const accessToken = await getAccessToken()
   if (!accessToken) {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('doghealthy_post_login_redirect', target)
+    }
     await router.replace({
       path: '/auth/login',
       query: { redirect: target }
@@ -270,6 +284,11 @@ const startSubscription = async (plan: PlanType) => {
         )
       }
       if (result?.url) {
+        saveCheckoutContext({
+          next: nextPath.value || readCheckoutContext().next || '',
+          pending: peekPendingAction(),
+          reason: typeof route.query.reason === 'string' ? route.query.reason : undefined
+        })
         window.location.href = result.url
         return
       }
