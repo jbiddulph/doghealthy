@@ -63,6 +63,13 @@
             >
               Profile
             </NuxtLink>
+            <NuxtLink
+              v-if="isAdmin"
+              to="/admin/nfc-shipments"
+              class="text-secondary hover:text-dark font-medium"
+            >
+              NFC shipments
+            </NuxtLink>
             <NotificationBell />
             <button
               @click="handleLogout"
@@ -124,6 +131,14 @@
           </NuxtLink>
           <NuxtLink @click="mobileOpen=false" to="/dogs" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">My Dogs</NuxtLink>
           <NuxtLink @click="mobileOpen=false" to="/profile" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">Profile</NuxtLink>
+          <NuxtLink
+            v-if="isAdmin"
+            @click="mobileOpen=false"
+            to="/admin/nfc-shipments"
+            class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50"
+          >
+            NFC shipments
+          </NuxtLink>
           <div class="px-3 py-2">
             <NotificationBell />
           </div>
@@ -144,8 +159,21 @@
 <script setup lang="ts">
 const authStore = useAuthStore()
 const router = useRouter()
+const supabase = useSupabase()
 const mobileOpen = ref(false)
+const isAdmin = ref(false)
 const { unreadCount: inboxUnread, refreshUnreadCount } = useInboxUnread()
+
+const loadAdminFlag = async () => {
+  isAdmin.value = false
+  if (!authStore.userId) return
+  const { data } = await supabase
+    .from('doghealthy_users')
+    .select('is_admin')
+    .eq('id', authStore.userId)
+    .maybeSingle()
+  isAdmin.value = !!data?.is_admin
+}
 
 onMounted(async () => {
   if (!authStore.user && !authStore.loading) {
@@ -161,15 +189,19 @@ onMounted(async () => {
     })
   }
   if (authStore.isAuthenticated) {
-    await refreshUnreadCount()
+    await Promise.all([refreshUnreadCount(), loadAdminFlag()])
   }
 })
 
 watch(
   () => authStore.isAuthenticated,
   async (ok) => {
-    if (ok) await refreshUnreadCount()
-    else inboxUnread.value = 0
+    if (ok) {
+      await Promise.all([refreshUnreadCount(), loadAdminFlag()])
+    } else {
+      inboxUnread.value = 0
+      isAdmin.value = false
+    }
   }
 )
 

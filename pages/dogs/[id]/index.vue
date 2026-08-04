@@ -393,6 +393,7 @@
               <h2 class="text-xl font-semibold text-gray-900">QR / NFC tag</h2>
               <p class="text-sm text-gray-600 mt-1">
                 Encode this URL on a QR code or NFC sticker. Anyone who scans it sees {{ dog.name }}’s public found-pet profile.
+                Creating a tag also collects your shipping address so we can post a physical NFC chip.
               </p>
             </div>
             <button
@@ -408,6 +409,15 @@
           <div v-if="tagError" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {{ tagError }}
           </div>
+
+          <NfcShippingAddressModal
+            :open="showShippingModal"
+            :dog-name="dog?.name"
+            :dog-id="dog?.id"
+            :initial="shippingInitial"
+            @cancel="showShippingModal = false"
+            @saved="onShippingSaved"
+          />
 
           <div v-if="activeTag && tagUrl" class="grid md:grid-cols-2 gap-6 items-start">
             <div class="flex flex-col items-center">
@@ -807,6 +817,17 @@ const tagUrl = ref('')
 const qrDataUrl = ref('')
 const tagLoading = ref(false)
 const tagError = ref('')
+const showShippingModal = ref(false)
+const shippingInitial = ref<Partial<{
+  billing_name: string
+  address_line1: string
+  address_line2: string
+  address_city: string
+  address_postcode: string
+  address_country: string
+  phone: string
+}>>({})
+const addressConfirmedForCreate = ref(false)
 const copied = ref(false)
 const PAGE_SIZE = 20
 
@@ -936,7 +957,39 @@ const renderQr = async (url: string) => {
   })
 }
 
-const ensureTag = async (options?: { skipSubscriptionCheck?: boolean }) => {
+const loadShippingProfile = async () => {
+  if (!authStore.userId) return null
+  const { data } = await supabase
+    .from('doghealthy_users')
+    .select(
+      'full_name, phone, billing_name, address_line1, address_line2, address_city, address_postcode, address_country, nfc_chip_status'
+    )
+    .eq('id', authStore.userId)
+    .maybeSingle()
+  return data
+}
+
+const openShippingModal = async () => {
+  const profile = await loadShippingProfile()
+  shippingInitial.value = {
+    billing_name: profile?.billing_name || profile?.full_name || '',
+    address_line1: profile?.address_line1 || '',
+    address_line2: profile?.address_line2 || '',
+    address_city: profile?.address_city || '',
+    address_postcode: profile?.address_postcode || '',
+    address_country: profile?.address_country || 'GB',
+    phone: profile?.phone || ''
+  }
+  showShippingModal.value = true
+}
+
+const onShippingSaved = async () => {
+  showShippingModal.value = false
+  addressConfirmedForCreate.value = true
+  await ensureTag({ skipSubscriptionCheck: true, skipAddressCheck: true })
+}
+
+const ensureTag = async (options?: { skipSubscriptionCheck?: boolean; skipAddressCheck?: boolean }) => {
   if (!dog.value) return
   tagLoading.value = true
   tagError.value = ''
@@ -953,6 +1006,13 @@ const ensureTag = async (options?: { skipSubscriptionCheck?: boolean }) => {
         }
       })
       if (!allowed) return
+    }
+
+    // First-time create: collect shipping address so admin can post an NFC chip
+    if (!activeTag.value && !options?.skipAddressCheck && !addressConfirmedForCreate.value) {
+      tagLoading.value = false
+      await openShippingModal()
+      return
     }
 
     const accessToken = await getAccessToken()
@@ -1019,6 +1079,7 @@ const ensureTag = async (options?: { skipSubscriptionCheck?: boolean }) => {
     }
     tagUrl.value = result.tagUrl || `${baseUrl.value}/dogs/${dog.value.id}`
     await renderQr(tagUrl.value)
+    addressConfirmedForCreate.value = false
     await Promise.all([loadRecentScans(1), loadCheckIns(1), loadRecentWalks(1)])
   } catch (err: any) {
     console.error(err)

@@ -359,12 +359,17 @@ const loadPage = async () => {
     shipping.email = authStore.user?.email || ''
     const { data: profile } = await supabase
       .from('doghealthy_users')
-      .select('full_name, phone')
+      .select('full_name, phone, billing_name, address_line1, address_line2, address_city, address_postcode, address_country')
       .eq('id', authStore.userId)
       .single()
 
-    if (profile?.full_name) shipping.name = profile.full_name
+    if (profile?.billing_name || profile?.full_name) shipping.name = profile.billing_name || profile.full_name
     if (profile?.phone) shipping.phone = profile.phone
+    if (profile?.address_line1) shipping.line1 = profile.address_line1
+    if (profile?.address_line2) shipping.line2 = profile.address_line2
+    if (profile?.address_city) shipping.city = profile.address_city
+    if (profile?.address_postcode) shipping.postcode = profile.address_postcode
+    if (profile?.address_country) shipping.country = profile.address_country
   } catch (err: any) {
     console.error(err)
     error.value = err?.data?.error || err?.message || 'Failed to load NFC order page'
