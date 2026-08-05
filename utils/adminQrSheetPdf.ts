@@ -7,38 +7,48 @@ export type AdminQrSheetItem = {
   tagUid?: string | null
 }
 
-/** Sticker layout is specified in CSS-style pixels at 144 PPI. */
-const PPI = 144
-const QR_PX = 85
-const GAP_PX = 30
-const BRAND_FONT_PX = 5
-const NAME_FONT_PX = 5
-const TAP_FONT_PX = 5
-const MARGIN_PX = 36
-const LABEL_GAP_PX = 3
-const TAP_GAP_PX = 4
+/** Physical circular sticker diameter. */
+const STICKER_MM = 24
+/** Gap between stickers for cutting. */
+const GAP_MM = 5
+const PAGE_MARGIN_MM = 8
+/** Keep artwork clear of the circular die-cut edge. */
+const EDGE_PAD_MM = 1.1
+
+/**
+ * Previous label size was 5px @ 144 PPI ≈ 2.5pt.
+ * Double that and use bold for sticker readability.
+ */
+const BRAND_PT = 5
+const NAME_PT = 5
+const TAP_PT = 5
+const LABEL_GAP_MM = 0.45
+const QR_PRINT_PPI = 144
 
 const BRAND_TEXT = 'doghealthy.uk'
 const TAP_TEXT = 'TAP or SCAN'
 
-const pxToIn = (px: number) => px / PPI
-/** jsPDF setFontSize always uses points (1/72"). */
-const pxToPt = (px: number) => (px / PPI) * 72
-
-function truncateCentered(doc: jsPDF, text: string, maxWidthIn: number): string {
+function truncateCentered(doc: jsPDF, text: string, maxWidthMm: number): string {
   const raw = String(text || '').trim()
   if (!raw) return ''
-  if (doc.getTextWidth(raw) <= maxWidthIn) return raw
+  if (doc.getTextWidth(raw) <= maxWidthMm) return raw
   let out = raw
-  while (out.length > 1 && doc.getTextWidth(`${out}…`) > maxWidthIn) {
+  while (out.length > 1 && doc.getTextWidth(`${out}…`) > maxWidthMm) {
     out = out.slice(0, -1)
   }
   return `${out}…`
 }
 
+/** Max horizontal width that still sits inside the circle at a given Y (doc units = mm). */
+function chordWidthMm(cy: number, y: number, radius: number, pad: number): number {
+  const dy = Math.abs(y - cy)
+  if (dy >= radius - pad) return 0
+  return Math.max(0, 2 * Math.sqrt(radius * radius - dy * dy) - pad * 2)
+}
+
 /**
- * Build a multi-page A4 PDF of QR codes.
- * Cell size is 85×85px at 144 PPI (~0.59"), with 30px gaps at the same PPI.
+ * Multi-page A4 PDF of QR stickers sized for 24mm circular die-cuts.
+ * Layout (centered in each circle): brand → dog name → QR → TAP or SCAN
  */
 export async function buildAdminQrSheetPdf(
   items: AdminQrSheetItem[],
@@ -50,45 +60,42 @@ export async function buildAdminQrSheetPdf(
 
   const doc = new jsPDF({
     orientation: 'portrait',
-    unit: 'in',
+    unit: 'mm',
     format: 'a4'
   })
 
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
+  const cell = STICKER_MM
+  const step = cell + GAP_MM
+  const radius = STICKER_MM / 2
 
-  const qrIn = pxToIn(QR_PX)
-  const gapIn = pxToIn(GAP_PX)
-  const marginIn = pxToIn(MARGIN_PX)
-  const labelGapIn = pxToIn(LABEL_GAP_PX)
-  const tapGapIn = pxToIn(TAP_GAP_PX)
-  const brandPt = pxToPt(BRAND_FONT_PX)
-  const namePt = pxToPt(NAME_FONT_PX)
-  const tapPt = pxToPt(TAP_FONT_PX)
-
-  // Approximate line heights from font size in inches
-  const brandLineIn = pxToIn(BRAND_FONT_PX) + labelGapIn
-  const nameLineIn = pxToIn(NAME_FONT_PX) + labelGapIn
-  const headerH = brandLineIn + nameLineIn
-  const tapLineH = pxToIn(TAP_FONT_PX) + tapGapIn
-
-  const cellW = qrIn
-  const cellH = headerH + qrIn + tapLineH
-  const stepX = cellW + gapIn
-  const stepY = cellH + gapIn
-
-  const usableW = pageW - marginIn * 2
-  const usableH = pageH - marginIn * 2
-  const cols = Math.max(1, Math.floor((usableW + gapIn) / stepX))
-  const rows = Math.max(1, Math.floor((usableH + gapIn) / stepY))
+  const cols = Math.max(1, Math.floor((pageW - PAGE_MARGIN_MM * 2 + GAP_MM) / step))
+  const rows = Math.max(1, Math.floor((pageH - PAGE_MARGIN_MM * 2 + GAP_MM) / step))
   const perPage = cols * rows
 
-  const gridW = cols * cellW + (cols - 1) * gapIn
-  const gridH = rows * cellH + (rows - 1) * gapIn
+  const gridW = cols * cell + (cols - 1) * GAP_MM
+  const gridH = rows * cell + (rows - 1) * GAP_MM
   const originX = (pageW - gridW) / 2
   const originY = (pageH - gridH) / 2
 
   const site = String(baseUrl || 'https://doghealthy.co.uk').replace(/\/$/, '')
+
+  // Approximate glyph heights in mm (pt → mm)
+  const ptToMm = (pt: number) => (pt * 25.4) / 72
+  const brandH = ptToMm(BRAND_PT)
+  const nameH = ptToMm(NAME_PT)
+  const tapH = ptToMm(TAP_PT)
+
+  // Reserve vertical space for labels; QR fills the rest inside the circle
+  const labelsH = brandH + LABEL_GAP_MM + nameH + LABEL_GAP_MM + LABEL_GAP_MM + tapH
+  const usableDiameter = STICKER_MM - EDGE_PAD_MM * 2
+  const qrSize = Math.max(8, Math.min(usableDiameter - labelsH, usableDiameter * 0.62))
+
+  const contentH =
+    brandH + LABEL_GAP_MM + nameH + LABEL_GAP_MM + qrSize + LABEL_GAP_MM + tapH
+
+  const qrPx = Math.max(QR_PRINT_PPI, Math.round((qrSize / 25.4) * QR_PRINT_PPI))
 
   for (let i = 0; i < items.length; i++) {
     const indexOnPage = i % perPage
@@ -98,47 +105,68 @@ export async function buildAdminQrSheetPdf(
 
     const col = indexOnPage % cols
     const row = Math.floor(indexOnPage / cols)
-    const x = originX + col * stepX
-    const y = originY + row * stepY
-    const centerX = x + cellW / 2
+    const x = originX + col * step
+    const y = originY + row * step
+    const cx = x + radius
+    const cy = y + radius
+
+    // Optional light cut guide (very faint) for alignment when printing/cutting
+    doc.setDrawColor(210, 210, 210)
+    doc.setLineWidth(0.1)
+    doc.circle(cx, cy, radius, 'S')
 
     const url = `${site}/dogs/${items[i].petId}`
-    // Exact 85×85 bitmap → 144 PPI when placed at 85/144"
     const dataUrl = await QRCode.toDataURL(url, {
-      width: QR_PX,
+      width: qrPx,
       margin: 1,
       errorCorrectionLevel: 'M'
     })
 
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(30, 30, 30)
+    let cursorY = cy - contentH / 2
+
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(20, 20, 20)
 
     // Brand
-    doc.setFontSize(brandPt)
-    doc.text(BRAND_TEXT, centerX, y + pxToIn(BRAND_FONT_PX), {
-      align: 'center',
-      baseline: 'alphabetic'
-    })
+    doc.setFontSize(BRAND_PT)
+    const brandBaseline = cursorY + brandH
+    const brandMaxW = chordWidthMm(cy, brandBaseline - brandH / 2, radius, EDGE_PAD_MM)
+    doc.text(
+      truncateCentered(doc, BRAND_TEXT, brandMaxW || usableDiameter * 0.7),
+      cx,
+      brandBaseline,
+      { align: 'center', baseline: 'alphabetic' }
+    )
+    cursorY = brandBaseline + LABEL_GAP_MM
 
-    // Dog name under brand
-    const nameY = y + brandLineIn + pxToIn(NAME_FONT_PX)
-    doc.setFontSize(namePt)
-    const dogName = truncateCentered(doc, items[i].dogName || 'Dog', cellW)
-    doc.text(dogName, centerX, nameY, {
-      align: 'center',
-      baseline: 'alphabetic'
-    })
+    // Dog name
+    doc.setFontSize(NAME_PT)
+    const nameBaseline = cursorY + nameH
+    const nameMaxW = chordWidthMm(cy, nameBaseline - nameH / 2, radius, EDGE_PAD_MM)
+    doc.text(
+      truncateCentered(doc, items[i].dogName || 'Dog', nameMaxW || usableDiameter * 0.7),
+      cx,
+      nameBaseline,
+      { align: 'center', baseline: 'alphabetic' }
+    )
+    cursorY = nameBaseline + LABEL_GAP_MM
 
-    // QR at 85px × 85px @ 144 PPI
-    const qrY = y + headerH
-    doc.addImage(dataUrl, 'PNG', x, qrY, qrIn, qrIn)
+    // QR (centered in remaining band)
+    const qrX = cx - qrSize / 2
+    const qrY = cursorY
+    doc.addImage(dataUrl, 'PNG', qrX, qrY, qrSize, qrSize)
+    cursorY = qrY + qrSize + LABEL_GAP_MM
 
-    // TAP or SCAN below
-    doc.setFontSize(tapPt)
-    doc.text(TAP_TEXT, centerX, qrY + qrIn + tapGapIn + pxToIn(TAP_FONT_PX), {
-      align: 'center',
-      baseline: 'alphabetic'
-    })
+    // TAP or SCAN
+    doc.setFontSize(TAP_PT)
+    const tapBaseline = cursorY + tapH
+    const tapMaxW = chordWidthMm(cy, tapBaseline - tapH / 2, radius, EDGE_PAD_MM)
+    doc.text(
+      truncateCentered(doc, TAP_TEXT, tapMaxW || usableDiameter * 0.7),
+      cx,
+      tapBaseline,
+      { align: 'center', baseline: 'alphabetic' }
+    )
   }
 
   return doc.output('blob')
