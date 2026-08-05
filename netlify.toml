@@ -13,6 +13,13 @@
   # These contain public Supabase URLs needed for client-side connection
   SECRETS_SCAN_OMIT_PATHS = "dist/**,README.md"
   
+# SPA fallback for client routes not present as static HTML (e.g. /admin/users/:id).
+# Existing files (/, /admin/index.html, assets) still win; only missing paths use 200.html.
+[[redirects]]
+  from = "/*"
+  to = "/200.html"
+  status = 200
+
 # Headers for Nuxt build assets
 [[headers]]
   for = "/_nuxt/builds/meta/*"
@@ -45,4 +52,5 @@
 #   Check: GET /.netlify/functions/stripe-mode  → mode should be "live"
 #   NUXT_PUBLIC_BASE_URL=https://doghealthy.co.uk
 #   After changing Stripe env vars: Trigger deploy → Clear cache and deploy site
+# Admin dashboard: /admin (prerendered) + SPA fallback via /200.html for nested routes
 

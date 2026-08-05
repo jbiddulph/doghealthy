@@ -1,4 +1,7 @@
 export default defineNuxtRouteMiddleware(async (to, from) => {
+  // Let static generate emit HTML; client middleware enforces auth after hydrate
+  if (import.meta.prerender || import.meta.server) return
+
   const authStore = useAuthStore()
 
   // Wait for auth initialization to complete before making decisions.

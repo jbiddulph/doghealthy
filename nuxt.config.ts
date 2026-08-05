@@ -5,9 +5,26 @@ export default defineNuxtConfig({
   ssr: true,
   
   nitro: {
-    preset: 'netlify-static'
+    preset: 'netlify-static',
+    prerender: {
+      crawlLinks: true,
+      // Auth-gated pages must be listed or middleware redirects skip them at generate time
+      routes: [
+        '/admin',
+        '/admin/users',
+        '/admin/dogs',
+        '/admin/nfc-shipments',
+        '/billing/success',
+        '/billing/subscribe',
+        '/profile',
+        '/inbox'
+      ]
+    }
   },
-  
+
+  routeRules: {
+    '/admin/**': { prerender: true }
+  },  
   modules: ['@nuxtjs/tailwindcss', '@pinia/nuxt', '@nuxt/image'],
 
   // Netlify Image CDN in production; IPX for local/dev

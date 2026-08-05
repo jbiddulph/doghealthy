@@ -1,4 +1,7 @@
 export default defineNuxtRouteMiddleware(async (to) => {
+  // Static generate must emit /admin HTML; enforce admin only in the browser
+  if (import.meta.prerender || import.meta.server) return
+
   const authStore = useAuthStore()
   const { requireAdmin } = useAdmin()
 
