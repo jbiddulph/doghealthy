@@ -3,21 +3,35 @@ import { jsPDF } from 'jspdf'
 
 export type AdminQrSheetItem = {
   petId: string
+  dogName?: string | null
   tagUid?: string | null
 }
 
-const QR_PX = 100
+const QR_PX = 85
 const GAP_PX = 30
 const BRAND_FONT_PX = 5
+const NAME_FONT_PX = 5
 const TAP_FONT_PX = 5
 const BRAND_TEXT = 'doghealthy.uk'
 const TAP_TEXT = 'TAP or SCAN'
 const MARGIN_PX = 36
-const BRAND_GAP_PX = 4
+const LABEL_GAP_PX = 3
 const TAP_GAP_PX = 4
 
+function truncateCentered(doc: jsPDF, text: string, maxWidth: number): string {
+  const raw = String(text || '').trim()
+  if (!raw) return ''
+  if (doc.getTextWidth(raw) <= maxWidth) return raw
+  let out = raw
+  while (out.length > 1 && doc.getTextWidth(`${out}…`) > maxWidth) {
+    out = out.slice(0, -1)
+  }
+  return `${out}…`
+}
+
 /**
- * Build a multi-page A4 PDF of QR codes in a ~100×100px grid with 30px gaps.
+ * Build a multi-page A4 PDF of QR codes in a grid with 30px gaps.
+ * Layout per cell (centered): brand → dog name → QR → TAP or SCAN
  */
 export async function buildAdminQrSheetPdf(
   items: AdminQrSheetItem[],
@@ -37,10 +51,10 @@ export async function buildAdminQrSheetPdf(
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
 
-  const brandLineH = BRAND_FONT_PX + BRAND_GAP_PX
+  const headerH = BRAND_FONT_PX + LABEL_GAP_PX + NAME_FONT_PX + LABEL_GAP_PX
   const tapLineH = TAP_FONT_PX + TAP_GAP_PX
   const cellW = QR_PX
-  const cellH = brandLineH + QR_PX + tapLineH
+  const cellH = headerH + QR_PX + tapLineH
   const stepX = cellW + GAP_PX
   const stepY = cellH + GAP_PX
 
@@ -59,7 +73,6 @@ export async function buildAdminQrSheetPdf(
   const site = String(baseUrl || 'https://doghealthy.co.uk').replace(/\/$/, '')
 
   for (let i = 0; i < items.length; i++) {
-    const pageIndex = Math.floor(i / perPage)
     const indexOnPage = i % perPage
     if (i > 0 && indexOnPage === 0) {
       doc.addPage()
@@ -69,6 +82,7 @@ export async function buildAdminQrSheetPdf(
     const row = Math.floor(indexOnPage / cols)
     const x = originX + col * stepX
     const y = originY + row * stepY
+    const centerX = x + cellW / 2
 
     const url = `${site}/dogs/${items[i].petId}`
     const dataUrl = await QRCode.toDataURL(url, {
@@ -77,22 +91,36 @@ export async function buildAdminQrSheetPdf(
       errorCorrectionLevel: 'M'
     })
 
-    // Brand above
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(BRAND_FONT_PX)
     doc.setTextColor(30, 30, 30)
-    doc.text(BRAND_TEXT, x + cellW / 2, y + BRAND_FONT_PX, {
+
+    // Brand
+    doc.setFontSize(BRAND_FONT_PX)
+    doc.text(BRAND_TEXT, centerX, y + BRAND_FONT_PX, {
+      align: 'center',
+      baseline: 'alphabetic'
+    })
+
+    // Dog name under brand
+    const nameY = y + BRAND_FONT_PX + LABEL_GAP_PX + NAME_FONT_PX
+    doc.setFontSize(NAME_FONT_PX)
+    const dogName = truncateCentered(
+      doc,
+      items[i].dogName || 'Dog',
+      cellW
+    )
+    doc.text(dogName, centerX, nameY, {
       align: 'center',
       baseline: 'alphabetic'
     })
 
     // QR
-    const qrY = y + brandLineH
+    const qrY = y + headerH
     doc.addImage(dataUrl, 'PNG', x, qrY, QR_PX, QR_PX)
 
     // TAP or SCAN below
     doc.setFontSize(TAP_FONT_PX)
-    doc.text(TAP_TEXT, x + cellW / 2, qrY + QR_PX + TAP_GAP_PX + TAP_FONT_PX, {
+    doc.text(TAP_TEXT, centerX, qrY + QR_PX + TAP_GAP_PX + TAP_FONT_PX, {
       align: 'center',
       baseline: 'alphabetic'
     })

@@ -36,7 +36,7 @@
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
         <h3 class="font-semibold text-slate-900 mb-1">QR sticker sheet</h3>
         <p class="text-sm text-slate-600 mb-4">
-          Download an A4 PDF of all active tag QR codes (100×100px grid, 30px gaps). Extra codes spill onto new pages.
+          Download an A4 PDF of all active tag QR codes (~85×85px grid, 30px gaps, dog name under brand). Extra codes spill onto new pages.
         </p>
         <p v-if="activeTagCount !== null" class="text-xs text-slate-500 mb-3">
           {{ activeTagCount }} active tag{{ activeTagCount === 1 ? '' : 's' }} registered
@@ -94,17 +94,27 @@ const cards = computed(() => [
 async function fetchActiveTags() {
   const { data, error } = await supabase
     .from('doghealthy_tags')
-    .select('pet_id, uid')
+    .select('pet_id, uid, doghealthy_dogs(name)')
     .eq('status', 'active')
     .order('created_at', { ascending: true })
 
   if (error) throw error
   return (data || [])
     .filter((row: { pet_id?: string | null }) => !!row.pet_id)
-    .map((row: { pet_id: string; uid?: string | null }) => ({
-      petId: row.pet_id,
-      tagUid: row.uid
-    }))
+    .map((row: {
+      pet_id: string
+      uid?: string | null
+      doghealthy_dogs?: { name?: string | null } | { name?: string | null }[] | null
+    }) => {
+      const dog = Array.isArray(row.doghealthy_dogs)
+        ? row.doghealthy_dogs[0]
+        : row.doghealthy_dogs
+      return {
+        petId: row.pet_id,
+        tagUid: row.uid,
+        dogName: dog?.name || null
+      }
+    })
 }
 
 async function downloadQrSheet() {
