@@ -36,7 +36,7 @@
       </div>
 
       <!-- Vaccinations List -->
-      <div v-else-if="vaccinations.length > 0" class="space-y-4">
+      <div v-else-if="total > 0" class="space-y-4">
         <div
           v-for="vaccination in vaccinations"
           :key="vaccination.id"
@@ -112,6 +112,12 @@
             </div>
           </div>
         </div>
+
+        <AppPagination
+          v-model:page="page"
+          :total="total"
+          :disabled="loading"
+        />
       </div>
 
       <!-- Empty State -->
@@ -303,12 +309,16 @@
 </template>
 
 <script setup lang="ts">
+import { DOG_RECORDS_PAGE_SIZE, pageRange, totalPages } from '~/utils/pagination'
+
 const route = useRoute()
 const supabase = useSupabase()
 const authStore = useAuthStore()
 
 const dogId = route.params.id as string
 const dogName = ref('')
+const page = ref(1)
+const total = ref(0)
 
 usePageSeo(() => ({
   title: dogName.value ? `Vaccinations — ${dogName.value}` : 'Dog Vaccinations',
@@ -383,14 +393,23 @@ const fetchVets = async () => {
 const fetchVaccinations = async () => {
   try {
     loading.value = true
+    const { from, to } = pageRange(page.value, DOG_RECORDS_PAGE_SIZE)
     // Fetch without FK join to avoid PGRST200 when FK not present
-    const { data, error } = await supabase
+    const { data, error, count } = await supabase
       .from('doghealthy_vaccinations')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('dog_id', dogId)
       .order('vaccination_date', { ascending: false })
+      .range(from, to)
 
     if (error) throw error
+
+    total.value = count || 0
+    const pages = totalPages(total.value, DOG_RECORDS_PAGE_SIZE)
+    if (page.value > pages) {
+      page.value = pages
+      return
+    }
 
     // Map vet_name locally from loaded vets (no server-side join)
     const vetIdToName = new Map<string, string>()
@@ -405,6 +424,8 @@ const fetchVaccinations = async () => {
     }))
   } catch (err: any) {
     console.error('Error fetching vaccinations:', err)
+    vaccinations.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
@@ -555,5 +576,7 @@ onMounted(async () => {
     showAddModal.value = true
   })
 })
+
+watch(page, fetchVaccinations)
 </script>
 

@@ -1,5 +1,5 @@
 <template>
-  <AdminShell title="Dogs" subtitle="Browse every dog profile and open the editor.">
+  <AdminShell title="Dogs" subtitle="Browse, edit or delete any dog profile.">
     <div class="mb-4 flex flex-wrap gap-3 items-end">
       <div class="flex-1 min-w-[200px]">
         <label class="block text-xs font-medium text-slate-600 mb-1">Search</label>
@@ -8,18 +8,18 @@
           type="search"
           placeholder="Dog name or breed…"
           class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-          @keyup.enter="load"
+          @keyup.enter="search"
         />
       </div>
       <label class="flex items-center gap-2 text-sm text-slate-700 pb-2">
-        <input v-model="activeOnly" type="checkbox" class="rounded border-slate-300" @change="load" />
+        <input v-model="activeOnly" type="checkbox" class="rounded border-slate-300" @change="search" />
         Active only
       </label>
       <button
         type="button"
         class="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold"
         :disabled="loading"
-        @click="load"
+        @click="search"
       >
         Search
       </button>
@@ -37,7 +37,7 @@
             <th class="px-4 py-3 font-medium">Dog</th>
             <th class="px-4 py-3 font-medium">Owner</th>
             <th class="px-4 py-3 font-medium">Status</th>
-            <th class="px-4 py-3 font-medium"></th>
+            <th class="px-4 py-3 font-medium text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -59,10 +59,18 @@
               {{ dog.is_active ? 'Active' : 'Inactive' }}
               <span v-if="dog.nfc_tag_enabled" class="text-slate-400"> · NFC</span>
             </td>
-            <td class="px-4 py-3 text-right">
+            <td class="px-4 py-3 text-right whitespace-nowrap">
               <NuxtLink :to="`/admin/dogs/${dog.id}`" class="text-blue-700 font-medium hover:underline">
                 Edit
               </NuxtLink>
+              <button
+                type="button"
+                class="ml-3 text-red-700 font-medium hover:underline disabled:opacity-50"
+                :disabled="deletingId === dog.id"
+                @click="deleteDog(dog)"
+              >
+                {{ deletingId === dog.id ? 'Deleting…' : 'Delete' }}
+              </button>
             </td>
           </tr>
           <tr v-if="dogs.length === 0">
@@ -71,10 +79,18 @@
         </tbody>
       </table>
     </div>
+
+    <AdminPagination
+      v-model:page="page"
+      :total="total"
+      :disabled="loading"
+    />
   </AdminShell>
 </template>
 
 <script setup lang="ts">
+import { adminPageRange } from '~/utils/adminPagination'
+
 definePageMeta({
   middleware: ['auth', 'admin'],
   layout: false
@@ -98,30 +114,40 @@ type DogRow = {
 const supabase = useSupabase()
 const q = ref('')
 const activeOnly = ref(true)
+const page = ref(1)
+const total = ref(0)
 const loading = ref(true)
 const error = ref('')
 const dogs = ref<DogRow[]>([])
 const owners = ref<Record<string, string>>({})
+const deletingId = ref('')
 
 const ownerLabel = (userId: string) => owners.value[userId] || userId.slice(0, 8)
+
+const search = () => {
+  if (page.value !== 1) page.value = 1
+  else load()
+}
 
 const load = async () => {
   loading.value = true
   error.value = ''
   try {
+    const { from, to } = adminPageRange(page.value)
     let query = supabase
       .from('doghealthy_dogs')
-      .select('id, user_id, name, breed, is_active, nfc_tag_enabled')
+      .select('id, user_id, name, breed, is_active, nfc_tag_enabled', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .limit(200)
+      .range(from, to)
 
     const term = q.value.trim()
     if (term) query = query.or(`name.ilike.%${term}%,breed.ilike.%${term}%`)
     if (activeOnly.value) query = query.eq('is_active', true)
 
-    const { data, error: fetchError } = await query
+    const { data, error: fetchError, count } = await query
     if (fetchError) throw fetchError
     dogs.value = (data || []) as DogRow[]
+    total.value = count || 0
 
     const userIds = [...new Set(dogs.value.map((d) => d.user_id).filter(Boolean))]
     if (userIds.length) {
@@ -140,10 +166,28 @@ const load = async () => {
   } catch (err: any) {
     error.value = err?.message || 'Failed to load dogs'
     dogs.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
 }
 
+const deleteDog = async (dog: DogRow) => {
+  if (!confirm(`Delete dog “${dog.name}” and related records? This cannot be undone.`)) return
+  deletingId.value = dog.id
+  error.value = ''
+  try {
+    const { error: delError } = await supabase.from('doghealthy_dogs').delete().eq('id', dog.id)
+    if (delError) throw delError
+    if (dogs.value.length <= 1 && page.value > 1) page.value -= 1
+    else await load()
+  } catch (err: any) {
+    error.value = err?.message || 'Failed to delete dog'
+  } finally {
+    deletingId.value = ''
+  }
+}
+
 onMounted(load)
+watch(page, load)
 </script>

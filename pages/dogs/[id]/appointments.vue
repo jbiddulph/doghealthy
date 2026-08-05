@@ -36,7 +36,7 @@
       </div>
 
       <!-- Appointments List -->
-      <div v-else-if="appointments.length > 0">
+      <div v-else-if="total > 0">
         <!-- Upcoming Appointments -->
         <div v-if="upcomingAppointments.length > 0" class="mb-8">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">Upcoming Appointments</h2>
@@ -200,6 +200,12 @@
             </div>
           </div>
         </div>
+
+        <AppPagination
+          v-model:page="page"
+          :total="total"
+          :disabled="loading"
+        />
       </div>
 
       <!-- Empty State -->
@@ -406,12 +412,16 @@
 </template>
 
 <script setup lang="ts">
+import { DOG_RECORDS_PAGE_SIZE, pageRange, totalPages } from '~/utils/pagination'
+
 const route = useRoute()
 const supabase = useSupabase()
 const authStore = useAuthStore()
 
 const dogId = route.params.id as string
 const dogName = ref('')
+const page = ref(1)
+const total = ref(0)
 
 usePageSeo(() => ({
   title: dogName.value ? `Appointments — ${dogName.value}` : 'Dog Appointments',
@@ -503,14 +513,23 @@ const fetchVets = async () => {
 const fetchAppointments = async () => {
   try {
     loading.value = true
+    const { from, to } = pageRange(page.value, DOG_RECORDS_PAGE_SIZE)
     // Fetch without FK join to avoid PGRST200 when vet FK isn't in schema cache
-    const { data, error } = await supabase
+    const { data, error, count } = await supabase
       .from('doghealthy_appointments')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('dog_id', dogId)
       .order('appointment_date', { ascending: false })
+      .range(from, to)
 
     if (error) throw error
+
+    total.value = count || 0
+    const pages = totalPages(total.value, DOG_RECORDS_PAGE_SIZE)
+    if (page.value > pages) {
+      page.value = pages
+      return
+    }
 
     // Map vet names client-side from loaded vets
     const vetIdToName = new Map<string, string>()
@@ -524,6 +543,8 @@ const fetchAppointments = async () => {
     }))
   } catch (err: any) {
     console.error('Error fetching appointments:', err)
+    appointments.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
@@ -678,5 +699,7 @@ onMounted(async () => {
     showAddModal.value = true
   })
 })
+
+watch(page, fetchAppointments)
 </script>
 

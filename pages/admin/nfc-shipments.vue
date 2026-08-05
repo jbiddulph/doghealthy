@@ -5,7 +5,7 @@
         type="button"
         class="px-3 py-2 text-sm rounded-lg border"
         :class="statusFilter === 'pending' ? 'bg-amber-100 border-amber-300 text-amber-900' : 'border-slate-300'"
-        @click="statusFilter = 'pending'; load()"
+        @click="setFilter('pending')"
       >
         Pending
       </button>
@@ -13,7 +13,7 @@
         type="button"
         class="px-3 py-2 text-sm rounded-lg border"
         :class="statusFilter === 'shipped' ? 'bg-green-100 border-green-300 text-green-900' : 'border-slate-300'"
-        @click="statusFilter = 'shipped'; load()"
+        @click="setFilter('shipped')"
       >
         Shipped
       </button>
@@ -91,11 +91,19 @@
           </p>
         </div>
       </article>
+
+      <AdminPagination
+        v-model:page="page"
+        :total="total"
+        :disabled="loading"
+      />
     </div>
   </AdminShell>
 </template>
 
 <script setup lang="ts">
+import { adminPageRange } from '~/utils/adminPagination'
+
 definePageMeta({
   middleware: ['auth', 'admin'],
   layout: false
@@ -133,6 +141,8 @@ const error = ref('')
 const rows = ref<ShipRow[]>([])
 const statusFilter = ref<'pending' | 'shipped'>('pending')
 const updatingId = ref('')
+const page = ref(1)
+const total = ref(0)
 
 const formatDate = (iso: string) => {
   try {
@@ -161,21 +171,31 @@ const formatAddress = (row: ShipRow) => {
     .join('\n')
 }
 
+const setFilter = (value: 'pending' | 'shipped') => {
+  statusFilter.value = value
+  if (page.value !== 1) page.value = 1
+  else load()
+}
+
 const load = async () => {
   loading.value = true
   error.value = ''
   try {
-    const { data, error: fetchError } = await supabase
+    const { from, to } = adminPageRange(page.value)
+    const { data, error: fetchError, count } = await supabase
       .from('doghealthy_users')
       .select(
-        'id, email, full_name, billing_name, phone, address_line1, address_line2, address_city, address_postcode, address_country, nfc_chip_status, nfc_chip_requested_at, nfc_chip_shipped_at, nfc_chip_dog_id'
+        'id, email, full_name, billing_name, phone, address_line1, address_line2, address_city, address_postcode, address_country, nfc_chip_status, nfc_chip_requested_at, nfc_chip_shipped_at, nfc_chip_dog_id',
+        { count: 'exact' }
       )
       .eq('nfc_chip_status', statusFilter.value)
       .order('nfc_chip_requested_at', { ascending: false, nullsFirst: false })
+      .range(from, to)
 
     if (fetchError) throw fetchError
 
     const list = (data || []) as ShipRow[]
+    total.value = count || 0
     const dogIds = list.map((r) => r.nfc_chip_dog_id).filter(Boolean) as string[]
     const dogNames: Record<string, string> = {}
     if (dogIds.length) {
@@ -190,6 +210,7 @@ const load = async () => {
   } catch (err: any) {
     error.value = err?.message || 'Failed to load shipments'
     rows.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
@@ -217,4 +238,5 @@ const markShipped = async (userId: string) => {
 }
 
 onMounted(load)
+watch(page, load)
 </script>

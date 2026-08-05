@@ -36,7 +36,7 @@
       </div>
 
       <!-- Records List -->
-      <div v-else-if="records.length > 0" class="space-y-4">
+      <div v-else-if="total > 0" class="space-y-4">
         <div
           v-for="record in records"
           :key="record.id"
@@ -100,6 +100,12 @@
             </div>
           </div>
         </div>
+
+        <AppPagination
+          v-model:page="page"
+          :total="total"
+          :disabled="loading"
+        />
       </div>
 
       <!-- Empty State -->
@@ -290,12 +296,16 @@
 </template>
 
 <script setup lang="ts">
+import { DOG_RECORDS_PAGE_SIZE, pageRange, totalPages } from '~/utils/pagination'
+
 const route = useRoute()
 const supabase = useSupabase()
 const authStore = useAuthStore()
 
 const dogId = route.params.id as string
 const dogName = ref('')
+const page = ref(1)
+const total = ref(0)
 
 usePageSeo(() => ({
   title: dogName.value ? `Health Records — ${dogName.value}` : 'Dog Health Records',
@@ -372,16 +382,25 @@ const fetchVets = async () => {
 const fetchRecords = async () => {
   try {
     loading.value = true
-    
+    const { from, to } = pageRange(page.value, DOG_RECORDS_PAGE_SIZE)
+
     // Try simple query first (without vet join)
-    const { data, error } = await supabase
+    const { data, error, count } = await supabase
       .from('doghealthy_health_records')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('dog_id', dogId)
       .order('record_date', { ascending: false })
-    
+      .range(from, to)
+
     if (error) throw error
-    
+
+    total.value = count || 0
+    const pages = totalPages(total.value, DOG_RECORDS_PAGE_SIZE)
+    if (page.value > pages) {
+      page.value = pages
+      return
+    }
+
     // Transform data and set vet_name to null (will be populated later when vet_id column exists)
     records.value = (data || []).map(record => ({
       ...record,
@@ -389,6 +408,8 @@ const fetchRecords = async () => {
     }))
   } catch (err: any) {
     console.error('Error fetching health records:', err)
+    records.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
@@ -531,5 +552,7 @@ onMounted(async () => {
     showAddModal.value = true
   })
 })
+
+watch(page, fetchRecords)
 </script>
 

@@ -7,7 +7,7 @@
         type="button"
         class="px-3 py-2 text-sm rounded-lg border"
         :class="statusFilter === opt.value ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-300'"
-        @click="statusFilter = opt.value; load()"
+        @click="setFilter(opt.value)"
       >
         {{ opt.label }}
       </button>
@@ -75,11 +75,19 @@
       </article>
 
       <p v-if="orders.length === 0" class="text-center text-slate-500 py-8">No orders in this filter.</p>
+
+      <AdminPagination
+        v-model:page="page"
+        :total="total"
+        :disabled="loading"
+      />
     </div>
   </AdminShell>
 </template>
 
 <script setup lang="ts">
+import { adminPageRange } from '~/utils/adminPagination'
+
 definePageMeta({
   middleware: ['auth', 'admin'],
   layout: false
@@ -120,6 +128,8 @@ const loading = ref(true)
 const error = ref('')
 const orders = ref<OrderRow[]>([])
 const statusFilter = ref('submitted')
+const page = ref(1)
+const total = ref(0)
 
 const filters = [
   { value: 'submitted', label: 'Submitted' },
@@ -154,30 +164,41 @@ const formatAddress = (o: OrderRow) =>
     .filter(Boolean)
     .join('\n')
 
+const setFilter = (value: string) => {
+  statusFilter.value = value
+  if (page.value !== 1) page.value = 1
+  else load()
+}
+
 const load = async () => {
   loading.value = true
   error.value = ''
   try {
+    const { from, to } = adminPageRange(page.value)
     let query = supabase
       .from('doghealthy_nfc_orders')
       .select(
-        'id, user_id, dog_ids, status, order_type, tags_per_dog, tag_quantity, postage_cents, total_cents, currency, product_sku, payment_status, nfc_me_order_id, shipping_name, shipping_email, shipping_line1, shipping_line2, shipping_city, shipping_postcode, shipping_country, created_at'
+        'id, user_id, dog_ids, status, order_type, tags_per_dog, tag_quantity, postage_cents, total_cents, currency, product_sku, payment_status, nfc_me_order_id, shipping_name, shipping_email, shipping_line1, shipping_line2, shipping_city, shipping_postcode, shipping_country, created_at',
+        { count: 'exact' }
       )
       .order('created_at', { ascending: false })
-      .limit(100)
+      .range(from, to)
 
     if (statusFilter.value) query = query.eq('status', statusFilter.value)
 
-    const { data, error: fetchError } = await query
+    const { data, error: fetchError, count } = await query
     if (fetchError) throw fetchError
     orders.value = (data || []) as OrderRow[]
+    total.value = count || 0
   } catch (err: any) {
     error.value = err?.message || 'Failed to load orders'
     orders.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
 }
 
 onMounted(load)
+watch(page, load)
 </script>

@@ -95,11 +95,19 @@
         </button>
         <button
           type="button"
-          class="px-5 py-2.5 border border-red-300 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-50 disabled:opacity-60"
+          class="px-5 py-2.5 border border-slate-300 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 disabled:opacity-60"
           :disabled="saving"
           @click="deactivate"
         >
           Deactivate
+        </button>
+        <button
+          type="button"
+          class="px-5 py-2.5 border border-red-300 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-50 disabled:opacity-60"
+          :disabled="saving || deleting"
+          @click="removeDog"
+        >
+          {{ deleting ? 'Deleting…' : 'Delete dog' }}
         </button>
       </div>
     </form>
@@ -113,6 +121,7 @@ definePageMeta({
 })
 
 const route = useRoute()
+const router = useRouter()
 const supabase = useSupabase()
 const dogId = computed(() => route.params.id as string)
 
@@ -139,6 +148,7 @@ type DogForm = {
 
 const loading = ref(true)
 const saving = ref(false)
+const deleting = ref(false)
 const error = ref('')
 const success = ref('')
 const form = ref<DogForm | null>(null)
@@ -214,6 +224,24 @@ const deactivate = async () => {
   if (!confirm(`Deactivate ${form.value.name}?`)) return
   form.value.is_active = false
   await save()
+}
+
+const removeDog = async () => {
+  if (!form.value) return
+  if (!confirm(`Delete dog “${form.value.name}” and related records? This cannot be undone.`)) return
+  deleting.value = true
+  error.value = ''
+  try {
+    const ownerId = form.value.user_id
+    const { error: delError } = await supabase.from('doghealthy_dogs').delete().eq('id', dogId.value)
+    if (delError) throw delError
+    if (ownerId) await router.push(`/admin/users/${ownerId}`)
+    else await router.push('/admin/dogs')
+  } catch (err: any) {
+    error.value = err?.message || 'Failed to delete dog'
+  } finally {
+    deleting.value = false
+  }
 }
 
 onMounted(load)

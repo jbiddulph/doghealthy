@@ -43,13 +43,37 @@
         <!-- Features -->
         <div>
           <h3 class="text-lg font-semibold mb-4">Features</h3>
-          <ul class="space-y-2 text-sm text-gray-400">
-            <li>📋 Health Records</li>
-            <li>💉 Vaccinations</li>
-            <li>💊 Medications</li>
-            <li>📅 Appointments</li>
-            <li>🏥 Vet Contacts</li>
-            <li>🍖 Food Finder</li>
+          <ul class="space-y-2 text-sm">
+            <li>
+              <NuxtLink to="/dogs" class="text-gray-400 hover:text-white transition-colors">
+                📋 Health Records
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/dogs" class="text-gray-400 hover:text-white transition-colors">
+                💉 Vaccinations
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/dogs" class="text-gray-400 hover:text-white transition-colors">
+                💊 Medications
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/dogs" class="text-gray-400 hover:text-white transition-colors">
+                📅 Appointments
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/vets" class="text-gray-400 hover:text-white transition-colors">
+                🏥 Vet Contacts
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/food-finder" class="text-gray-400 hover:text-white transition-colors">
+                🍖 Food Finder
+              </NuxtLink>
+            </li>
           </ul>
         </div>
 
