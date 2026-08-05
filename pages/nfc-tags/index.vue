@@ -17,11 +17,10 @@
         <p class="text-gray-600 mb-2">
           Order <strong>2 stickers per dog</strong> by default — white
           <strong>25mm × 25mm NFC stickers</strong> at <strong>£1 each</strong>.
-          Kennels can select many dogs; everything ships in <strong>one parcel</strong>
-          with a single postage fee.
+          Kennels can select many dogs; everything ships in <strong>one parcel</strong>.
         </p>
         <p class="text-sm text-gray-500">
-          Postage £{{ (postageCentsDefault / 100).toFixed(2) }} per order
+          Postage: 1st Class £1.80 or 2nd Class 91p
           (free when you order {{ freePostageThreshold }}+ stickers).
         </p>
       </div>
@@ -95,11 +94,12 @@
           <h2 class="text-xl font-semibold text-gray-900 mb-4">2. Sticker product</h2>
           <div
             v-if="selectedProduct"
-            class="flex items-start gap-4 p-4 border border-blue-500 bg-blue-50 rounded-xl"
+            class="flex items-center gap-4"
           >
-            <div class="h-12 w-12 rounded-lg bg-white border border-blue-100 flex items-center justify-center text-2xl shrink-0">
-              🏷️
-            </div>
+            <div
+              class="h-16 w-16 shrink-0 rounded-full bg-white border border-black"
+              aria-hidden="true"
+            />
             <div class="flex-1 min-w-0">
               <div class="flex flex-wrap items-baseline justify-between gap-2">
                 <p class="font-semibold text-gray-900">{{ selectedProduct.name }}</p>
@@ -166,9 +166,42 @@
           </div>
         </div>
 
+        <!-- Postage -->
+        <div class="bg-white rounded-xl shadow p-6 mb-6">
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">4. Postage</h2>
+          <p
+            v-if="postageFree"
+            class="mb-4 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800"
+          >
+            Free postage — {{ freePostageThreshold }}+ stickers in this order.
+          </p>
+          <div class="grid sm:grid-cols-2 gap-3" :class="{ 'opacity-50 pointer-events-none': postageFree }">
+            <label
+              class="flex items-start gap-3 p-4 border rounded-xl cursor-pointer"
+              :class="postageClass === 'first' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'"
+            >
+              <input v-model="postageClass" type="radio" value="first" class="mt-1" :disabled="postageFree" />
+              <span>
+                <span class="font-semibold text-gray-900 block">1st Class stamp</span>
+                <span class="text-sm text-gray-600">{{ formatMoney(POSTAGE_FIRST_CENTS) }}</span>
+              </span>
+            </label>
+            <label
+              class="flex items-start gap-3 p-4 border rounded-xl cursor-pointer"
+              :class="postageClass === 'second' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'"
+            >
+              <input v-model="postageClass" type="radio" value="second" class="mt-1" :disabled="postageFree" />
+              <span>
+                <span class="font-semibold text-gray-900 block">2nd Class stamp</span>
+                <span class="text-sm text-gray-600">{{ formatMoney(POSTAGE_SECOND_CENTS) }}</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
         <!-- Summary -->
         <div class="bg-white rounded-xl shadow p-6 mb-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">4. Order summary</h2>
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">5. Order summary</h2>
           <dl class="space-y-2 text-sm">
             <div class="flex justify-between gap-4">
               <dt class="text-gray-600">Dogs selected</dt>
@@ -189,8 +222,8 @@
             <div class="flex justify-between gap-4">
               <dt class="text-gray-600">
                 Postage
-                <span v-if="postageCents === 0" class="text-green-700">(free)</span>
-                <span v-else class="text-gray-400"> — one parcel</span>
+                <span v-if="postageFree" class="text-green-700">(free)</span>
+                <span v-else class="text-gray-400"> — {{ postageClassLabel }}</span>
               </dt>
               <dd class="font-medium text-gray-900">{{ formatMoney(postageCents) }}</dd>
             </div>
@@ -203,7 +236,7 @@
 
         <!-- Shipping -->
         <div class="bg-white rounded-xl shadow p-6 mb-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">5. Shipping address</h2>
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">6. Shipping address</h2>
           <p class="text-sm text-gray-500 mb-4">All stickers in this order go to one address.</p>
           <div class="grid sm:grid-cols-2 gap-4">
             <div class="sm:col-span-2">
@@ -270,7 +303,8 @@ definePageMeta({
 })
 
 const TAGS_PER_DOG_DEFAULT = 2
-const POSTAGE_CENTS = 100
+const POSTAGE_FIRST_CENTS = 180
+const POSTAGE_SECOND_CENTS = 91
 const FREE_POSTAGE_TAG_THRESHOLD = 20
 
 interface Dog {
@@ -305,6 +339,7 @@ const selectedDogIds = ref<string[]>([])
 const selectedProductId = ref('')
 const orderType = ref<'new' | 'replacement'>('new')
 const tagsPerDog = ref(2)
+const postageClass = ref<'first' | 'second'>('second')
 const pageLoading = ref(true)
 const submitting = ref(false)
 const error = ref('')
@@ -321,7 +356,6 @@ const shipping = reactive({
   country: 'GB'
 })
 
-const postageCentsDefault = POSTAGE_CENTS
 const freePostageThreshold = FREE_POSTAGE_TAG_THRESHOLD
 
 const selectedProduct = computed(() =>
@@ -339,10 +373,18 @@ const subtotalCents = computed(() => {
   return selectedProduct.value.unit_price_cents * tagQuantity.value
 })
 
+const postageFree = computed(
+  () => tagQuantity.value > 0 && tagQuantity.value >= FREE_POSTAGE_TAG_THRESHOLD
+)
+
 const postageCents = computed(() => {
-  if (tagQuantity.value === 0) return 0
-  return tagQuantity.value >= FREE_POSTAGE_TAG_THRESHOLD ? 0 : POSTAGE_CENTS
+  if (tagQuantity.value === 0 || postageFree.value) return 0
+  return postageClass.value === 'first' ? POSTAGE_FIRST_CENTS : POSTAGE_SECOND_CENTS
 })
+
+const postageClassLabel = computed(() =>
+  postageClass.value === 'first' ? '1st Class' : '2nd Class'
+)
 
 const totalCents = computed(() => subtotalCents.value + postageCents.value)
 
@@ -542,6 +584,7 @@ const submitOrder = async () => {
         productSku: selectedProduct.value.sku,
         tagsPerDog: effectiveTagsPerDog.value,
         orderType: orderType.value,
+        postageClass: postageClass.value,
         shipping: { ...shipping }
       }
     })

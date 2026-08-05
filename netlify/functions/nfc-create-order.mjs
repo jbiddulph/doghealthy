@@ -6,9 +6,10 @@ const NFC_API_BASE = (
   'https://nfc-me-a3a3437da95d.herokuapp.com/api/v1'
 ).replace(/\/$/, '')
 const NFC_API_KEY = process.env.NFC_ME_API_KEY
-const NFC_PRODUCT_SKU = (process.env.NFC_ME_PRODUCT_SKU || 'NFC-WHITE-25MM').toUpperCase()
+/** Canonical DogHealthy sticker — always preferred over legacy env SKUs. */
+const CANONICAL_NFC_SKU = 'NFC-WHITE-25MM'
+const NFC_PRODUCT_SKU = (process.env.NFC_ME_PRODUCT_SKU || CANONICAL_NFC_SKU).toUpperCase()
 const STRIPE_NFC_STICKER_PRICE_ID = (process.env.STRIPE_NFC_STICKER_PRICE_ID || '').trim()
-const STRIPE_NFC_POSTAGE_PRICE_ID = (process.env.STRIPE_NFC_POSTAGE_PRICE_ID || '').trim()
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -17,12 +18,43 @@ const PUBLIC_BASE_URL = (process.env.NUXT_PUBLIC_BASE_URL || 'https://doghealthy
 
 /** Default stickers per dog; replacements may order 1 or 2. */
 const DEFAULT_TAGS_PER_DOG = 2
-/** Flat UK postage once per order (pence). */
-const POSTAGE_CENTS = Number(process.env.NFC_POSTAGE_CENTS || 100)
+/** Royal Mail stamp rates (pence). */
+const POSTAGE_FIRST_CENTS = Number(process.env.NFC_POSTAGE_FIRST_CENTS || 180)
+const POSTAGE_SECOND_CENTS = Number(process.env.NFC_POSTAGE_SECOND_CENTS || 91)
 /** Free postage when ordering this many stickers or more. */
 const FREE_POSTAGE_TAG_THRESHOLD = Number(process.env.NFC_FREE_POSTAGE_TAG_THRESHOLD || 20)
 
 const NFC_ORDERS_URL = `${NFC_API_BASE}/orders/`
+
+const PRODUCT_SELECT =
+  'id, sku, name, unit_price_cents, currency, min_order_qty, is_active'
+
+async function resolveActiveStickerProduct(admin) {
+  const tried = new Set()
+  // Prefer the new white 25mm sticker even if Netlify still has NFC_ME_PRODUCT_SKU=DOG-NFC-TAG
+  for (const sku of [CANONICAL_NFC_SKU, NFC_PRODUCT_SKU]) {
+    const key = String(sku || '').toUpperCase()
+    if (!key || tried.has(key)) continue
+    tried.add(key)
+    const { data, error } = await admin
+      .from('nfcme_products')
+      .select(PRODUCT_SELECT)
+      .eq('is_active', true)
+      .eq('sku', key)
+      .limit(1)
+    if (error) throw error
+    if (data?.[0]) return data[0]
+  }
+
+  const { data, error } = await admin
+    .from('nfcme_products')
+    .select(PRODUCT_SELECT)
+    .eq('is_active', true)
+    .order('name')
+    .limit(1)
+  if (error) throw error
+  return data?.[0] || null
+}
 
 const json = (statusCode, body) => ({
   statusCode,
@@ -61,7 +93,8 @@ function resolveReturnBase(event) {
  *   productId?: string,
  *   productSku?: string,
  *   tagsPerDog?: 1 | 2,
- *   orderType?: 'new' | 'replacement'
+ *   orderType?: 'new' | 'replacement',
+ *   postageClass?: 'first' | 'second'
  * }
  */
 export async function handler(event) {
@@ -84,6 +117,7 @@ export async function handler(event) {
     const body = JSON.parse(event.body || '{}')
     const { dogIds, shipping } = body
     const orderType = body.orderType === 'replacement' ? 'replacement' : 'new'
+    const postageClass = body.postageClass === 'first' ? 'first' : 'second'
     let tagsPerDog = Number(body.tagsPerDog || DEFAULT_TAGS_PER_DOG)
     if (tagsPerDog !== 1 && tagsPerDog !== 2) tagsPerDog = DEFAULT_TAGS_PER_DOG
     if (orderType === 'new') tagsPerDog = DEFAULT_TAGS_PER_DOG
@@ -104,21 +138,17 @@ export async function handler(event) {
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    let productQuery = admin
-      .from('nfcme_products')
-      .select('id, sku, name, unit_price_cents, currency, min_order_qty, is_active')
-      .eq('is_active', true)
-      .eq('sku', NFC_PRODUCT_SKU)
-
-    // Only allow the configured DogHealthy sticker SKU (ignore other catalogue IDs).
-    const { data: productRows, error: productError } = await productQuery.limit(1)
-    if (productError) {
+    let product
+    try {
+      product = await resolveActiveStickerProduct(admin)
+    } catch (productError) {
       console.error('Product lookup error:', productError)
       return json(500, { error: 'Failed to look up NFC product' })
     }
-    const product = productRows?.[0]
     if (!product) {
-      return json(400, { error: `Unknown or inactive product: ${NFC_PRODUCT_SKU}` })
+      return json(400, {
+        error: `No active NFC sticker product found (tried ${CANONICAL_NFC_SKU}).`
+      })
     }
 
     const { data: dogs, error: dogsError } = await admin
@@ -147,7 +177,17 @@ export async function handler(event) {
 
     const unitPrice = Number(product.unit_price_cents || 0)
     const subtotalCents = unitPrice * tagQuantity
-    const postageCents = tagQuantity >= FREE_POSTAGE_TAG_THRESHOLD ? 0 : POSTAGE_CENTS
+    const postageFree = tagQuantity >= FREE_POSTAGE_TAG_THRESHOLD
+    const postageCents = postageFree
+      ? 0
+      : postageClass === 'first'
+        ? POSTAGE_FIRST_CENTS
+        : POSTAGE_SECOND_CENTS
+    const postageLabel = postageFree
+      ? 'Free postage'
+      : postageClass === 'first'
+        ? '1st Class stamp'
+        : '2nd Class stamp'
     const totalCents = subtotalCents + postageCents
     const currency = String(product.currency || 'gbp').toLowerCase()
 
@@ -170,6 +210,7 @@ export async function handler(event) {
       notes: [
         `DogHealthy ${orderType} order for ${shipping.email}`,
         `Phone: ${shipping.phone || 'n/a'}`,
+        `Postage: ${postageLabel}${postageCents ? ` (£${(postageCents / 100).toFixed(2)})` : ''}`,
         `Dogs: ${dogs.length} × ${tagsPerDog} stickers = ${tagQuantity}`,
         'Profile URLs (encode each sticker to its dog):',
         ...profileLines
@@ -220,10 +261,11 @@ export async function handler(event) {
     params.set('metadata[order_id]', orderId)
     params.set('metadata[user_id]', user.id)
     params.set('metadata[order_type]', orderType)
+    params.set('metadata[postage_class]', postageFree ? 'free' : postageClass)
     params.append('payment_method_types[0]', 'card')
 
     // Prefer catalogue Price IDs from Stripe Dashboard when configured;
-    // otherwise charge £1/sticker (and postage) via inline price_data.
+    // otherwise charge £1/sticker (and stamp postage) via inline price_data.
     if (STRIPE_NFC_STICKER_PRICE_ID) {
       params.set('line_items[0][price]', STRIPE_NFC_STICKER_PRICE_ID)
       params.set('line_items[0][quantity]', String(tagQuantity))
@@ -244,19 +286,14 @@ export async function handler(event) {
     }
 
     if (postageCents > 0) {
-      if (STRIPE_NFC_POSTAGE_PRICE_ID) {
-        params.set('line_items[1][price]', STRIPE_NFC_POSTAGE_PRICE_ID)
-        params.set('line_items[1][quantity]', '1')
-      } else {
-        params.set('line_items[1][quantity]', '1')
-        params.set('line_items[1][price_data][currency]', currency)
-        params.set('line_items[1][price_data][unit_amount]', String(postageCents))
-        params.set('line_items[1][price_data][product_data][name]', 'UK postage')
-        params.set(
-          'line_items[1][price_data][product_data][description]',
-          'Flat rate — one parcel for the whole order'
-        )
-      }
+      params.set('line_items[1][quantity]', '1')
+      params.set('line_items[1][price_data][currency]', currency)
+      params.set('line_items[1][price_data][unit_amount]', String(postageCents))
+      params.set('line_items[1][price_data][product_data][name]', postageLabel)
+      params.set(
+        'line_items[1][price_data][product_data][description]',
+        'Royal Mail stamp — one parcel for the whole order'
+      )
     }
 
     const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
@@ -290,10 +327,11 @@ export async function handler(event) {
       tagsPerDog,
       dogCount: dogs.length,
       postageCents,
+      postageClass: postageFree ? 'free' : postageClass,
       subtotalCents,
       totalCents,
       currency,
-      freePostage: postageCents === 0
+      freePostage: postageFree
     })
   } catch (error) {
     console.error('nfc-create-order error:', error)

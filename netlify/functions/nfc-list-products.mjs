@@ -3,7 +3,11 @@ import { createClient } from '@supabase/supabase-js'
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const DEFAULT_SKU = (process.env.NFC_ME_PRODUCT_SKU || 'NFC-WHITE-25MM').toUpperCase()
+const CANONICAL_SKU = 'NFC-WHITE-25MM'
+const ENV_SKU = (process.env.NFC_ME_PRODUCT_SKU || CANONICAL_SKU).toUpperCase()
+
+const PRODUCT_SELECT =
+  'id, sku, name, description, tag_type, form_factor, unit_price_cents, currency, min_order_qty, stock_qty'
 
 const json = (statusCode, body) => ({
   statusCode,
@@ -15,6 +19,32 @@ const json = (statusCode, body) => ({
   },
   body: JSON.stringify(body)
 })
+
+async function resolveActiveProducts(admin) {
+  const tried = new Set()
+  for (const sku of [CANONICAL_SKU, ENV_SKU]) {
+    const key = String(sku || '').toUpperCase()
+    if (!key || tried.has(key)) continue
+    tried.add(key)
+    const { data, error } = await admin
+      .from('nfcme_products')
+      .select(PRODUCT_SELECT)
+      .eq('is_active', true)
+      .eq('sku', key)
+      .limit(1)
+    if (error) throw error
+    if (data?.length) return data
+  }
+
+  const { data, error } = await admin
+    .from('nfcme_products')
+    .select(PRODUCT_SELECT)
+    .eq('is_active', true)
+    .order('name')
+    .limit(1)
+  if (error) throw error
+  return data || []
+}
 
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') {
@@ -45,36 +75,8 @@ export async function handler(event) {
     }
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-
-    // Prefer the configured DogHealthy sticker SKU; fall back to any single active product.
-    let { data, error } = await admin
-      .from('nfcme_products')
-      .select('id, sku, name, description, tag_type, form_factor, unit_price_cents, currency, min_order_qty, stock_qty')
-      .eq('is_active', true)
-      .eq('sku', DEFAULT_SKU)
-      .limit(1)
-
-    if (error) {
-      console.error('nfc-list-products error:', error)
-      return json(500, { error: 'Failed to load NFC products' })
-    }
-
-    if (!data?.length) {
-      const fallback = await admin
-        .from('nfcme_products')
-        .select('id, sku, name, description, tag_type, form_factor, unit_price_cents, currency, min_order_qty, stock_qty')
-        .eq('is_active', true)
-        .order('name')
-        .limit(1)
-      if (fallback.error) {
-        console.error('nfc-list-products fallback error:', fallback.error)
-        return json(500, { error: 'Failed to load NFC products' })
-      }
-      data = fallback.data || []
-    }
-
-    const products = data || []
-    const defaultSku = products[0]?.sku || DEFAULT_SKU
+    const products = await resolveActiveProducts(admin)
+    const defaultSku = products[0]?.sku || CANONICAL_SKU
 
     return json(200, { products, defaultSku })
   } catch (error) {
