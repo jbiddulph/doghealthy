@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const DEFAULT_SKU = (process.env.NFC_ME_PRODUCT_SKU || 'DOG-NFC-TAG').toUpperCase()
+const DEFAULT_SKU = (process.env.NFC_ME_PRODUCT_SKU || 'NFC-WHITE-25MM').toUpperCase()
 
 const json = (statusCode, body) => ({
   statusCode,
@@ -45,21 +45,36 @@ export async function handler(event) {
     }
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-    const { data, error } = await admin
+
+    // Prefer the configured DogHealthy sticker SKU; fall back to any single active product.
+    let { data, error } = await admin
       .from('nfcme_products')
       .select('id, sku, name, description, tag_type, form_factor, unit_price_cents, currency, min_order_qty, stock_qty')
       .eq('is_active', true)
-      .order('name')
+      .eq('sku', DEFAULT_SKU)
+      .limit(1)
 
     if (error) {
       console.error('nfc-list-products error:', error)
       return json(500, { error: 'Failed to load NFC products' })
     }
 
+    if (!data?.length) {
+      const fallback = await admin
+        .from('nfcme_products')
+        .select('id, sku, name, description, tag_type, form_factor, unit_price_cents, currency, min_order_qty, stock_qty')
+        .eq('is_active', true)
+        .order('name')
+        .limit(1)
+      if (fallback.error) {
+        console.error('nfc-list-products fallback error:', fallback.error)
+        return json(500, { error: 'Failed to load NFC products' })
+      }
+      data = fallback.data || []
+    }
+
     const products = data || []
-    const defaultSku = products.some((p) => p.sku === DEFAULT_SKU)
-      ? DEFAULT_SKU
-      : products[0]?.sku || DEFAULT_SKU
+    const defaultSku = products[0]?.sku || DEFAULT_SKU
 
     return json(200, { products, defaultSku })
   } catch (error) {

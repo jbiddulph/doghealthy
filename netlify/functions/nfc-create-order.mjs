@@ -6,7 +6,9 @@ const NFC_API_BASE = (
   'https://nfc-me-a3a3437da95d.herokuapp.com/api/v1'
 ).replace(/\/$/, '')
 const NFC_API_KEY = process.env.NFC_ME_API_KEY
-const NFC_PRODUCT_SKU = (process.env.NFC_ME_PRODUCT_SKU || 'DOG-NFC-TAG').toUpperCase()
+const NFC_PRODUCT_SKU = (process.env.NFC_ME_PRODUCT_SKU || 'NFC-WHITE-25MM').toUpperCase()
+const STRIPE_NFC_STICKER_PRICE_ID = (process.env.STRIPE_NFC_STICKER_PRICE_ID || '').trim()
+const STRIPE_NFC_POSTAGE_PRICE_ID = (process.env.STRIPE_NFC_POSTAGE_PRICE_ID || '').trim()
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -80,7 +82,7 @@ export async function handler(event) {
     const accessToken = authHeader.slice(7)
 
     const body = JSON.parse(event.body || '{}')
-    const { dogIds, shipping, productSku, productId } = body
+    const { dogIds, shipping } = body
     const orderType = body.orderType === 'replacement' ? 'replacement' : 'new'
     let tagsPerDog = Number(body.tagsPerDog || DEFAULT_TAGS_PER_DOG)
     if (tagsPerDog !== 1 && tagsPerDog !== 2) tagsPerDog = DEFAULT_TAGS_PER_DOG
@@ -106,13 +108,9 @@ export async function handler(event) {
       .from('nfcme_products')
       .select('id, sku, name, unit_price_cents, currency, min_order_qty, is_active')
       .eq('is_active', true)
+      .eq('sku', NFC_PRODUCT_SKU)
 
-    if (productId) productQuery = productQuery.eq('id', productId)
-    else {
-      const requestedSku = String(productSku || NFC_PRODUCT_SKU).trim().toUpperCase()
-      productQuery = productQuery.eq('sku', requestedSku)
-    }
-
+    // Only allow the configured DogHealthy sticker SKU (ignore other catalogue IDs).
     const { data: productRows, error: productError } = await productQuery.limit(1)
     if (productError) {
       console.error('Product lookup error:', productError)
@@ -120,7 +118,7 @@ export async function handler(event) {
     }
     const product = productRows?.[0]
     if (!product) {
-      return json(400, { error: `Unknown or inactive product: ${productSku || productId || NFC_PRODUCT_SKU}` })
+      return json(400, { error: `Unknown or inactive product: ${NFC_PRODUCT_SKU}` })
     }
 
     const { data: dogs, error: dogsError } = await admin
@@ -224,29 +222,41 @@ export async function handler(event) {
     params.set('metadata[order_type]', orderType)
     params.append('payment_method_types[0]', 'card')
 
-    params.set('line_items[0][quantity]', String(tagQuantity))
-    params.set('line_items[0][price_data][currency]', currency)
-    params.set('line_items[0][price_data][unit_amount]', String(unitPrice))
-    params.set(
-      'line_items[0][price_data][product_data][name]',
-      orderType === 'replacement'
-        ? `${product.name} (replacement)`
-        : product.name
-    )
-    params.set(
-      'line_items[0][price_data][product_data][description]',
-      `${dogs.length} dog(s) × ${tagsPerDog} sticker(s) = ${tagQuantity}`
-    )
+    // Prefer catalogue Price IDs from Stripe Dashboard when configured;
+    // otherwise charge £1/sticker (and postage) via inline price_data.
+    if (STRIPE_NFC_STICKER_PRICE_ID) {
+      params.set('line_items[0][price]', STRIPE_NFC_STICKER_PRICE_ID)
+      params.set('line_items[0][quantity]', String(tagQuantity))
+    } else {
+      params.set('line_items[0][quantity]', String(tagQuantity))
+      params.set('line_items[0][price_data][currency]', currency)
+      params.set('line_items[0][price_data][unit_amount]', String(unitPrice))
+      params.set(
+        'line_items[0][price_data][product_data][name]',
+        orderType === 'replacement'
+          ? `${product.name} (replacement)`
+          : product.name
+      )
+      params.set(
+        'line_items[0][price_data][product_data][description]',
+        `${dogs.length} dog(s) × ${tagsPerDog} sticker(s) = ${tagQuantity}`
+      )
+    }
 
     if (postageCents > 0) {
-      params.set('line_items[1][quantity]', '1')
-      params.set('line_items[1][price_data][currency]', currency)
-      params.set('line_items[1][price_data][unit_amount]', String(postageCents))
-      params.set('line_items[1][price_data][product_data][name]', 'UK postage')
-      params.set(
-        'line_items[1][price_data][product_data][description]',
-        'Flat rate — one parcel for the whole order'
-      )
+      if (STRIPE_NFC_POSTAGE_PRICE_ID) {
+        params.set('line_items[1][price]', STRIPE_NFC_POSTAGE_PRICE_ID)
+        params.set('line_items[1][quantity]', '1')
+      } else {
+        params.set('line_items[1][quantity]', '1')
+        params.set('line_items[1][price_data][currency]', currency)
+        params.set('line_items[1][price_data][unit_amount]', String(postageCents))
+        params.set('line_items[1][price_data][product_data][name]', 'UK postage')
+        params.set(
+          'line_items[1][price_data][product_data][description]',
+          'Flat rate — one parcel for the whole order'
+        )
+      }
     }
 
     const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {

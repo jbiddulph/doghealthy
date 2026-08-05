@@ -15,8 +15,10 @@
           </div>
         </div>
         <p class="text-gray-600 mb-2">
-          Order <strong>2 stickers per dog</strong> by default. Kennels can select many dogs —
-          everything ships in <strong>one parcel</strong> with a single postage fee.
+          Order <strong>2 stickers per dog</strong> by default — white
+          <strong>25mm × 25mm NFC stickers</strong> at <strong>£1 each</strong>.
+          Kennels can select many dogs; everything ships in <strong>one parcel</strong>
+          with a single postage fee.
         </p>
         <p class="text-sm text-gray-500">
           Postage £{{ (postageCentsDefault / 100).toFixed(2) }} per order
@@ -42,8 +44,8 @@
       </div>
 
       <div v-else-if="products.length === 0" class="bg-white rounded-xl shadow p-8 text-center">
-        <h2 class="text-xl font-semibold text-gray-900 mb-2">No NFC products available</h2>
-        <p class="text-gray-600">Add an active product in the NFC Me catalogue first.</p>
+        <h2 class="text-xl font-semibold text-gray-900 mb-2">Sticker product unavailable</h2>
+        <p class="text-gray-600">The 25mm NFC white sticker is not configured yet. Please try again shortly.</p>
       </div>
 
       <template v-else>
@@ -88,34 +90,30 @@
           </div>
         </div>
 
-        <!-- Product -->
+        <!-- Product (single SKU) -->
         <div class="bg-white rounded-xl shadow p-6 mb-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">2. Choose sticker product</h2>
-          <div class="space-y-3">
-            <label
-              v-for="product in products"
-              :key="product.id"
-              class="flex items-start gap-4 p-4 border rounded-xl cursor-pointer transition-colors"
-              :class="selectedProductId === product.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'"
-            >
-              <input
-                v-model="selectedProductId"
-                type="radio"
-                :value="product.id"
-                class="mt-1 h-5 w-5 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <div class="flex-1 min-w-0">
-                <div class="flex flex-wrap items-baseline justify-between gap-2">
-                  <p class="font-semibold text-gray-900">{{ product.name }}</p>
-                  <p class="text-sm font-medium text-gray-800">
-                    {{ formatMoney(product.unit_price_cents, product.currency) }} each
-                  </p>
-                </div>
-                <p class="text-sm text-gray-500 mt-1">
-                  <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{{ product.sku }}</code>
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">2. Sticker product</h2>
+          <div
+            v-if="selectedProduct"
+            class="flex items-start gap-4 p-4 border border-blue-500 bg-blue-50 rounded-xl"
+          >
+            <div class="h-12 w-12 rounded-lg bg-white border border-blue-100 flex items-center justify-center text-2xl shrink-0">
+              🏷️
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-wrap items-baseline justify-between gap-2">
+                <p class="font-semibold text-gray-900">{{ selectedProduct.name }}</p>
+                <p class="text-sm font-semibold text-gray-900">
+                  {{ formatMoney(selectedProduct.unit_price_cents, selectedProduct.currency) }} each
                 </p>
               </div>
-            </label>
+              <p v-if="selectedProduct.description" class="text-sm text-gray-600 mt-1">
+                {{ selectedProduct.description }}
+              </p>
+              <p class="text-xs text-gray-500 mt-2">
+                Paid securely with Stripe (same checkout as subscriptions).
+              </p>
+            </div>
           </div>
         </div>
 
