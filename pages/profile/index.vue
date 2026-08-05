@@ -160,8 +160,8 @@
 
           <p v-if="isAdmin" class="text-sm text-gray-600 pt-2">
             Admin:
-            <NuxtLink to="/admin/nfc-shipments" class="text-blue-600 hover:text-blue-700 font-medium">
-              NFC chip shipments
+            <NuxtLink to="/admin" class="text-blue-600 hover:text-blue-700 font-medium">
+              Open admin dashboard
             </NuxtLink>
           </p>
         </form>

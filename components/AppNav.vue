@@ -65,10 +65,10 @@
             </NuxtLink>
             <NuxtLink
               v-if="isAdmin"
-              to="/admin/nfc-shipments"
+              to="/admin"
               class="text-secondary hover:text-dark font-medium"
             >
-              NFC shipments
+              Admin
             </NuxtLink>
             <NotificationBell />
             <button
@@ -134,10 +134,10 @@
           <NuxtLink
             v-if="isAdmin"
             @click="mobileOpen=false"
-            to="/admin/nfc-shipments"
+            to="/admin"
             class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50"
           >
-            NFC shipments
+            Admin
           </NuxtLink>
           <div class="px-3 py-2">
             <NotificationBell />
