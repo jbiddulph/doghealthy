@@ -14,10 +14,12 @@ export default defineNuxtConfig({
         '/admin/users',
         '/admin/dogs',
         '/admin/nfc-shipments',
+        '/admin/nfc-orders',
         '/billing/success',
         '/billing/subscribe',
         '/profile',
-        '/inbox'
+        '/inbox',
+        '/nfc-tags'
       ]
     }
   },

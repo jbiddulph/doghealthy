@@ -1,20 +1,25 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Accept either NFC_ME_BASE_URL or NFC_ME_API_BASE_URL from Netlify env
 const NFC_API_BASE = (
   process.env.NFC_ME_BASE_URL ||
   process.env.NFC_ME_API_BASE_URL ||
   'https://nfc-me-a3a3437da95d.herokuapp.com/api/v1'
 ).replace(/\/$/, '')
 const NFC_API_KEY = process.env.NFC_ME_API_KEY
-// Must match an active product SKU in NFC Me (see GET /api/v1/products/)
 const NFC_PRODUCT_SKU = (process.env.NFC_ME_PRODUCT_SKU || 'DOG-NFC-TAG').toUpperCase()
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const PUBLIC_BASE_URL = process.env.NUXT_PUBLIC_BASE_URL || 'https://doghealthy.co.uk'
+const STRIPE_SECRET_KEY = (process.env.STRIPE_SECRET_KEY || '').trim()
+const PUBLIC_BASE_URL = (process.env.NUXT_PUBLIC_BASE_URL || 'https://doghealthy.co.uk').replace(/\/$/, '')
 
-// Django APPEND_SLASH requires the trailing slash on POST
+/** Default stickers per dog; replacements may order 1 or 2. */
+const DEFAULT_TAGS_PER_DOG = 2
+/** Flat UK postage once per order (pence). */
+const POSTAGE_CENTS = Number(process.env.NFC_POSTAGE_CENTS || 100)
+/** Free postage when ordering this many stickers or more. */
+const FREE_POSTAGE_TAG_THRESHOLD = Number(process.env.NFC_FREE_POSTAGE_TAG_THRESHOLD || 20)
+
 const NFC_ORDERS_URL = `${NFC_API_BASE}/orders/`
 
 const json = (statusCode, body) => ({
@@ -28,67 +33,82 @@ const json = (statusCode, body) => ({
   body: JSON.stringify(body)
 })
 
-export async function handler(event) {
-  if (event.httpMethod === 'OPTIONS') {
-    return json(204, {})
+function resolveReturnBase(event) {
+  const headers = event.headers || {}
+  const origin = headers.origin || headers.Origin || ''
+  try {
+    if (origin) {
+      const host = new URL(origin).hostname
+      if (['doghealthy.co.uk', 'www.doghealthy.co.uk', 'doghealthy.netlify.app'].includes(host)) {
+        return origin.replace(/\/$/, '')
+      }
+    }
+  } catch {
+    // ignore
   }
+  return PUBLIC_BASE_URL
+}
 
-  if (event.httpMethod !== 'POST') {
-    return json(405, { error: 'Method not allowed' })
-  }
+/**
+ * Create a batch NFC sticker order (dogs × tags_per_dog) with one postage fee,
+ * then redirect to Stripe Checkout. NFC Me is called after payment via nfc-confirm-order.
+ *
+ * Body: {
+ *   dogIds: string[],
+ *   shipping: {...},
+ *   productId?: string,
+ *   productSku?: string,
+ *   tagsPerDog?: 1 | 2,
+ *   orderType?: 'new' | 'replacement'
+ * }
+ */
+export async function handler(event) {
+  if (event.httpMethod === 'OPTIONS') return json(204, {})
+  if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' })
 
   try {
-    if (!NFC_API_KEY) {
-      return json(503, { error: 'NFC_ME_API_KEY is not configured' })
+    if (!NFC_API_KEY) return json(503, { error: 'NFC_ME_API_KEY is not configured' })
+    if (!STRIPE_SECRET_KEY || STRIPE_SECRET_KEY.includes('REPLACE_ME')) {
+      return json(503, { error: 'STRIPE_SECRET_KEY is not configured' })
     }
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
       return json(503, { error: 'Supabase environment is not configured' })
     }
 
     const authHeader = event.headers.authorization || event.headers.Authorization
-    if (!authHeader?.startsWith('Bearer ')) {
-      return json(401, { error: 'Missing auth token' })
-    }
+    if (!authHeader?.startsWith('Bearer ')) return json(401, { error: 'Missing auth token' })
     const accessToken = authHeader.slice(7)
 
     const body = JSON.parse(event.body || '{}')
-    const {
-      dogIds,
-      shipping,
-      productSku,
-      productId
-    } = body
+    const { dogIds, shipping, productSku, productId } = body
+    const orderType = body.orderType === 'replacement' ? 'replacement' : 'new'
+    let tagsPerDog = Number(body.tagsPerDog || DEFAULT_TAGS_PER_DOG)
+    if (tagsPerDog !== 1 && tagsPerDog !== 2) tagsPerDog = DEFAULT_TAGS_PER_DOG
+    if (orderType === 'new') tagsPerDog = DEFAULT_TAGS_PER_DOG
 
     if (!Array.isArray(dogIds) || dogIds.length === 0) {
       return json(400, { error: 'Select at least one dog' })
     }
-
     if (!shipping?.name || !shipping?.email || !shipping?.line1 || !shipping?.city || !shipping?.postcode) {
       return json(400, { error: 'Complete shipping details are required' })
     }
 
-    // Verify the caller with their JWT
     const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } }
     })
     const { data: userData, error: userError } = await authClient.auth.getUser()
-    if (userError || !userData?.user) {
-      return json(401, { error: 'Invalid or expired session' })
-    }
+    if (userError || !userData?.user) return json(401, { error: 'Invalid or expired session' })
     const user = userData.user
 
-    // Service role for ownership checks + order writes that need elevated update
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // Resolve product from shared nfcme_products table (user choice, else env default)
     let productQuery = admin
       .from('nfcme_products')
       .select('id, sku, name, unit_price_cents, currency, min_order_qty, is_active')
       .eq('is_active', true)
 
-    if (productId) {
-      productQuery = productQuery.eq('id', productId)
-    } else {
+    if (productId) productQuery = productQuery.eq('id', productId)
+    else {
       const requestedSku = String(productSku || NFC_PRODUCT_SKU).trim().toUpperCase()
       productQuery = productQuery.eq('sku', requestedSku)
     }
@@ -98,17 +118,14 @@ export async function handler(event) {
       console.error('Product lookup error:', productError)
       return json(500, { error: 'Failed to look up NFC product' })
     }
-
     const product = productRows?.[0]
     if (!product) {
-      return json(400, {
-        error: `Unknown or inactive product: ${productSku || productId || NFC_PRODUCT_SKU}`
-      })
+      return json(400, { error: `Unknown or inactive product: ${productSku || productId || NFC_PRODUCT_SKU}` })
     }
 
     const { data: dogs, error: dogsError } = await admin
       .from('doghealthy_dogs')
-      .select('id, name, breed, photo_url, gender, color, microchip_number')
+      .select('id, name, breed, photo_url')
       .eq('user_id', user.id)
       .eq('is_active', true)
       .in('id', dogIds)
@@ -117,34 +134,33 @@ export async function handler(event) {
       console.error('Dogs fetch error:', dogsError)
       return json(500, { error: 'Failed to load selected dogs' })
     }
-
     if (!dogs || dogs.length !== dogIds.length) {
       return json(400, { error: 'One or more selected dogs were not found on your account' })
     }
 
-    const quantity = dogs.length
+    const tagQuantity = dogs.length * tagsPerDog
     const minQty = Number(product.min_order_qty || 1)
-    if (quantity < minQty) {
+    // Replacements may be a single sticker; new orders must meet catalogue min on sticker qty
+    if (orderType === 'new' && tagQuantity < minQty) {
       return json(400, {
-        error: `Minimum order quantity for ${product.sku} is ${minQty}. Select at least ${minQty} dogs, or choose a different product.`
+        error: `Minimum order is ${minQty} stickers (${Math.ceil(minQty / tagsPerDog)} dogs at ${tagsPerDog} each).`
       })
     }
 
-    const orderId = crypto.randomUUID()
-    const profileBase = PUBLIC_BASE_URL.replace(/\/$/, '')
-    const profileLines = dogs.map(
-      (dog) => `${dog.name}: ${profileBase}/dogs/${dog.id}`
-    )
+    const unitPrice = Number(product.unit_price_cents || 0)
+    const subtotalCents = unitPrice * tagQuantity
+    const postageCents = tagQuantity >= FREE_POSTAGE_TAG_THRESHOLD ? 0 : POSTAGE_CENTS
+    const totalCents = subtotalCents + postageCents
+    const currency = String(product.currency || 'gbp').toLowerCase()
 
-    // Payload shape from NFC Me docs (POST /api/v1/orders/)
+    const orderId = crypto.randomUUID()
+    const baseUrl = resolveReturnBase(event)
+    const profileBase = PUBLIC_BASE_URL
+    const profileLines = dogs.map((dog) => `${dog.name}: ${profileBase}/dogs/${dog.id}`)
+
     const nfcPayload = {
       external_reference: orderId,
-      items: [
-        {
-          sku: product.sku,
-          quantity
-        }
-      ],
+      items: [{ sku: product.sku, quantity: tagQuantity }],
       shipping: {
         name: shipping.name,
         line1: shipping.line1,
@@ -154,137 +170,120 @@ export async function handler(event) {
         country: shipping.country || 'GB'
       },
       notes: [
-        `DogHealthy order for ${shipping.email}`,
+        `DogHealthy ${orderType} order for ${shipping.email}`,
         `Phone: ${shipping.phone || 'n/a'}`,
-        'Profile URLs:',
+        `Dogs: ${dogs.length} × ${tagsPerDog} stickers = ${tagQuantity}`,
+        'Profile URLs (encode each sticker to its dog):',
         ...profileLines
       ].join('\n')
     }
 
-    // Create local order first
-    const { error: insertError } = await admin
-      .from('doghealthy_nfc_orders')
-      .insert({
-        id: orderId,
-        user_id: user.id,
-        dog_ids: dogIds,
-        status: 'pending',
-        shipping_name: shipping.name,
-        shipping_email: shipping.email,
-        shipping_phone: shipping.phone || null,
-        shipping_line1: shipping.line1,
-        shipping_line2: shipping.line2 || null,
-        shipping_city: shipping.city,
-        shipping_postcode: shipping.postcode,
-        shipping_country: shipping.country || 'GB',
-        request_payload: nfcPayload
-      })
+    const { error: insertError } = await admin.from('doghealthy_nfc_orders').insert({
+      id: orderId,
+      user_id: user.id,
+      dog_ids: dogIds,
+      status: 'pending_payment',
+      order_type: orderType,
+      tags_per_dog: tagsPerDog,
+      tag_quantity: tagQuantity,
+      unit_price_cents: unitPrice,
+      postage_cents: postageCents,
+      subtotal_cents: subtotalCents,
+      total_cents: totalCents,
+      currency,
+      product_sku: product.sku,
+      payment_status: 'unpaid',
+      shipping_name: shipping.name,
+      shipping_email: shipping.email,
+      shipping_phone: shipping.phone || null,
+      shipping_line1: shipping.line1,
+      shipping_line2: shipping.line2 || null,
+      shipping_city: shipping.city,
+      shipping_postcode: shipping.postcode,
+      shipping_country: shipping.country || 'GB',
+      request_payload: nfcPayload
+    })
 
     if (insertError) {
       console.error('Order insert error:', insertError)
       return json(500, { error: 'Failed to create local NFC order' })
     }
 
-    // Forward to nfc-me (supports X-API-Key or Bearer)
-    const nfcResponse = await fetch(NFC_ORDERS_URL, {
+    const successUrl =
+      `${baseUrl}/nfc-tags?order=success&session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`
+    const cancelUrl = `${baseUrl}/nfc-tags?order=cancelled&order_id=${orderId}`
+
+    const params = new URLSearchParams()
+    params.set('mode', 'payment')
+    params.set('success_url', successUrl)
+    params.set('cancel_url', cancelUrl)
+    params.set('client_reference_id', orderId)
+    params.set('customer_email', shipping.email || user.email || '')
+    params.set('metadata[order_id]', orderId)
+    params.set('metadata[user_id]', user.id)
+    params.set('metadata[order_type]', orderType)
+    params.append('payment_method_types[0]', 'card')
+
+    params.set('line_items[0][quantity]', String(tagQuantity))
+    params.set('line_items[0][price_data][currency]', currency)
+    params.set('line_items[0][price_data][unit_amount]', String(unitPrice))
+    params.set(
+      'line_items[0][price_data][product_data][name]',
+      orderType === 'replacement'
+        ? `${product.name} (replacement)`
+        : product.name
+    )
+    params.set(
+      'line_items[0][price_data][product_data][description]',
+      `${dogs.length} dog(s) × ${tagsPerDog} sticker(s) = ${tagQuantity}`
+    )
+
+    if (postageCents > 0) {
+      params.set('line_items[1][quantity]', '1')
+      params.set('line_items[1][price_data][currency]', currency)
+      params.set('line_items[1][price_data][unit_amount]', String(postageCents))
+      params.set('line_items[1][price_data][product_data][name]', 'UK postage')
+      params.set(
+        'line_items[1][price_data][product_data][description]',
+        'Flat rate — one parcel for the whole order'
+      )
+    }
+
+    const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
       headers: {
-        'X-API-Key': NFC_API_KEY,
-        Authorization: `Bearer ${NFC_API_KEY}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
+        Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: JSON.stringify(nfcPayload)
+      body: params.toString()
     })
-
-    const responseText = await nfcResponse.text()
-    let responseJson = null
-    try {
-      responseJson = responseText ? JSON.parse(responseText) : null
-    } catch {
-      responseJson = { raw: responseText }
-    }
-
-    if (!nfcResponse.ok) {
+    const session = await stripeRes.json().catch(() => ({}))
+    if (!stripeRes.ok) {
+      console.error('Stripe NFC checkout error:', session)
       await admin
         .from('doghealthy_nfc_orders')
-        .update({
-          status: 'failed',
-          response_payload: responseJson,
-          error_message: `NFC API error ${nfcResponse.status}`
-        })
+        .update({ status: 'failed', error_message: session?.error?.message || 'Stripe checkout failed' })
         .eq('id', orderId)
-
-      return json(502, {
-        error: 'Failed to submit order to NFC provider',
-        details: responseJson,
-        orderId
-      })
+      return json(502, { error: session?.error?.message || 'Failed to start payment' })
     }
-
-    const remoteOrder =
-      responseJson?.order ||
-      responseJson
-    const remoteOrderId =
-      remoteOrder?.id ||
-      remoteOrder?.order_number ||
-      responseJson?.id ||
-      responseJson?.order_id ||
-      null
 
     await admin
       .from('doghealthy_nfc_orders')
-      .update({
-        status: 'submitted',
-        nfc_me_order_id: remoteOrderId ? String(remoteOrderId) : null,
-        response_payload: responseJson
-      })
+      .update({ stripe_checkout_session_id: session.id })
       .eq('id', orderId)
 
-    // Mark selected dogs as NFC-enabled and ensure one active tag each
-    const nowIso = new Date().toISOString()
-    await admin
-      .from('doghealthy_dogs')
-      .update({
-        nfc_tag_enabled: true,
-        nfc_ordered_at: nowIso
-      })
-      .in('id', dogIds)
-      .eq('user_id', user.id)
-
-    for (const dog of dogs) {
-      const { data: existingTag } = await admin
-        .from('doghealthy_tags')
-        .select('id')
-        .eq('pet_id', dog.id)
-        .eq('status', 'active')
-        .maybeSingle()
-
-      if (!existingTag) {
-        await admin.from('doghealthy_tags').insert({
-          uid: crypto.randomUUID().replace(/-/g, '').slice(0, 16),
-          pet_id: dog.id,
-          status: 'active',
-          manufacturer_id: product.sku,
-          activated_at: nowIso
-        })
-      }
-    }
-
     return json(200, {
-      success: true,
+      url: session.url,
+      sessionId: session.id,
       orderId,
-      nfcMeOrderId: remoteOrderId,
-      product: {
-        id: product.id,
-        sku: product.sku,
-        name: product.name
-      },
-      dogs: dogs.map((d) => ({
-        id: d.id,
-        name: d.name,
-        profileUrl: `${profileBase}/dogs/${d.id}`
-      }))
+      tagQuantity,
+      tagsPerDog,
+      dogCount: dogs.length,
+      postageCents,
+      subtotalCents,
+      totalCents,
+      currency,
+      freePostage: postageCents === 0
     })
   } catch (error) {
     console.error('nfc-create-order error:', error)

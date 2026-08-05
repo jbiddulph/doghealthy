@@ -392,18 +392,27 @@
             <div>
               <h2 class="text-xl font-semibold text-gray-900">QR / NFC tag</h2>
               <p class="text-sm text-gray-600 mt-1">
-                Encode this URL on a QR code or NFC sticker. Anyone who scans it sees {{ dog.name }}’s public found-pet profile.
-                Creating a tag also collects your shipping address so we can post a physical NFC chip.
+                Create a digital QR / NFC URL for {{ dog.name }}. Physical stickers are ordered in batches
+                (2 per dog, one postage fee) via
+                <NuxtLink to="/nfc-tags" class="text-blue-600 hover:underline">Order NFC stickers</NuxtLink>.
               </p>
             </div>
-            <button
-              type="button"
-              class="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-4 py-2 rounded-lg text-sm font-semibold"
-              :disabled="tagLoading"
-              @click="ensureTag"
-            >
-              {{ tagLoading ? 'Preparing…' : activeTag ? 'Refresh tag' : 'Create tag + QR' }}
-            </button>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-4 py-2 rounded-lg text-sm font-semibold"
+                :disabled="tagLoading"
+                @click="ensureTag"
+              >
+                {{ tagLoading ? 'Preparing…' : activeTag ? 'Refresh tag' : 'Create tag + QR' }}
+              </button>
+              <NuxtLink
+                :to="`/nfc-tags?dogId=${dog.id}&mode=replace`"
+                class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 px-4 py-2 rounded-lg text-sm font-semibold"
+              >
+                Order / replace stickers
+              </NuxtLink>
+            </div>
           </div>
 
           <div v-if="tagError" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

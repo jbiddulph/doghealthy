@@ -9,17 +9,18 @@
 
       <div class="bg-white rounded-2xl shadow-lg p-6 sm:p-8 mb-8">
         <div class="flex flex-wrap items-start justify-between gap-4 mb-3">
-          <h1 class="text-3xl font-bold text-gray-900">Order NFC Dog Tags</h1>
+          <h1 class="text-3xl font-bold text-gray-900">Order NFC stickers</h1>
           <div class="rounded-full bg-green-100 text-green-800 px-4 py-1.5 text-sm font-semibold">
             {{ orderTotalLabel }}
           </div>
         </div>
         <p class="text-gray-600 mb-2">
-          Choose a tag product and one or more dogs. Each tag links to that dog’s public DogHealthy
-          profile so anyone who finds them can identify them quickly.
+          Order <strong>2 stickers per dog</strong> by default. Kennels can select many dogs —
+          everything ships in <strong>one parcel</strong> with a single postage fee.
         </p>
         <p class="text-sm text-gray-500">
-          Products come from your NFC Me catalogue. Pick whichever active SKU you want to ship.
+          Postage £{{ (postageCentsDefault / 100).toFixed(2) }} per order
+          (free when you order {{ freePostageThreshold }}+ stickers).
         </p>
       </div>
 
@@ -31,7 +32,7 @@
       <div v-else-if="dogs.length === 0" class="bg-white rounded-xl shadow p-8 text-center">
         <div class="text-5xl mb-4">🐕</div>
         <h2 class="text-xl font-semibold text-gray-900 mb-2">No dogs registered yet</h2>
-        <p class="text-gray-600 mb-6">Add a dog first, then come back to order an NFC tag.</p>
+        <p class="text-gray-600 mb-6">Add a dog first, then come back to order NFC stickers.</p>
         <NuxtLink
           to="/dogs"
           class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold"
@@ -42,15 +43,54 @@
 
       <div v-else-if="products.length === 0" class="bg-white rounded-xl shadow p-8 text-center">
         <h2 class="text-xl font-semibold text-gray-900 mb-2">No NFC products available</h2>
-        <p class="text-gray-600">
-          Add an active product in the NFC Me ops catalogue first, then refresh this page.
-        </p>
+        <p class="text-gray-600">Add an active product in the NFC Me catalogue first.</p>
       </div>
 
       <template v-else>
-        <!-- Product selection -->
+        <!-- Order type -->
         <div class="bg-white rounded-xl shadow p-6 mb-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">1. Choose tag product</h2>
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">1. Order type</h2>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <label
+              class="flex items-start gap-3 p-4 border rounded-xl cursor-pointer"
+              :class="orderType === 'new' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'"
+            >
+              <input v-model="orderType" type="radio" value="new" class="mt-1" />
+              <span>
+                <span class="font-semibold text-gray-900 block">New stickers</span>
+                <span class="text-sm text-gray-600">2 stickers for each selected dog</span>
+              </span>
+            </label>
+            <label
+              class="flex items-start gap-3 p-4 border rounded-xl cursor-pointer"
+              :class="orderType === 'replacement' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'"
+            >
+              <input v-model="orderType" type="radio" value="replacement" class="mt-1" />
+              <span>
+                <span class="font-semibold text-gray-900 block">Replace damaged</span>
+                <span class="text-sm text-gray-600">Reorder 1 or 2 stickers for selected dogs</span>
+              </span>
+            </label>
+          </div>
+
+          <div v-if="orderType === 'replacement'" class="mt-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Stickers per selected dog</label>
+            <div class="flex gap-3">
+              <label class="inline-flex items-center gap-2 text-sm">
+                <input v-model.number="tagsPerDog" type="radio" :value="1" />
+                1 (single replacement)
+              </label>
+              <label class="inline-flex items-center gap-2 text-sm">
+                <input v-model.number="tagsPerDog" type="radio" :value="2" />
+                2 (pair)
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product -->
+        <div class="bg-white rounded-xl shadow p-6 mb-6">
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">2. Choose sticker product</h2>
           <div class="space-y-3">
             <label
               v-for="product in products"
@@ -73,27 +113,16 @@
                 </div>
                 <p class="text-sm text-gray-500 mt-1">
                   <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{{ product.sku }}</code>
-                  · {{ product.form_factor }} · {{ product.tag_type }}
-                  · min {{ product.min_order_qty }}
-                </p>
-                <p v-if="product.description" class="text-sm text-gray-600 mt-2">
-                  {{ product.description }}
-                </p>
-                <p
-                  v-if="selectedDogIds.length > 0 && selectedDogIds.length < product.min_order_qty"
-                  class="text-sm text-amber-700 mt-2"
-                >
-                  Needs at least {{ product.min_order_qty }} tags — select more dogs or another product.
                 </p>
               </div>
             </label>
           </div>
         </div>
 
-        <!-- Dog selection -->
+        <!-- Dogs -->
         <div class="bg-white rounded-xl shadow p-6 mb-6">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold text-gray-900">2. Select dogs</h2>
+            <h2 class="text-xl font-semibold text-gray-900">3. Select dogs</h2>
             <button
               type="button"
               class="text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -139,41 +168,77 @@
           </div>
         </div>
 
+        <!-- Summary -->
+        <div class="bg-white rounded-xl shadow p-6 mb-6">
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">4. Order summary</h2>
+          <dl class="space-y-2 text-sm">
+            <div class="flex justify-between gap-4">
+              <dt class="text-gray-600">Dogs selected</dt>
+              <dd class="font-medium text-gray-900">{{ selectedDogIds.length }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-gray-600">Stickers per dog</dt>
+              <dd class="font-medium text-gray-900">{{ effectiveTagsPerDog }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-gray-600">Total stickers</dt>
+              <dd class="font-medium text-gray-900">{{ tagQuantity }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-gray-600">Stickers subtotal</dt>
+              <dd class="font-medium text-gray-900">{{ formatMoney(subtotalCents) }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-gray-600">
+                Postage
+                <span v-if="postageCents === 0" class="text-green-700">(free)</span>
+                <span v-else class="text-gray-400"> — one parcel</span>
+              </dt>
+              <dd class="font-medium text-gray-900">{{ formatMoney(postageCents) }}</dd>
+            </div>
+            <div class="flex justify-between gap-4 border-t border-gray-200 pt-3 text-base">
+              <dt class="font-semibold text-gray-900">Total</dt>
+              <dd class="font-bold text-gray-900">{{ formatMoney(totalCents) }}</dd>
+            </div>
+          </dl>
+        </div>
+
         <!-- Shipping -->
         <div class="bg-white rounded-xl shadow p-6 mb-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">3. Shipping details</h2>
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">5. Shipping address</h2>
+          <p class="text-sm text-gray-500 mb-4">All stickers in this order go to one address.</p>
           <div class="grid sm:grid-cols-2 gap-4">
             <div class="sm:col-span-2">
               <label class="block text-sm font-medium text-gray-700 mb-1">Full name</label>
-              <input v-model="shipping.name" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+              <input v-model="shipping.name" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input v-model="shipping.email" type="email" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+              <input v-model="shipping.email" type="email" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-              <input v-model="shipping.phone" type="tel" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+              <input v-model="shipping.phone" type="tel" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" />
             </div>
             <div class="sm:col-span-2">
               <label class="block text-sm font-medium text-gray-700 mb-1">Address line 1</label>
-              <input v-model="shipping.line1" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+              <input v-model="shipping.line1" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" />
             </div>
             <div class="sm:col-span-2">
               <label class="block text-sm font-medium text-gray-700 mb-1">Address line 2 (optional)</label>
-              <input v-model="shipping.line2" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+              <input v-model="shipping.line2" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
-              <input v-model="shipping.city" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+              <input v-model="shipping.city" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Postcode</label>
-              <input v-model="shipping.postcode" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+              <input v-model="shipping.postcode" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Country</label>
-              <select v-model="shipping.country" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              <select v-model="shipping.country" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
                 <option value="GB">United Kingdom</option>
                 <option value="IE">Ireland</option>
               </select>
@@ -206,6 +271,10 @@ definePageMeta({
   middleware: 'auth'
 })
 
+const TAGS_PER_DOG_DEFAULT = 2
+const POSTAGE_CENTS = 100
+const FREE_POSTAGE_TAG_THRESHOLD = 20
+
 interface Dog {
   id: string
   name: string
@@ -227,6 +296,8 @@ interface NfcProduct {
   stock_qty: number
 }
 
+const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const supabase = useSupabase()
 
@@ -234,6 +305,8 @@ const dogs = ref<Dog[]>([])
 const products = ref<NfcProduct[]>([])
 const selectedDogIds = ref<string[]>([])
 const selectedProductId = ref('')
+const orderType = ref<'new' | 'replacement'>('new')
+const tagsPerDog = ref(2)
 const pageLoading = ref(true)
 const submitting = ref(false)
 const error = ref('')
@@ -250,40 +323,58 @@ const shipping = reactive({
   country: 'GB'
 })
 
+const postageCentsDefault = POSTAGE_CENTS
+const freePostageThreshold = FREE_POSTAGE_TAG_THRESHOLD
+
 const selectedProduct = computed(() =>
   products.value.find((p) => p.id === selectedProductId.value) || null
 )
 
-const allSelected = computed(() => dogs.value.length > 0 && selectedDogIds.value.length === dogs.value.length)
+const effectiveTagsPerDog = computed(() =>
+  orderType.value === 'new' ? TAGS_PER_DOG_DEFAULT : tagsPerDog.value
+)
 
-const orderTotalCents = computed(() => {
-  if (!selectedProduct.value || selectedDogIds.value.length === 0) return 0
-  return selectedProduct.value.unit_price_cents * selectedDogIds.value.length
+const tagQuantity = computed(() => selectedDogIds.value.length * effectiveTagsPerDog.value)
+
+const subtotalCents = computed(() => {
+  if (!selectedProduct.value) return 0
+  return selectedProduct.value.unit_price_cents * tagQuantity.value
 })
 
+const postageCents = computed(() => {
+  if (tagQuantity.value === 0) return 0
+  return tagQuantity.value >= FREE_POSTAGE_TAG_THRESHOLD ? 0 : POSTAGE_CENTS
+})
+
+const totalCents = computed(() => subtotalCents.value + postageCents.value)
+
+const allSelected = computed(() => dogs.value.length > 0 && selectedDogIds.value.length === dogs.value.length)
+
 const orderTotalLabel = computed(() => {
-  if (!selectedProduct.value) return 'Choose a product'
-  const currency = selectedProduct.value.currency || 'GBP'
-  return formatMoney(orderTotalCents.value, currency)
+  if (!selectedProduct.value || selectedDogIds.value.length === 0) return 'Select dogs'
+  return formatMoney(totalCents.value, selectedProduct.value.currency)
 })
 
 const canSubmit = computed(() => {
   if (!selectedProduct.value || selectedDogIds.value.length === 0) return false
-  return selectedDogIds.value.length >= (selectedProduct.value.min_order_qty || 1)
+  if (orderType.value === 'new') {
+    const min = selectedProduct.value.min_order_qty || 1
+    return tagQuantity.value >= min
+  }
+  return tagQuantity.value >= 1
 })
 
 const submitLabel = computed(() => {
-  if (submitting.value) return 'Submitting order...'
-  const count = selectedDogIds.value.length
-  const sku = selectedProduct.value?.sku || 'NFC tag'
-  return `Order ${count || ''} × ${sku} — ${orderTotalLabel.value}`
+  if (submitting.value) return 'Redirecting to payment…'
+  if (!canSubmit.value) return 'Complete the form to continue'
+  return `Pay ${orderTotalLabel.value} — ${tagQuantity.value} stickers`
 })
 
 const formatMoney = (cents: number, currency = 'GBP') => {
   try {
     return new Intl.NumberFormat('en-GB', {
       style: 'currency',
-      currency
+      currency: currency.toUpperCase()
     }).format((cents || 0) / 100)
   } catch {
     return `£${((cents || 0) / 100).toFixed(2)}`
@@ -291,12 +382,12 @@ const formatMoney = (cents: number, currency = 'GBP') => {
 }
 
 const toggleSelectAll = () => {
-  if (allSelected.value) {
-    selectedDogIds.value = []
-  } else {
-    selectedDogIds.value = dogs.value.map((d) => d.id)
-  }
+  selectedDogIds.value = allSelected.value ? [] : dogs.value.map((d) => d.id)
 }
+
+watch(orderType, (type) => {
+  if (type === 'new') tagsPerDog.value = 2
+})
 
 const waitForAuth = async () => {
   if ((authStore as any).loading) {
@@ -313,9 +404,7 @@ const waitForAuth = async () => {
 const getAccessToken = async () => {
   const { data: sessionData } = await supabase.auth.getSession()
   const accessToken = sessionData.session?.access_token
-  if (!accessToken) {
-    throw new Error('Your session has expired. Please log in again.')
-  }
+  if (!accessToken) throw new Error('Your session has expired. Please log in again.')
   return accessToken
 }
 
@@ -352,24 +441,38 @@ const loadPage = async () => {
 
     products.value = productsResult.products || []
     const defaultProduct =
-      products.value.find((p) => p.sku === productsResult.defaultSku) ||
-      products.value[0]
+      products.value.find((p) => p.sku === productsResult.defaultSku) || products.value[0]
     selectedProductId.value = defaultProduct?.id || ''
 
     shipping.email = authStore.user?.email || ''
     const { data: profile } = await supabase
       .from('doghealthy_users')
-      .select('full_name, phone, billing_name, address_line1, address_line2, address_city, address_postcode, address_country')
+      .select(
+        'full_name, phone, billing_name, address_line1, address_line2, address_city, address_postcode, address_country'
+      )
       .eq('id', authStore.userId)
       .single()
 
-    if (profile?.billing_name || profile?.full_name) shipping.name = profile.billing_name || profile.full_name
+    if (profile?.billing_name || profile?.full_name) {
+      shipping.name = profile.billing_name || profile.full_name
+    }
     if (profile?.phone) shipping.phone = profile.phone
     if (profile?.address_line1) shipping.line1 = profile.address_line1
     if (profile?.address_line2) shipping.line2 = profile.address_line2
     if (profile?.address_city) shipping.city = profile.address_city
     if (profile?.address_postcode) shipping.postcode = profile.address_postcode
     if (profile?.address_country) shipping.country = profile.address_country
+
+    // Deep-link: /nfc-tags?dogId=…&mode=replace
+    const dogId = typeof route.query.dogId === 'string' ? route.query.dogId : ''
+    const mode = typeof route.query.mode === 'string' ? route.query.mode : ''
+    if (mode === 'replace' || mode === 'replacement') {
+      orderType.value = 'replacement'
+      tagsPerDog.value = route.query.qty === '1' ? 1 : 2
+    }
+    if (dogId && dogs.value.some((d) => d.id === dogId)) {
+      selectedDogIds.value = [dogId]
+    }
   } catch (err: any) {
     console.error(err)
     error.value = err?.data?.error || err?.message || 'Failed to load NFC order page'
@@ -378,20 +481,50 @@ const loadPage = async () => {
   }
 }
 
+const confirmPaidOrder = async (sessionId: string) => {
+  submitting.value = true
+  error.value = ''
+  try {
+    const accessToken = await getAccessToken()
+    const result = await $fetch<{
+      ok: boolean
+      tagQuantity?: number
+      dogCount?: number
+      orderType?: string
+    }>('/.netlify/functions/nfc-confirm-order', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: { sessionId }
+    })
+
+    successMessage.value =
+      result.orderType === 'replacement'
+        ? `Payment received. Replacement stickers (${result.tagQuantity}) are being prepared for postage.`
+        : `Payment received. ${result.tagQuantity} stickers for ${result.dogCount} dog(s) will ship together.`
+
+    selectedDogIds.value = []
+    await router.replace({ path: '/nfc-tags', query: {} })
+    await loadPage()
+  } catch (err: any) {
+    error.value =
+      err?.data?.error ||
+      err?.message ||
+      'Payment may have succeeded; contact support if stickers do not appear.'
+  } finally {
+    submitting.value = false
+  }
+}
+
 const submitOrder = async () => {
   error.value = ''
   successMessage.value = ''
 
   if (!selectedProduct.value) {
-    error.value = 'Please choose a tag product.'
+    error.value = 'Please choose a sticker product.'
     return
   }
   if (selectedDogIds.value.length === 0) {
     error.value = 'Please select at least one dog.'
-    return
-  }
-  if (selectedDogIds.value.length < selectedProduct.value.min_order_qty) {
-    error.value = `Minimum order quantity for ${selectedProduct.value.sku} is ${selectedProduct.value.min_order_qty}.`
     return
   }
   if (!shipping.name || !shipping.email || !shipping.line1 || !shipping.city || !shipping.postcode) {
@@ -402,50 +535,50 @@ const submitOrder = async () => {
   submitting.value = true
   try {
     const accessToken = await getAccessToken()
-
-    const response = await $fetch<{
-      success: boolean
-      orderId: string
-      product?: { sku: string; name: string }
-      dogs: Array<{ id: string; name: string; profileUrl: string }>
-    }>('/.netlify/functions/nfc-create-order', {
+    const response = await $fetch<{ url: string }>('/.netlify/functions/nfc-create-order', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      },
+      headers: { Authorization: `Bearer ${accessToken}` },
       body: {
         dogIds: selectedDogIds.value,
         productId: selectedProduct.value.id,
         productSku: selectedProduct.value.sku,
+        tagsPerDog: effectiveTagsPerDog.value,
+        orderType: orderType.value,
         shipping: { ...shipping }
       }
     })
 
-    const productName = response.product?.name || selectedProduct.value.name
-    successMessage.value = `Order submitted for ${response.dogs.length} × ${productName}. Each NFC tag will link to that dog’s public profile.`
-    selectedDogIds.value = []
-    await loadPage()
+    if (!response?.url) throw new Error('No checkout URL returned')
+    window.location.href = response.url
   } catch (err: any) {
     console.error('NFC order error:', err)
     error.value =
       err?.data?.error ||
-      err?.data?.details?.error ||
-      err?.data?.statusMessage ||
       err?.message ||
-      'Unable to place NFC order. Please try again.'
-  } finally {
+      'Unable to start checkout. Please try again.'
     submitting.value = false
   }
 }
 
-onMounted(loadPage)
+onMounted(async () => {
+  await loadPage()
+
+  if (route.query.order === 'cancelled') {
+    error.value = 'Checkout was cancelled. You can adjust the order and try again.'
+  }
+
+  const sessionId = typeof route.query.session_id === 'string' ? route.query.session_id : ''
+  if (route.query.order === 'success' && sessionId.startsWith('cs_')) {
+    await confirmPaidOrder(sessionId)
+  }
+})
 
 usePageSeo({
   title: 'NFC & QR Dog Tags — Found-Pet Alerts for UK Owners',
   description:
-    'Order DogHealthy NFC and QR dog tags linked to your pet’s profile. When someone finds your dog in the UK, they can scan the tag to alert you — with GPS, check-in and walk tools.',
+    'Order DogHealthy NFC stickers — 2 per dog, one postage fee for the whole batch. Replace damaged tags for individual dogs.',
   keywords:
-    'NFC dog tag UK, QR pet tag, dog ID tag, found dog alert, lost dog NFC tag, DogHealthy tag, pet microchip alternative QR, smart dog tag UK',
+    'NFC dog tag UK, QR pet tag, dog ID tag, found dog alert, lost dog NFC tag, DogHealthy tag, kennel NFC tags bulk',
   path: '/nfc-tags'
 })
 </script>
