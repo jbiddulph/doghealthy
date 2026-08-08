@@ -4,8 +4,17 @@ import { createPlaceholderDogs } from './_lib/extra-dogs.mjs'
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const STRIPE_SECRET_KEY = (process.env.STRIPE_SECRET_KEY || '').trim()
 const PUBLIC_BASE_URL = (process.env.NUXT_PUBLIC_BASE_URL || 'https://doghealthy.co.uk').replace(/\/$/, '')
+
+function resolveStripeSecret() {
+  return String(process.env.STRIPE_SECRET_KEY || '').trim()
+}
+
+function stripeKeyMode(secret) {
+  if (secret.startsWith('sk_test_')) return 'test'
+  if (secret.startsWith('sk_live_')) return 'live'
+  return 'unknown'
+}
 
 const FREE_DOG_LIMIT = 3
 const UNIT_PRICE_CENTS = Number(process.env.EXTRA_DOG_PRICE_CENTS || 200)
@@ -104,8 +113,13 @@ export async function handler(event) {
       })
     }
 
+    const STRIPE_SECRET_KEY = resolveStripeSecret()
     if (!STRIPE_SECRET_KEY || STRIPE_SECRET_KEY.includes('REPLACE_ME')) {
       return json(503, { error: 'STRIPE_SECRET_KEY is not configured' })
+    }
+    const keyMode = stripeKeyMode(STRIPE_SECRET_KEY)
+    if (keyMode === 'unknown') {
+      return json(503, { error: 'STRIPE_SECRET_KEY must start with sk_test_ or sk_live_.' })
     }
     if (!shipping.name || !shipping.email || !shipping.line1 || !shipping.city || !shipping.postcode) {
       return json(400, { error: 'Complete shipping details are required for NFC postage' })
@@ -205,6 +219,12 @@ export async function handler(event) {
       .update({ stripe_checkout_session_id: session.id })
       .eq('id', orderId)
 
+    const sessionMode = String(session.id || '').startsWith('cs_test_')
+      ? 'test'
+      : String(session.id || '').startsWith('cs_live_')
+        ? 'live'
+        : keyMode
+
     return json(200, {
       url: session.url,
       sessionId: session.id,
@@ -212,7 +232,8 @@ export async function handler(event) {
       quantity,
       postageCents,
       subtotalCents,
-      totalCents
+      totalCents,
+      mode: sessionMode
     })
   } catch (error) {
     console.error('extra-dogs-create-checkout error:', error)

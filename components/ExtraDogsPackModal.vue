@@ -258,6 +258,8 @@ const goPay = async () => {
       free?: boolean
       names?: string[]
       dogIds?: string[]
+      mode?: string
+      sessionId?: string
     }>('/.netlify/functions/extra-dogs-create-checkout', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
