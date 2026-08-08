@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { createPlaceholderDogs } from './extra-dogs-confirm.mjs'
+import { createPlaceholderDogs } from './_lib/extra-dogs.mjs'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
@@ -160,7 +160,6 @@ export async function handler(event) {
     params.set('metadata[type]', 'extra_dog_pack')
     params.set('metadata[quantity]', String(quantity))
     params.set('metadata[paid_quantity]', String(paidQty))
-    params.set('automatic_payment_methods[enabled]', 'true')
 
     params.set('line_items[0][quantity]', String(paidQty))
     params.set('line_items[0][price_data][currency]', 'gbp')

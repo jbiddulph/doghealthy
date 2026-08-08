@@ -20,22 +20,38 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async initialize() {
       const supabase = useSupabase()
-      
-      // Get current session
-      const { data: { user } } = await supabase.auth.getUser()
-      this.user = user
-      this.loading = false
-      
-      // Ensure user profile exists in doghealthy_users
-      if (user) {
-        await this.ensureUserProfile(user)
+
+      const withTimeout = <T>(promise: Promise<T>, ms: number) =>
+        Promise.race([
+          promise,
+          new Promise<T>((_, reject) => {
+            setTimeout(() => reject(new Error('Auth init timed out')), ms)
+          })
+        ])
+
+      try {
+        // getSession reads local storage; getUser() can hang on a stale refresh token.
+        const { data: { session } } = await withTimeout(supabase.auth.getSession(), 8000)
+        this.user = session?.user ?? null
+        if (this.user) {
+          await this.ensureUserProfile(this.user)
+        }
+      } catch (error) {
+        console.error('Auth initialize failed:', error)
+        this.user = null
+        try {
+          await supabase.auth.signOut({ scope: 'local' })
+        } catch {
+          // ignore — local storage may already be unusable
+        }
+      } finally {
+        this.loading = false
       }
-      
-      // Listen for auth changes
-      supabase.auth.onAuthStateChange(async (_event, session) => {
+
+      supabase.auth.onAuthStateChange((_event, session) => {
         this.user = session?.user || null
         if (session?.user) {
-          await this.ensureUserProfile(session.user)
+          void this.ensureUserProfile(session.user)
         }
       })
     },

@@ -3,6 +3,11 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   
   ssr: true,
+
+  experimental: {
+    // After a deploy, stale Chrome tabs may request deleted chunks — reload once.
+    emitRouteChunkError: 'automatic'
+  },
   
   nitro: {
     preset: 'netlify-static',
