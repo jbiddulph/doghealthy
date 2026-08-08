@@ -22,6 +22,11 @@
           >
             + Add Dog
           </button>
+          <AddMultipleDogsButton
+            button-class="bg-white/95 hover:bg-white border-0"
+            hint-class="text-white border-white"
+            @click="openMultipleDogsModal"
+          />
         </div>
       </div>
     </div>
@@ -44,9 +49,21 @@
           >
             + Add Dog
           </button>
+          <AddMultipleDogsButton
+            hint-class="text-slate-600 border-slate-400"
+            @click="openMultipleDogsModal"
+          />
         </div>
       </div>
       
+      <div
+        v-if="packMessage"
+        class="mb-6 rounded-lg border px-4 py-3 text-sm"
+        :class="packMessageError ? 'border-red-200 bg-red-50 text-red-700' : 'border-green-200 bg-green-50 text-green-800'"
+      >
+        {{ packMessage }}
+      </div>
+
       <!-- Loading State -->
       <div v-if="loading" class="text-center py-12">
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -76,13 +93,19 @@
         <h2 class="text-2xl font-semibold text-gray-900 mb-2">No dogs yet</h2>
         <p class="text-gray-600 mb-4">Start by adding your first furry friend! Tracking your dog's health information helps ensure they live a long, happy, and healthy life.</p>
         <p class="text-sm text-gray-500 mb-6">You can track vaccinations, medications, appointments, health records, and more for each of your dogs.</p>
-        <button
-          type="button"
-          @click="handleAddDogClick"
-          class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-        >
-          Add Your First Dog
-        </button>
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            @click="handleAddDogClick"
+            class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+          >
+            Add Your First Dog
+          </button>
+          <AddMultipleDogsButton
+            hint-class="text-slate-600 border-slate-400"
+            @click="openMultipleDogsModal"
+          />
+        </div>
       </div>
       
       <!-- Dogs Grid -->
@@ -135,6 +158,13 @@
         </div>
       </div>
     </div>
+
+    <ExtraDogsPackModal
+      :open="showPackModal"
+      :existing-dog-count="dogs.length"
+      @close="showPackModal = false"
+      @created="onPackCreated"
+    />
   </div>
 </template>
 
@@ -195,6 +225,11 @@ usePageSeo({
 const dogs = ref<Dog[]>([])
 const loading = ref(true)
 const error = ref('')
+const showPackModal = ref(false)
+const packMessage = ref('')
+const packMessageError = ref(false)
+const route = useRoute()
+const FREE_DOG_LIMIT = 3
 
 const waitForAuth = async () => {
   // If auth is still initializing, wait until it's done
@@ -261,6 +296,15 @@ const formatAge = (birthDate: string) => {
   }
 }
 
+const openMultipleDogsModal = async () => {
+  await waitForAuth()
+  if (!authStore.isAuthenticated || !authStore.userId) {
+    router.push('/auth/login')
+    return
+  }
+  showPackModal.value = true
+}
+
 const handleAddDogClick = async () => {
   try {
     await waitForAuth()
@@ -270,10 +314,10 @@ const handleAddDogClick = async () => {
       return
     }
 
-    // Free accounts can add up to 3 dogs; 4th requires subscription
-    const { ensureCanCreate } = usePlanLimits()
-    const allowed = await ensureCanCreate('dogs', dogs.value.length, { next: '/dogs/new' })
-    if (!allowed) return
+    if (dogs.value.length >= FREE_DOG_LIMIT) {
+      showPackModal.value = true
+      return
+    }
 
     router.push('/dogs/new')
   } catch (err) {
@@ -282,8 +326,56 @@ const handleAddDogClick = async () => {
   }
 }
 
-onMounted(() => {
-  loadDogs()
+const onPackCreated = async (payload?: { names?: string[] }) => {
+  showPackModal.value = false
+  const names = payload?.names?.length ? payload.names.join(', ') : 'your dogs'
+  packMessageError.value = false
+  packMessage.value = `Added ${names}. You can rename them anytime.`
+  await loadDogs()
+}
+
+const confirmExtraDogPack = async (sessionId: string) => {
+  packMessage.value = 'Confirming payment and creating your extra dogs…'
+  packMessageError.value = false
+  try {
+    const { data: sessionData } = await supabase.auth.getSession()
+    const token = sessionData.session?.access_token
+    const result = await $fetch<{ ok?: boolean; quantity?: number; names?: string[] }>(
+      '/.netlify/functions/extra-dogs-confirm',
+      {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: { sessionId }
+      }
+    )
+    const names = result.names?.length ? result.names.join(', ') : `${result.quantity || ''} extra dogs`
+    packMessage.value = `Payment received. Added ${names}. You can rename them anytime. NFC + QR are ready.`
+    await loadDogs()
+    await router.replace({ path: '/dogs', query: {} })
+  } catch (err: any) {
+    packMessageError.value = true
+    packMessage.value =
+      err?.data?.error || err?.message || 'Payment may have succeeded; refresh if the new dogs do not appear.'
+  }
+}
+
+onMounted(async () => {
+  await loadDogs()
+
+  if (route.query.pack === 'cancelled') {
+    packMessageError.value = true
+    packMessage.value = 'Checkout was cancelled. You can add extra dogs whenever you are ready.'
+    showPackModal.value = true
+  }
+
+  if (route.query.addPack === '1') {
+    showPackModal.value = true
+  }
+
+  const sessionId = typeof route.query.session_id === 'string' ? route.query.session_id : ''
+  if (route.query.pack === 'success' && sessionId.startsWith('cs_')) {
+    await confirmExtraDogPack(sessionId)
+  }
 })
 </script>
 

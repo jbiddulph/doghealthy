@@ -468,9 +468,8 @@ const handleSubmit = async () => {
 
     if (countError) throw countError
 
-    const { ensureCanCreate } = usePlanLimits()
-    const allowed = await ensureCanCreate('dogs', count || 0)
-    if (!allowed) {
+    if ((count || 0) >= 3) {
+      await navigateTo('/dogs?addPack=1')
       loading.value = false
       return
     }

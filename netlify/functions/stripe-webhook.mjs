@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'node:crypto'
 import { stripeSubscriptionPeriodEndUnix } from './_lib/subscription.mjs'
+import { fulfilExtraDogOrder } from './extra-dogs-confirm.mjs'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -122,6 +123,30 @@ export async function handler(event) {
       const session = stripeEvent.data.object
       if (session.metadata?.subscription_type && session.metadata?.user_id) {
         await applyUserSubscription(session)
+      }
+      if (session.metadata?.type === 'extra_dog_pack' && session.metadata?.order_id) {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+        const { data: order } = await admin
+          .from('doghealthy_extra_dog_orders')
+          .select('*')
+          .eq('id', session.metadata.order_id)
+          .maybeSingle()
+        if (order) {
+          const paymentIntent =
+            typeof session.payment_intent === 'string'
+              ? session.payment_intent
+              : session.payment_intent?.id
+          await admin
+            .from('doghealthy_extra_dog_orders')
+            .update({
+              payment_status: 'paid',
+              paid_at: order.paid_at || new Date().toISOString(),
+              stripe_checkout_session_id: session.id,
+              stripe_payment_intent_id: paymentIntent || null
+            })
+            .eq('id', order.id)
+          await fulfilExtraDogOrder(admin, { ...order, payment_status: 'paid' })
+        }
       }
     }
 
