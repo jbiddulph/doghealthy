@@ -8,19 +8,26 @@ export const NFC_ORDERS_URL = `${NFC_API_BASE}/orders/`
 export const NFC_API_KEY = process.env.NFC_ME_API_KEY
 export const CANONICAL_SELL_SKU = 'NFC-WHITE-25MM'
 
-/** SKUs NFC Me manufacturers are known to list. Our local sell SKU is not one of them. */
-const DEFAULT_FULFILMENT_SKUS = ['NTAG213-STICKER', 'DOG-NFC-TAG']
+/** Legacy SKUs still present on older failed order payloads. */
+const LEGACY_SKU_ALIASES = {
+  'DOG-NFC-TAG': CANONICAL_SELL_SKU,
+  'NTAG213-STICKER': CANONICAL_SELL_SKU
+}
+
+const DEFAULT_FULFILMENT_SKUS = [CANONICAL_SELL_SKU, 'DOG-NFC-TAG', 'NTAG213-STICKER']
 
 export function nfcMeFulfilmentSkus(preferred) {
   const envSku = String(process.env.NFC_ME_FULFILMENT_SKU || '').trim().toUpperCase()
   const preferredSku = String(preferred || '').trim().toUpperCase()
-  const ordered = [envSku, preferredSku, ...DEFAULT_FULFILMENT_SKUS].filter(Boolean)
+  const aliasedPreferred = LEGACY_SKU_ALIASES[preferredSku] || preferredSku
+  const ordered = [CANONICAL_SELL_SKU, envSku, aliasedPreferred, preferredSku, ...DEFAULT_FULFILMENT_SKUS]
+    .map((sku) => LEGACY_SKU_ALIASES[sku] || sku)
+    .filter(Boolean)
   const unique = []
   for (const sku of ordered) {
-    if (sku === CANONICAL_SELL_SKU) continue
     if (!unique.includes(sku)) unique.push(sku)
   }
-  if (!unique.length) unique.push('NTAG213-STICKER')
+  if (!unique.length) unique.push(CANONICAL_SELL_SKU)
   return unique
 }
 
@@ -77,9 +84,14 @@ export async function submitNfcMeOrder(payload, preferredSku) {
 
       last = { ok: false, status: nfcResponse.status, json: responseJson, sku, payload: body }
       const msg = JSON.stringify(responseJson || {})
+      if (responseJson && typeof responseJson === 'object' && !responseJson.error && !responseJson.detail && !responseJson.message) {
+        last.json = { ...responseJson, error: `NFC API error ${nfcResponse.status}: ${msg}` }
+      } else if (!responseJson) {
+        last.json = { error: `NFC API error ${nfcResponse.status}` }
+      }
       const retryable =
         nfcResponse.status === 400 &&
-        /manufacturer offers|unknown (or inactive )?product|invalid sku/i.test(msg)
+        /manufacturer offers|unknown (or inactive )?product|invalid sku|minimum order quantity/i.test(msg)
       if (!retryable) break
     } catch (err) {
       last = {
