@@ -1,17 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
+import { NFC_API_KEY, submitNfcMeOrder } from './_lib/nfc-me.mjs'
 
-const NFC_API_BASE = (
-  process.env.NFC_ME_BASE_URL ||
-  process.env.NFC_ME_API_BASE_URL ||
-  'https://nfc-me-a3a3437da95d.herokuapp.com/api/v1'
-).replace(/\/$/, '')
-const NFC_API_KEY = process.env.NFC_ME_API_KEY
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const STRIPE_SECRET_KEY = (process.env.STRIPE_SECRET_KEY || '').trim()
 const PUBLIC_BASE_URL = (process.env.NUXT_PUBLIC_BASE_URL || 'https://doghealthy.co.uk').replace(/\/$/, '')
-const NFC_ORDERS_URL = `${NFC_API_BASE}/orders/`
 
 const json = (statusCode, body) => ({
   statusCode,
@@ -101,56 +95,37 @@ export async function handler(event) {
     const nfcPayload = order.request_payload
     if (!nfcPayload) return json(500, { error: 'Order is missing NFC payload' })
 
-    const nfcResponse = await fetch(NFC_ORDERS_URL, {
-      method: 'POST',
-      headers: {
-        'X-API-Key': NFC_API_KEY,
-        Authorization: `Bearer ${NFC_API_KEY}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
-      },
-      body: JSON.stringify(nfcPayload)
-    })
-
-    const responseText = await nfcResponse.text()
-    let responseJson = null
-    try {
-      responseJson = responseText ? JSON.parse(responseText) : null
-    } catch {
-      responseJson = { raw: responseText }
-    }
-
-    if (!nfcResponse.ok) {
+    const submitted = await submitNfcMeOrder(nfcPayload, order.product_sku)
+    if (!submitted.ok) {
+      const detail =
+        submitted.json?.error ||
+        submitted.json?.detail ||
+        submitted.json?.message ||
+        `NFC API error ${submitted.status}`
       await admin
         .from('doghealthy_nfc_orders')
         .update({
           status: 'failed',
-          response_payload: responseJson,
-          error_message: `NFC API error ${nfcResponse.status}`
+          response_payload: submitted.json,
+          error_message: String(detail),
+          request_payload: submitted.payload || nfcPayload
         })
         .eq('id', orderId)
 
       return json(502, {
         error: 'Payment succeeded but NFC fulfilment failed — support will retry',
         orderId,
-        details: responseJson
+        details: submitted.json
       })
     }
-
-    const remoteOrder = responseJson?.order || responseJson
-    const remoteOrderId =
-      remoteOrder?.id ||
-      remoteOrder?.order_number ||
-      responseJson?.id ||
-      responseJson?.order_id ||
-      null
 
     await admin
       .from('doghealthy_nfc_orders')
       .update({
         status: 'submitted',
-        nfc_me_order_id: remoteOrderId ? String(remoteOrderId) : null,
-        response_payload: responseJson,
+        nfc_me_order_id: submitted.nfcMeOrderId,
+        response_payload: submitted.json,
+        request_payload: submitted.payload || nfcPayload,
         error_message: null
       })
       .eq('id', orderId)
@@ -192,7 +167,7 @@ export async function handler(event) {
     return json(200, {
       ok: true,
       orderId,
-      nfcMeOrderId: remoteOrderId,
+      nfcMeOrderId: submitted.nfcMeOrderId,
       tagQuantity: order.tag_quantity,
       dogCount: dogIds.length,
       orderType: order.order_type

@@ -8,11 +8,12 @@
   >
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
       <h2 id="nfc-address-title" class="text-xl font-bold text-gray-900 mb-2">
-        Shipping address for your NFC chip
+        Shipping address for NFC stickers
       </h2>
       <p class="text-sm text-gray-600 mb-5">
-        We’ll post a physical NFC chip to this UK address so you can stick it on
-        {{ dogName || 'your dog' }}’s collar. Your QR code is ready online immediately.
+        NFC Me will print and post stickers to this UK address for
+        {{ dogName || 'your dog' }}. Your QR code is ready online immediately —
+        next you’ll confirm the sticker order.
       </p>
 
       <div v-if="error" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -201,11 +202,7 @@ const submit = async () => {
       address_city: form.address_city.trim(),
       address_postcode: form.address_postcode.trim().toUpperCase(),
       address_country: form.address_country || 'GB',
-      phone: form.phone.trim() || null,
-      // Request physical chip postage for admin fulfilment
-      nfc_chip_status: 'pending',
-      nfc_chip_requested_at: new Date().toISOString(),
-      nfc_chip_dog_id: props.dogId || null
+      phone: form.phone.trim() || null
     }
 
     if (!payload.billing_name || !payload.address_line1 || !payload.address_city || !payload.address_postcode) {

@@ -1,11 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-const NFC_API_BASE = (
-  process.env.NFC_ME_BASE_URL ||
-  process.env.NFC_ME_API_BASE_URL ||
-  'https://nfc-me-a3a3437da95d.herokuapp.com/api/v1'
-).replace(/\/$/, '')
-const NFC_API_KEY = process.env.NFC_ME_API_KEY
+import { NFC_API_KEY, nfcMeFulfilmentSkus } from './_lib/nfc-me.mjs'
+
 /** Canonical DogHealthy sticker — always preferred over legacy env SKUs. */
 const CANONICAL_NFC_SKU = 'NFC-WHITE-25MM'
 const NFC_PRODUCT_SKU = (process.env.NFC_ME_PRODUCT_SKU || CANONICAL_NFC_SKU).toUpperCase()
@@ -23,8 +19,6 @@ const POSTAGE_FIRST_CENTS = Number(process.env.NFC_POSTAGE_FIRST_CENTS || 180)
 const POSTAGE_SECOND_CENTS = Number(process.env.NFC_POSTAGE_SECOND_CENTS || 91)
 /** Free postage when ordering this many stickers or more. */
 const FREE_POSTAGE_TAG_THRESHOLD = Number(process.env.NFC_FREE_POSTAGE_TAG_THRESHOLD || 20)
-
-const NFC_ORDERS_URL = `${NFC_API_BASE}/orders/`
 
 const PRODUCT_SELECT =
   'id, sku, name, unit_price_cents, currency, min_order_qty, is_active'
@@ -196,9 +190,10 @@ export async function handler(event) {
     const profileBase = PUBLIC_BASE_URL
     const profileLines = dogs.map((dog) => `${dog.name}: ${profileBase}/dogs/${dog.id}`)
 
+    const fulfilmentSku = nfcMeFulfilmentSkus(product.sku)[0]
     const nfcPayload = {
       external_reference: orderId,
-      items: [{ sku: product.sku, quantity: tagQuantity }],
+      items: [{ sku: fulfilmentSku, quantity: tagQuantity }],
       shipping: {
         name: shipping.name,
         line1: shipping.line1,

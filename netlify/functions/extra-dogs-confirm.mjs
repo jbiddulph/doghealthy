@@ -1,19 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
 import { createPlaceholderDogs } from './_lib/extra-dogs.mjs'
+import { NFC_API_KEY, submitNfcMeOrder } from './_lib/nfc-me.mjs'
 
-const NFC_API_BASE = (
-  process.env.NFC_ME_BASE_URL ||
-  process.env.NFC_ME_API_BASE_URL ||
-  'https://nfc-me-a3a3437da95d.herokuapp.com/api/v1'
-).replace(/\/$/, '')
-const NFC_API_KEY = process.env.NFC_ME_API_KEY
 const NFC_PRODUCT_SKU = (process.env.NFC_ME_PRODUCT_SKU || 'NFC-WHITE-25MM').toUpperCase()
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const STRIPE_SECRET_KEY = (process.env.STRIPE_SECRET_KEY || '').trim()
 const PUBLIC_BASE_URL = (process.env.NUXT_PUBLIC_BASE_URL || 'https://doghealthy.co.uk').replace(/\/$/, '')
-const NFC_ORDERS_URL = `${NFC_API_BASE}/orders/`
 const TAGS_PER_DOG = 2
 
 const json = (statusCode, body) => ({
@@ -72,34 +66,15 @@ export async function fulfilExtraDogOrder(admin, order) {
       ].join('\n')
     }
 
-    try {
-      const nfcResponse = await fetch(NFC_ORDERS_URL, {
-        method: 'POST',
-        headers: {
-          'X-API-Key': NFC_API_KEY,
-          Authorization: `Bearer ${NFC_API_KEY}`,
-          'Content-Type': 'application/json',
-          Accept: 'application/json'
-        },
-        body: JSON.stringify(nfcPayload)
-      })
-      const responseText = await nfcResponse.text()
-      let responseJson = null
-      try {
-        responseJson = responseText ? JSON.parse(responseText) : null
-      } catch {
-        responseJson = { raw: responseText }
-      }
-      if (nfcResponse.ok) {
-        const remote = responseJson?.order || responseJson
-        nfcMeOrderId =
-          remote?.id || remote?.order_number || responseJson?.id || responseJson?.order_id || null
-        if (nfcMeOrderId) nfcMeOrderId = String(nfcMeOrderId)
-      } else {
-        nfcError = `NFC API error ${nfcResponse.status}`
-      }
-    } catch (err) {
-      nfcError = err?.message || 'NFC fulfilment failed'
+    const submitted = await submitNfcMeOrder(nfcPayload, NFC_PRODUCT_SKU)
+    if (submitted.ok) {
+      nfcMeOrderId = submitted.nfcMeOrderId
+    } else {
+      nfcError =
+        submitted.json?.error ||
+        submitted.json?.detail ||
+        submitted.json?.message ||
+        `NFC API error ${submitted.status}`
     }
   }
 

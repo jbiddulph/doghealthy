@@ -48,8 +48,7 @@ const links = [
   { to: '/admin', label: 'Dashboard' },
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/dogs', label: 'Dogs' },
-  { to: '/admin/nfc-orders', label: 'NFC orders' },
-  { to: '/admin/nfc-shipments', label: 'Chip shipments' }
+  { to: '/admin/nfc-orders', label: 'NFC orders' }
 ]
 
 const isActive = (path: string) => {

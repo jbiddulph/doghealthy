@@ -1,5 +1,5 @@
 <template>
-  <AdminShell title="Dashboard" subtitle="Manage users, dogs, profiles and NFC chip postage.">
+  <AdminShell title="Dashboard" subtitle="Manage users, dogs, profiles and NFC Me sticker orders.">
     <div v-if="loading" class="text-slate-600">Loading stats…</div>
     <div v-else class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <NuxtLink
@@ -25,10 +25,7 @@
             <NuxtLink to="/admin/dogs" class="text-blue-700 hover:underline">Browse and edit all dogs</NuxtLink>
           </li>
           <li>
-            <NuxtLink to="/admin/nfc-orders" class="text-blue-700 hover:underline">Review paid NFC sticker batch orders</NuxtLink>
-          </li>
-          <li>
-            <NuxtLink to="/admin/nfc-shipments" class="text-blue-700 hover:underline">Fulfil pending NFC chip posts</NuxtLink>
+            <NuxtLink to="/admin/nfc-orders" class="text-blue-700 hover:underline">Review NFC Me sticker orders (NFC Me ships to the customer)</NuxtLink>
           </li>
         </ul>
       </div>
@@ -80,14 +77,14 @@ const qrSuccess = ref('')
 const stats = reactive({
   users: 0,
   dogs: 0,
-  pendingChips: 0,
+  nfcQueue: 0,
   activeSubs: 0
 })
 
 const cards = computed(() => [
   { label: 'Users', value: stats.users, to: '/admin/users', cta: 'Manage users' },
   { label: 'Dogs', value: stats.dogs, to: '/admin/dogs', cta: 'Manage dogs' },
-  { label: 'Pending NFC chips', value: stats.pendingChips, to: '/admin/nfc-shipments', cta: 'Shipments' },
+  { label: 'NFC Me to ship', value: stats.nfcQueue, to: '/admin/nfc-orders?status=failed', cta: 'NFC orders' },
   { label: 'Active subscriptions', value: stats.activeSubs, to: '/admin/users?sub=active', cta: 'View subscribers' }
 ])
 
@@ -144,13 +141,14 @@ async function downloadQrSheet() {
 onMounted(async () => {
   loading.value = true
   try {
-    const [users, dogs, pending, subs, tags] = await Promise.all([
+    const [users, dogs, nfcQueue, subs, tags] = await Promise.all([
       supabase.from('doghealthy_users').select('id', { count: 'exact', head: true }),
       supabase.from('doghealthy_dogs').select('id', { count: 'exact', head: true }),
       supabase
-        .from('doghealthy_users')
+        .from('doghealthy_nfc_orders')
         .select('id', { count: 'exact', head: true })
-        .eq('nfc_chip_status', 'pending'),
+        .eq('payment_status', 'paid')
+        .neq('status', 'submitted'),
       supabase
         .from('doghealthy_users')
         .select('id', { count: 'exact', head: true })
@@ -162,7 +160,7 @@ onMounted(async () => {
     ])
     stats.users = users.count || 0
     stats.dogs = dogs.count || 0
-    stats.pendingChips = pending.count || 0
+    stats.nfcQueue = nfcQueue.count || 0
     stats.activeSubs = subs.count || 0
     activeTagCount.value = tags.count || 0
   } finally {

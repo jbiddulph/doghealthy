@@ -996,6 +996,9 @@ const onShippingSaved = async () => {
   showShippingModal.value = false
   addressConfirmedForCreate.value = true
   await ensureTag({ skipSubscriptionCheck: true, skipAddressCheck: true })
+  if (dog.value?.id) {
+    await navigateTo(`/nfc-tags?dogId=${dog.value.id}`)
+  }
 }
 
 const ensureTag = async (options?: { skipSubscriptionCheck?: boolean; skipAddressCheck?: boolean }) => {

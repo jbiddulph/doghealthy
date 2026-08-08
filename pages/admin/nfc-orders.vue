@@ -58,7 +58,14 @@
 {{ formatAddress(order) }}
         </div>
 
-        <div class="mt-3 flex flex-wrap gap-3 text-sm">
+        <p
+          v-if="order.error_message"
+          class="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2"
+        >
+          {{ order.error_message }}
+        </p>
+
+        <div class="mt-3 flex flex-wrap gap-3 text-sm items-center">
           <NuxtLink
             v-if="order.user_id"
             :to="`/admin/users/${order.user_id}`"
@@ -71,6 +78,15 @@
           <span class="text-slate-400">
             Postage {{ formatMoney(order.postage_cents || 0, order.currency) }}
           </span>
+          <button
+            v-if="order.payment_status === 'paid' && order.status !== 'submitted'"
+            type="button"
+            class="ml-auto px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-semibold disabled:opacity-60"
+            :disabled="retryingId === order.id"
+            @click="retryFulfilment(order.id)"
+          >
+            {{ retryingId === order.id ? 'Sending to NFC Me…' : 'Send to NFC Me' }}
+          </button>
         </div>
       </article>
 
@@ -113,6 +129,7 @@ type OrderRow = {
   product_sku: string | null
   payment_status: string
   nfc_me_order_id: string | null
+  error_message: string | null
   shipping_name: string
   shipping_email: string
   shipping_line1: string
@@ -126,8 +143,12 @@ type OrderRow = {
 const supabase = useSupabase()
 const loading = ref(true)
 const error = ref('')
+const retryingId = ref('')
 const orders = ref<OrderRow[]>([])
-const statusFilter = ref('submitted')
+const route = useRoute()
+const statusFilter = ref(
+  typeof route.query.status === 'string' ? route.query.status : 'submitted'
+)
 const page = ref(1)
 const total = ref(0)
 
@@ -178,7 +199,7 @@ const load = async () => {
     let query = supabase
       .from('doghealthy_nfc_orders')
       .select(
-        'id, user_id, dog_ids, status, order_type, tags_per_dog, tag_quantity, postage_cents, total_cents, currency, product_sku, payment_status, nfc_me_order_id, shipping_name, shipping_email, shipping_line1, shipping_line2, shipping_city, shipping_postcode, shipping_country, created_at',
+        'id, user_id, dog_ids, status, order_type, tags_per_dog, tag_quantity, postage_cents, total_cents, currency, product_sku, payment_status, nfc_me_order_id, error_message, shipping_name, shipping_email, shipping_line1, shipping_line2, shipping_city, shipping_postcode, shipping_country, created_at',
         { count: 'exact' }
       )
       .order('created_at', { ascending: false })
@@ -196,6 +217,26 @@ const load = async () => {
     total.value = 0
   } finally {
     loading.value = false
+  }
+}
+
+const retryFulfilment = async (orderId: string) => {
+  retryingId.value = orderId
+  error.value = ''
+  try {
+    const { data: sessionData } = await supabase.auth.getSession()
+    const token = sessionData.session?.access_token
+    if (!token) throw new Error('Please log in again.')
+    await $fetch('/.netlify/functions/nfc-retry-fulfilment', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: { orderId }
+    })
+    await load()
+  } catch (err: any) {
+    error.value = err?.data?.error || err?.message || 'Failed to send order to NFC Me'
+  } finally {
+    retryingId.value = ''
   }
 }
 
