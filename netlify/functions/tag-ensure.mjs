@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { randomBytes } from 'node:crypto'
+import { isActiveSubscription } from './_lib/subscription.mjs'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
@@ -93,12 +94,10 @@ export async function handler(event) {
         .eq('id', user.id)
         .maybeSingle()
 
-      const status = String(profile?.subscription_status || '').toLowerCase()
-      const periodEnd = profile?.subscription_current_period_end
-        ? new Date(profile.subscription_current_period_end)
-        : null
-      const periodOk = !periodEnd || periodEnd.getTime() > Date.now() - 24 * 60 * 60 * 1000
-      const subscribed = (status === 'active' || status === 'trialing') && periodOk
+      const subscribed = isActiveSubscription(
+        profile?.subscription_status,
+        profile?.subscription_current_period_end
+      )
 
       if (!subscribed) {
         return json(402, {

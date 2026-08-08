@@ -1,3 +1,5 @@
+import { isActiveSubscription } from '~/utils/subscription'
+
 const FREE_LIMIT = 3
 const SUBSCRIPTION_KEY = 'doghealthy_has_subscription'
 const PENDING_ACTION_KEY = 'doghealthy_pending_action'
@@ -24,8 +26,6 @@ export type CheckoutContext = {
   reason?: string
   savedAt?: number
 }
-
-const ACTIVE_STATUSES = new Set(['active', 'trialing'])
 
 /** Merge query params into a path string like `/dogs/x/vaccinations?add=1`. */
 export const withQueryParams = (path: string, params: Record<string, string>) => {
@@ -156,13 +156,7 @@ export const usePlanLimits = () => {
         return false
       }
 
-      const status = String(data.subscription_status || '').toLowerCase()
-      const periodEnd = data.subscription_current_period_end
-        ? new Date(data.subscription_current_period_end)
-        : null
-      const periodOk = !periodEnd || periodEnd.getTime() > Date.now() - 24 * 60 * 60 * 1000
-
-      if (ACTIVE_STATUSES.has(status) && periodOk) {
+      if (isActiveSubscription(data.subscription_status, data.subscription_current_period_end)) {
         markSubscribed()
         return true
       }

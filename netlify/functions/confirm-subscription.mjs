@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { stripeSubscriptionPeriodEndUnix } from './_lib/subscription.mjs'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
@@ -105,9 +106,8 @@ export async function handler(event) {
     if (session.subscription && typeof session.subscription === 'object') {
       subscriptionStatus = session.subscription.status || 'active'
       subscriptionId = session.subscription.id
-      if (session.subscription.current_period_end) {
-        periodEnd = new Date(session.subscription.current_period_end * 1000).toISOString()
-      }
+      const periodUnix = stripeSubscriptionPeriodEndUnix(session.subscription)
+      if (periodUnix) periodEnd = new Date(periodUnix * 1000).toISOString()
     } else if (subscriptionId) {
       const subRes = await fetch(
         `https://api.stripe.com/v1/subscriptions/${encodeURIComponent(subscriptionId)}`,
@@ -116,9 +116,8 @@ export async function handler(event) {
       const sub = await subRes.json().catch(() => ({}))
       if (subRes.ok) {
         subscriptionStatus = sub.status || 'active'
-        if (sub.current_period_end) {
-          periodEnd = new Date(sub.current_period_end * 1000).toISOString()
-        }
+        const periodUnix = stripeSubscriptionPeriodEndUnix(sub)
+        if (periodUnix) periodEnd = new Date(periodUnix * 1000).toISOString()
         if (!customerId && sub.customer) {
           customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id
         }

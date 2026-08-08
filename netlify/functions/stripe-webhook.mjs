@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'node:crypto'
+import { stripeSubscriptionPeriodEndUnix } from './_lib/subscription.mjs'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -66,9 +67,8 @@ async function applyUserSubscription(session) {
   const sub = await subRes.json().catch(() => ({}))
   if (subRes.ok) {
     status = sub.status || 'active'
-    if (sub.current_period_end) {
-      periodEnd = new Date(sub.current_period_end * 1000).toISOString()
-    }
+    const periodUnix = stripeSubscriptionPeriodEndUnix(sub)
+    if (periodUnix) periodEnd = new Date(periodUnix * 1000).toISOString()
   }
 
   const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id
@@ -133,9 +133,8 @@ export async function handler(event) {
       const userId = sub.metadata?.user_id
       if (userId) {
         const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-        const periodEnd = sub.current_period_end
-          ? new Date(sub.current_period_end * 1000).toISOString()
-          : null
+        const periodUnix = stripeSubscriptionPeriodEndUnix(sub)
+        const periodEnd = periodUnix ? new Date(periodUnix * 1000).toISOString() : null
         await admin
           .from('doghealthy_users')
           .update({

@@ -134,6 +134,7 @@ const supabase = useSupabase()
 const {
   freeLimit,
   markSubscribed,
+  checkSubscription,
   resourceLabel,
   peekPendingAction,
   consumePendingAction,
@@ -256,6 +257,12 @@ onMounted(async () => {
 
   // Payment Link fallback (no session_id) — trust return URL + local flag
   if (route.query.subscription === 'success') {
+    await resumeAfterSubscribe()
+    return
+  }
+
+  // Already subscribed (e.g. NFC create false-negative) — resume instead of showing plans
+  if (await checkSubscription()) {
     await resumeAfterSubscribe()
   }
 })
