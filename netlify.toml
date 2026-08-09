@@ -13,6 +13,13 @@
   # These contain public Supabase URLs needed for client-side connection
   SECRETS_SCAN_OMIT_PATHS = "dist/**,README.md"
   
+# ads.txt must be a real file (not SPA fallback) for AdSense site verification.
+[[headers]]
+  for = "/ads.txt"
+  [headers.values]
+    content-type = "text/plain; charset=utf-8"
+    cache-control = "public, max-age=300"
+
 # SPA fallback for client routes not present as static HTML (e.g. /admin/users/:id).
 # Existing files (/, /admin/index.html, assets) still win; only missing paths use 200.html.
 [[redirects]]
@@ -53,7 +60,7 @@
 #   TWILIO_AUTH_TOKEN=...
 #   TWILIO_FROM_NUMBER=+447888871736
 #   TWILIO_USE_TRIAL_TEMPLATE=false
-# Unsplash — server-side for /.netlify/functions/unsplash-image
+# Unsplash — server-side for /.netlify/functions/unsplash-image and unsplash-search
 # UNSPLASH_ACCESS_KEY=...
 # Mapbox (scan map): NUXT_PUBLIC_MAPBOX_TOKEN
 # Care actions: tag-care-action.mjs (check in/out, walk start/end — no SMS)

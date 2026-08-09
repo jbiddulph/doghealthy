@@ -51,6 +51,7 @@ const links = [
   { to: '/admin', label: 'Dashboard' },
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/dogs', label: 'Dogs' },
+  { to: '/admin/news', label: 'News' },
   { to: '/admin/nfc-orders', label: 'NFC orders' }
 ]
 

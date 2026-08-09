@@ -37,6 +37,16 @@
                 Food Quiz
               </NuxtLink>
             </li>
+            <li>
+              <NuxtLink to="/news" class="text-gray-400 hover:text-white transition-colors">
+                News
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/how-to" class="text-gray-400 hover:text-white transition-colors">
+                How to
+              </NuxtLink>
+            </li>
           </ul>
         </div>
 

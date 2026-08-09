@@ -16,6 +16,15 @@
         <li>To provide features like records, vaccinations, medications and appointments</li>
         <li>To secure your account and improve the service</li>
       </ul>
+      <h2>Advertising &amp; analytics</h2>
+      <p>
+        We use Google AdSense to show ads on some public pages and Google Analytics to understand how the site is used.
+        Google and its partners may use cookies or similar technologies to serve and measure ads. You can learn more in
+        <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer">Google’s advertising policy</a>
+        and opt out via
+        <a href="https://adssettings.google.com/" target="_blank" rel="noopener noreferrer">Google Ads Settings</a>.
+        Ads are not shown on private account areas such as your dogs, inbox or admin.
+      </p>
       <h2>Data Retention & Deletion</h2>
       <p>You can delete your data at any time. We retain data only as long as needed to provide the service.</p>
       <h2>Contact</h2>

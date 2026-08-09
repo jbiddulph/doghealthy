@@ -1,5 +1,5 @@
 <template>
-  <AdminShell title="Dashboard" subtitle="Manage users, dogs, profiles and NFC Me sticker orders.">
+  <AdminShell title="Dashboard" subtitle="Manage users, dogs, news, profiles and NFC Me sticker orders.">
     <div v-if="loading" class="text-slate-600">Loading stats…</div>
     <div v-else class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <NuxtLink
@@ -46,6 +46,9 @@
           </li>
           <li>
             <NuxtLink to="/admin/nfc-orders" class="text-blue-700 hover:underline">Review NFC Me sticker orders (NFC Me ships to the customer)</NuxtLink>
+          </li>
+          <li>
+            <NuxtLink to="/admin/news" class="text-blue-700 hover:underline">Add news and how-to guides</NuxtLink>
           </li>
         </ul>
       </div>

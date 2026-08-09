@@ -33,6 +33,18 @@
             Classifieds
           </NuxtLink>
           <NuxtLink
+            to="/news"
+            class="text-secondary hover:text-dark font-medium"
+          >
+            News
+          </NuxtLink>
+          <NuxtLink
+            to="/how-to"
+            class="text-secondary hover:text-dark font-medium"
+          >
+            How to
+          </NuxtLink>
+          <NuxtLink
             to="/members"
             class="text-secondary hover:text-dark font-medium"
           >
@@ -121,6 +133,8 @@
       <div class="px-4 py-3 space-y-2">
         <NuxtLink @click="mobileOpen=false" to="/food-finder" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">Food Finder</NuxtLink>
         <NuxtLink @click="mobileOpen=false" to="/classifieds" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">Classifieds</NuxtLink>
+        <NuxtLink @click="mobileOpen=false" to="/news" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">News</NuxtLink>
+        <NuxtLink @click="mobileOpen=false" to="/how-to" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">How to</NuxtLink>
         <NuxtLink @click="mobileOpen=false" to="/members" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">Members</NuxtLink>
         <template v-if="authStore.isAuthenticated">
           <NuxtLink @click="mobileOpen=false" to="/inbox" class="block w-full text-left px-3 py-2 rounded-md text-secondary hover:text-dark hover:bg-gray-50">

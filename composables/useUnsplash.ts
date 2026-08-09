@@ -7,6 +7,15 @@ export type UnsplashImage = {
   description: string | null
 }
 
+export type UnsplashSearchResult = {
+  id?: string
+  url: string
+  thumb?: string
+  author: string
+  authorUrl: string
+  description?: string | null
+}
+
 /** Build a sized Unsplash CDN URL without Nuxt Image / IPX. */
 export const unsplashSizedUrl = (
   url: string,
@@ -276,9 +285,23 @@ export const useUnsplash = () => {
     height = 800
   ): UnsplashImage => curatedUnsplashImage(query, width, height)
 
+  const searchPhotos = async (
+    query: string,
+    perPage = 12
+  ): Promise<{ results: UnsplashSearchResult[]; fallback: boolean }> => {
+    const data = await $fetch<{ results?: UnsplashSearchResult[]; fallback?: boolean }>(
+      `/.netlify/functions/unsplash-search?query=${encodeURIComponent(query.trim())}&per_page=${perPage}`
+    )
+    return {
+      results: data.results || [],
+      fallback: !!data.fallback
+    }
+  }
+
   return {
     fetchImageWithFallback,
     getCuratedImage,
-    curatedUnsplashImage
+    curatedUnsplashImage,
+    searchPhotos
   }
 }

@@ -20,8 +20,12 @@ export default defineNuxtConfig({
         '/admin',
         '/admin/users',
         '/admin/dogs',
+        '/admin/news',
+        '/admin/news/new',
         '/admin/nfc-shipments',
         '/admin/nfc-orders',
+        '/news',
+        '/how-to',
         '/billing/success',
         '/billing/subscribe',
         '/profile',
@@ -87,13 +91,13 @@ export default defineNuxtConfig({
         {
           src: 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1907813559893319',
           async: true,
-          defer: true,
           crossorigin: 'anonymous'
         }
       ],
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'google-adsense-account', content: 'ca-pub-1907813559893319' },
         { name: 'robots', content: 'index, follow' },
         { name: 'author', content: 'DogHealthy' },
         { name: 'theme-color', content: '#f97316' },
@@ -143,7 +147,7 @@ export default defineNuxtConfig({
       supabaseKey: process.env.SUPABASE_ANON_KEY,
       stripePublishableKey: process.env.NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY,
       baseUrl: process.env.NUXT_PUBLIC_BASE_URL,
-      adsenseClient: process.env.NUXT_PUBLIC_ADSENSE_CLIENT,
+      adsenseClient: process.env.NUXT_PUBLIC_ADSENSE_CLIENT || 'ca-pub-1907813559893319',
       unsplashAccessKey:
         process.env.NUXT_PUBLIC_UNSPLASH_ACCESS_KEY || process.env.UNSPLASH_ACCESS_KEY,
       stripePaymentLinkMonthly: process.env.NUXT_PUBLIC_STRIPE_PAYMENT_LINK_MONTHLY,

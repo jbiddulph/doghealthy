@@ -138,6 +138,65 @@
       </div>
     </section>
 
+    <!-- Featured news -->
+    <section v-if="featuredNews.length" class="bg-amber-50 border-b border-amber-100">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
+        <div class="flex flex-wrap items-end justify-between gap-4 mb-10">
+          <div>
+            <p class="text-sm font-semibold uppercase tracking-wide text-amber-800 mb-2">News</p>
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900">Featured from DogHealthy</h2>
+          </div>
+          <NuxtLink to="/news" class="text-amber-900 font-semibold hover:underline">
+            All news →
+          </NuxtLink>
+        </div>
+        <div class="grid md:grid-cols-3 gap-8">
+          <NuxtLink
+            v-for="article in featuredNews"
+            :key="article.id"
+            :to="newsArticlePath(article)"
+            class="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow overflow-hidden border border-amber-100"
+          >
+            <img
+              v-if="article.image_url"
+              :src="article.image_url"
+              :alt="article.image_alt || article.title"
+              class="w-full h-48 object-cover"
+              loading="lazy"
+            />
+            <div v-else class="w-full h-48 bg-amber-100 flex items-center justify-center text-5xl">📰</div>
+            <div class="p-5">
+              <h3 class="text-xl font-bold text-gray-900 mb-2">{{ article.title }}</h3>
+              <p class="text-sm text-gray-600 line-clamp-3">{{ article.excerpt || article.body }}</p>
+              <p class="text-xs text-gray-400 mt-3">{{ formatNewsDate(article.published_at || article.created_at) }}</p>
+            </div>
+          </NuxtLink>
+        </div>
+      </div>
+    </section>
+
+    <!-- How to -->
+    <section v-if="howtoArticles.length" class="bg-white border-b border-gray-100">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
+        <div class="flex flex-wrap items-end justify-between gap-4 mb-8">
+          <div>
+            <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700 mb-2">How to</p>
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900">Dog care guides</h2>
+            <p class="text-gray-600 mt-2 max-w-2xl">
+              Everyday how-tos — jealousy, body language, lost dogs, hot cars, bathing, diet and more.
+            </p>
+          </div>
+          <NuxtLink to="/how-to" class="text-emerald-800 font-semibold hover:underline">
+            All how-to guides →
+          </NuxtLink>
+        </div>
+        <div class="grid md:grid-cols-2 gap-x-12">
+          <HowToArticleList :articles="howtoLeft" />
+          <HowToArticleList :articles="howtoRight" />
+        </div>
+      </div>
+    </section>
+
     <!-- Features Section -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       <div class="text-center mb-16">
@@ -622,8 +681,25 @@
 </template>
 
 <script setup lang="ts">
+import { newsArticlePath } from '~/utils/newsSlug'
+
 const authStore = useAuthStore()
+const supabase = useSupabase()
 const { fetchImageWithFallback, getCuratedImage } = useUnsplash()
+const featuredNews = ref<any[]>([])
+const howtoArticles = ref<any[]>([])
+const howtoMid = computed(() => Math.ceil(howtoArticles.value.length / 2))
+const howtoLeft = computed(() => howtoArticles.value.slice(0, howtoMid.value))
+const howtoRight = computed(() => howtoArticles.value.slice(howtoMid.value))
+
+const formatNewsDate = (iso?: string | null) => {
+  if (!iso) return ''
+  try {
+    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+  } catch {
+    return ''
+  }
+}
 
 // Fetch hero image from Unsplash
 const heroImage = ref('')
@@ -633,6 +709,29 @@ const photoCredit = ref<{ author: string; authorUrl: string } | null>(null)
 const featureImages = ref<Record<string, { url: string; description?: string; author?: string; authorUrl?: string }>>({})
 
 onMounted(async () => {
+  supabase
+    .from('doghealthy_news')
+    .select('id, slug, title, excerpt, body, image_url, image_alt, category, published_at, created_at')
+    .eq('is_published', true)
+    .eq('is_featured', true)
+    .eq('category', 'news')
+    .order('published_at', { ascending: false })
+    .limit(3)
+    .then(({ data }) => {
+      featuredNews.value = data || []
+    })
+
+  supabase
+    .from('doghealthy_news')
+    .select('id, slug, title, category, is_featured, published_at')
+    .eq('is_published', true)
+    .eq('category', 'howto')
+    .order('is_featured', { ascending: false })
+    .order('published_at', { ascending: false })
+    .then(({ data }) => {
+      howtoArticles.value = data || []
+    })
+
   // Paint curated CDN images immediately so the hero/features never sit blank
   // while waiting on Unsplash (API often 403s from the browser / rate limits).
   const heroFallback = getCuratedImage('happy dog', 1600, 900)
@@ -739,7 +838,9 @@ usePageSeo({
       'NFC and QR pet tags',
       'Found-dog SMS alerts',
       'Dog food finder',
-      'Vet contact management'
+      'Vet contact management',
+      'Dog health news',
+      'How-to dog care guides'
     ],
     provider: {
       '@type': 'Organization',

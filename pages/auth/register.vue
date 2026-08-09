@@ -8,17 +8,6 @@
       />
       <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/15 lg:bg-gradient-to-r lg:from-black/70 lg:via-black/40 lg:to-black/10" />
       <div class="relative z-10 h-full flex flex-col justify-end lg:justify-center px-6 py-8 sm:px-10 lg:px-12 text-white">
-        <NuxtLink to="/" class="inline-flex items-center gap-2 mb-6 lg:mb-10">
-          <NuxtImg
-            src="/logo-96.png"
-            alt="DogHealthy"
-            width="40"
-            height="45"
-            class="h-10 w-auto drop-shadow"
-            format="webp"
-          />
-          <span class="text-lg font-bold tracking-tight">DogHealthy</span>
-        </NuxtLink>
         <p class="inline-flex w-fit items-center rounded-full bg-white/15 border border-white/30 px-3 py-1 text-xs font-semibold mb-4">
           🇬🇧 Free to start · UK only
         </p>
