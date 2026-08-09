@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NFC_API_KEY, submitNfcMeOrder } from './_lib/nfc-me.mjs'
+import { formatShipLine, notifyAdmins } from './_lib/admin-notify.mjs'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
@@ -112,6 +113,13 @@ export async function handler(event) {
         })
         .eq('id', orderId)
 
+      await notifyAdmins(admin, {
+        type: 'nfc_order',
+        referenceId: orderId,
+        title: 'NFC payment received — fulfilment failed',
+        message: `${formatShipLine(order)}. ${order.tag_quantity || 0} stickers. ${detail}`
+      })
+
       return json(502, {
         error: 'Payment succeeded but NFC fulfilment failed — support will retry',
         orderId,
@@ -129,6 +137,13 @@ export async function handler(event) {
         error_message: null
       })
       .eq('id', orderId)
+
+    await notifyAdmins(admin, {
+      type: 'nfc_order',
+      referenceId: orderId,
+      title: 'NFC order sent to NFC Me',
+      message: `${formatShipLine(order)}. ${order.dog_ids?.length || 0} dog(s) × ${order.tags_per_dog || 2} = ${order.tag_quantity || 0} stickers. NFC Me #${submitted.nfcMeOrderId || '—'}.`
+    })
 
     const dogIds = order.dog_ids || []
     const nowIso = new Date().toISOString()

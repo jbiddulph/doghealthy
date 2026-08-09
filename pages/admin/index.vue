@@ -14,6 +14,26 @@
       </NuxtLink>
     </div>
 
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 mb-4">
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <h3 class="font-semibold text-slate-900">Latest NFC activity</h3>
+        <NuxtLink to="/admin/nfc-orders" class="text-xs text-blue-700 hover:underline">All orders</NuxtLink>
+      </div>
+      <p v-if="!activity.length" class="text-sm text-slate-500">No NFC purchases or NFC dog packs yet.</p>
+      <ul v-else class="divide-y divide-slate-100">
+        <li v-for="item in activity" :key="item.id" class="py-3 flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <p class="text-sm font-medium text-slate-900">{{ item.title }}</p>
+            <p class="text-xs text-slate-500 mt-0.5">{{ item.detail }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-xs font-semibold capitalize text-slate-700">{{ item.status }}</p>
+            <p class="text-xs text-slate-400">{{ item.when }}</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+
     <div class="grid lg:grid-cols-2 gap-4">
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
         <h3 class="font-semibold text-slate-900 mb-2">Quick actions</h3>
@@ -80,6 +100,22 @@ const stats = reactive({
   nfcQueue: 0,
   activeSubs: 0
 })
+const activity = ref<
+  { id: string; title: string; detail: string; status: string; when: string; at: number }[]
+>([])
+
+const formatWhen = (iso: string) => {
+  try {
+    return new Date(iso).toLocaleString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch {
+    return iso
+  }
+}
 
 const cards = computed(() => [
   { label: 'Users', value: stats.users, to: '/admin/users', cta: 'Manage users' },
@@ -141,7 +177,7 @@ async function downloadQrSheet() {
 onMounted(async () => {
   loading.value = true
   try {
-    const [users, dogs, nfcQueue, subs, tags] = await Promise.all([
+    const [users, dogs, nfcQueue, subs, tags, nfcOrders, packOrders] = await Promise.all([
       supabase.from('doghealthy_users').select('id', { count: 'exact', head: true }),
       supabase.from('doghealthy_dogs').select('id', { count: 'exact', head: true }),
       supabase
@@ -156,13 +192,41 @@ onMounted(async () => {
       supabase
         .from('doghealthy_tags')
         .select('id', { count: 'exact', head: true })
-        .eq('status', 'active')
+        .eq('status', 'active'),
+      supabase
+        .from('doghealthy_nfc_orders')
+        .select('id, status, payment_status, tag_quantity, shipping_name, shipping_email, created_at')
+        .order('created_at', { ascending: false })
+        .limit(8),
+      supabase
+        .from('doghealthy_extra_dog_orders')
+        .select('id, status, payment_status, quantity, shipping_name, shipping_email, created_at')
+        .order('created_at', { ascending: false })
+        .limit(8)
     ])
     stats.users = users.count || 0
     stats.dogs = dogs.count || 0
     stats.nfcQueue = nfcQueue.count || 0
     stats.activeSubs = subs.count || 0
     activeTagCount.value = tags.count || 0
+
+    const stickerRows = (nfcOrders.data || []).map((row: any) => ({
+      id: `nfc-${row.id}`,
+      title: `NFC stickers · ${row.shipping_name || row.shipping_email || 'Customer'}`,
+      detail: `${row.tag_quantity || 0} stickers · ${row.payment_status || 'unpaid'}`,
+      status: row.status || 'pending',
+      when: formatWhen(row.created_at),
+      at: new Date(row.created_at).getTime()
+    }))
+    const packRows = (packOrders.data || []).map((row: any) => ({
+      id: `pack-${row.id}`,
+      title: `NFC dog pack · ${row.shipping_name || row.shipping_email || 'Customer'}`,
+      detail: `${row.quantity || 0} dogs · ${row.payment_status || 'unpaid'}`,
+      status: row.status || 'pending',
+      when: formatWhen(row.created_at),
+      at: new Date(row.created_at).getTime()
+    }))
+    activity.value = [...stickerRows, ...packRows].sort((a, b) => b.at - a.at).slice(0, 10)
   } finally {
     loading.value = false
   }

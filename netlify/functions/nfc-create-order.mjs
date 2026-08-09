@@ -255,6 +255,7 @@ export async function handler(event) {
     params.set('customer_email', shipping.email || user.email || '')
     params.set('metadata[order_id]', orderId)
     params.set('metadata[user_id]', user.id)
+    params.set('metadata[type]', 'nfc_sticker')
     params.set('metadata[order_type]', orderType)
     params.set('metadata[postage_class]', postageFree ? 'free' : postageClass)
     params.append('payment_method_types[0]', 'card')

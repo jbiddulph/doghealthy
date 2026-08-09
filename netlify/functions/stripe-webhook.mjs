@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import crypto from 'node:crypto'
 import { stripeSubscriptionPeriodEndUnix } from './_lib/subscription.mjs'
 import { fulfilExtraDogOrder } from './extra-dogs-confirm.mjs'
+import { formatShipLine, notifyAdmins } from './_lib/admin-notify.mjs'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -146,6 +147,45 @@ export async function handler(event) {
             })
             .eq('id', order.id)
           await fulfilExtraDogOrder(admin, { ...order, payment_status: 'paid' })
+        }
+      }
+
+      const stickerOrderId = session.metadata?.order_id
+      if (
+        stickerOrderId &&
+        (session.metadata?.type === 'nfc_sticker' || session.metadata?.order_type)
+      ) {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+        const { data: nfcOrder } = await admin
+          .from('doghealthy_nfc_orders')
+          .select('*')
+          .eq('id', stickerOrderId)
+          .maybeSingle()
+        if (nfcOrder) {
+          const paymentIntent =
+            typeof session.payment_intent === 'string'
+              ? session.payment_intent
+              : session.payment_intent?.id
+          if (nfcOrder.payment_status !== 'paid') {
+            await admin
+              .from('doghealthy_nfc_orders')
+              .update({
+                payment_status: 'paid',
+                paid_at: nfcOrder.paid_at || new Date().toISOString(),
+                stripe_checkout_session_id: session.id,
+                stripe_payment_intent_id: paymentIntent || null,
+                status: nfcOrder.status === 'submitted' ? 'submitted' : 'paid'
+              })
+              .eq('id', nfcOrder.id)
+          }
+          if (nfcOrder.status !== 'submitted') {
+            await notifyAdmins(admin, {
+              type: 'nfc_order',
+              referenceId: nfcOrder.id,
+              title: 'NFC stickers purchased',
+              message: `${formatShipLine(nfcOrder)}. ${nfcOrder.dog_ids?.length || 0} dog(s), ${nfcOrder.tag_quantity || 0} stickers. Status: paid — check NFC orders.`
+            })
+          }
         }
       }
     }

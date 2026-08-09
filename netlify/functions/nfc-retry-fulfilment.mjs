@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { submitNfcMeOrder } from './_lib/nfc-me.mjs'
+import { formatShipLine, notifyAdmins } from './_lib/admin-notify.mjs'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
@@ -96,6 +97,13 @@ export async function handler(event) {
         error_message: null
       })
       .eq('id', orderId)
+
+    await notifyAdmins(admin, {
+      type: 'nfc_order',
+      referenceId: orderId,
+      title: 'NFC order submitted to NFC Me',
+      message: `${formatShipLine(order)}. ${order.tag_quantity || 0} stickers. NFC Me #${submitted.nfcMeOrderId || '—'}.`
+    })
 
     return json(200, { ok: true, orderId, nfcMeOrderId: submitted.nfcMeOrderId, sku: submitted.sku })
   } catch (error) {

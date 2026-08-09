@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { createPlaceholderDogs } from './_lib/extra-dogs.mjs'
 import { NFC_API_KEY, submitNfcMeOrder } from './_lib/nfc-me.mjs'
+import { formatShipLine, notifyAdmins } from './_lib/admin-notify.mjs'
 
 const NFC_PRODUCT_SKU = (process.env.NFC_ME_PRODUCT_SKU || 'NFC-WHITE-25MM').toUpperCase()
 const SUPABASE_URL = process.env.SUPABASE_URL
@@ -89,6 +90,24 @@ export async function fulfilExtraDogOrder(admin, order) {
       fulfilled_at: nowIso
     })
     .eq('id', order.id)
+
+  const nfcCount = nfcDogs.length
+  await notifyAdmins(admin, {
+    type: 'nfc_dogs',
+    referenceId: order.id,
+    title: nfcCount
+      ? 'New dogs created with NFC'
+      : 'New dogs created',
+    message: [
+      `${names.join(', ') || `${order.quantity} dogs`}.`,
+      nfcCount ? `${nfcCount} with NFC + QR.` : null,
+      nfcMeOrderId ? `NFC Me #${nfcMeOrderId}.` : null,
+      nfcError ? `NFC Me error: ${nfcError}.` : null,
+      formatShipLine(order) || null
+    ]
+      .filter(Boolean)
+      .join(' ')
+  })
 
   return { alreadyProcessed: false, dogIds, names, nfcMeOrderId, nfcError }
 }

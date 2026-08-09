@@ -136,6 +136,8 @@ const getNotificationIcon = (type: string) => {
     case 'medication': return 'bi-capsule'
     case 'message': return 'bi-chat-dots'
     case 'upgrade': return 'bi-star'
+    case 'nfc_order': return 'bi-upc-scan'
+    case 'nfc_dogs': return 'bi-heart'
     default: return 'bi-bell'
   }
 }
@@ -146,6 +148,8 @@ const getNotificationIconClass = (type: string) => {
     case 'medication': return 'bg-accent'
     case 'message': return 'bg-secondary'
     case 'upgrade': return 'bg-primary'
+    case 'nfc_order': return 'bg-slate-800'
+    case 'nfc_dogs': return 'bg-amber-600'
     default: return 'bg-muted'
   }
 }
@@ -241,6 +245,12 @@ const handleNotificationClick = async (notification: Notification) => {
     case 'upgrade':
       // Navigate to my listings
       await navigateTo('/classifieds/my-listings')
+      break
+    case 'nfc_order':
+      await navigateTo('/admin/nfc-orders')
+      break
+    case 'nfc_dogs':
+      await navigateTo('/admin/dogs')
       break
   }
   

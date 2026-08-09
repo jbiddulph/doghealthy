@@ -16,6 +16,9 @@
           >
             {{ item.label }}
           </NuxtLink>
+          <div class="text-white [&_button]:text-white [&_.text-secondary]:text-slate-300">
+            <NotificationBell />
+          </div>
           <NuxtLink
             to="/dogs"
             class="px-3 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-white/10"
