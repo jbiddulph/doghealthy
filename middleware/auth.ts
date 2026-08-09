@@ -4,11 +4,12 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 
   const authStore = useAuthStore()
 
-  // Wait for auth initialization to complete before making decisions.
+  // Wait for auth initialization, but never block navigation forever.
   if ((authStore as any).loading) {
     await new Promise<void>((resolve) => {
+      const started = Date.now()
       const check = () => {
-        if (!(authStore as any).loading) resolve()
+        if (!(authStore as any).loading || Date.now() - started > 6000) resolve()
         else setTimeout(check, 50)
       }
       check()

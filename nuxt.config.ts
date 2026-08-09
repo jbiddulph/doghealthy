@@ -6,7 +6,9 @@ export default defineNuxtConfig({
 
   experimental: {
     // After a deploy, stale Chrome tabs may request deleted chunks — reload once.
-    emitRouteChunkError: 'automatic'
+    emitRouteChunkError: 'automatic',
+    // Avoid /_nuxt/builds/latest.json — Chrome still has an immutable year-long cache of it.
+    appManifest: false
   },
   
   nitro: {
